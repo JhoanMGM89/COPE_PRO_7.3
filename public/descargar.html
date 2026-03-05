@@ -71,11 +71,13 @@ async function empaquetar() {
         }
     }
 
-    progreso.textContent = 'Empaquetando en un solo archivo...';
+    progreso.textContent = 'Integrando módulos nativamente...';
 
     let mainHTML = contenidos['GENERADOR_DE_PLANTILLAS.html'];
 
-    // Encode modules as base64
+    // =============================================
+    // PASO 1: Codificar módulos en Base64
+    // =============================================
     const moduleData = {};
     for (const mod of modulos) {
         if (mod !== 'GENERADOR_DE_PLANTILLAS.html') {
@@ -83,72 +85,54 @@ async function empaquetar() {
         }
     }
 
-    // Store module data in a hidden div to avoid script parsing issues
-    const dataTag = '<div id="__embeddedModules__" style="display:none">' + 
-        encodeURIComponent(JSON.stringify(moduleData)) + '</div>';
+    // =============================================
+    // PASO 2: Insertar almacén de módulos como variable JS
+    //         directamente DENTRO de la función abrirModulo
+    // =============================================
+    // Reemplazar "iframe.src = modulo;" por lógica que use módulos embebidos
+    // Hay 2 ocurrencias: una para nestedIframe y otra para iframe principal
 
-    // Build the override script in parts to avoid closing tag issues
-    const scriptParts = [];
-    scriptParts.push('<scr');
-    scriptParts.push('ipt>');
-    scriptParts.push(`
-(function(){
-    var raw = document.getElementById('__embeddedModules__').textContent;
-    var mods = JSON.parse(decodeURIComponent(raw));
-    var origAbrir = window.abrirModulo;
-    window.abrirModulo = function(modulo, params) {
-        if (!mods[modulo]) { origAbrir(modulo, params); return; }
-        var html = decodeURIComponent(escape(atob(mods[modulo])));
-        var bienvenida = document.getElementById('pantallaBienvenida');
-        if (bienvenida) bienvenida.style.display = 'none';
-        var existingOverlay = document.getElementById('moduleOverlay');
-        if (existingOverlay && existingOverlay.classList.contains('activo')) {
-            var nestedOverlay = document.getElementById('nestedModuleOverlay');
-            var nestedIframe = document.getElementById('nestedModuleIframe');
-            if (!nestedOverlay) {
-                nestedOverlay = document.createElement('div');
-                nestedOverlay.id = 'nestedModuleOverlay';
-                nestedOverlay.className = 'module-overlay';
-                nestedOverlay.style.background = 'transparent';
-                nestedOverlay.onclick = function(e) { if (e.target === nestedOverlay) cerrarModuloAnidado(); };
-                nestedIframe = document.createElement('iframe');
-                nestedIframe.id = 'nestedModuleIframe';
-                nestedIframe.setAttribute('allowtransparency', 'true');
-                nestedOverlay.appendChild(nestedIframe);
-                document.body.appendChild(nestedOverlay);
-            }
-            nestedIframe.srcdoc = html;
-            if (params) { nestedIframe.onload = function() { nestedIframe.contentWindow.postMessage(params, '*'); }; }
-            nestedOverlay.classList.add('activo');
-            return;
-        }
-        var overlay = document.getElementById('moduleOverlay');
-        var iframe = document.getElementById('moduleIframe');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'moduleOverlay';
-            overlay.className = 'module-overlay';
-            overlay.onclick = function(e) { if (e.target === overlay) cerrarModulo(); };
-            iframe = document.createElement('iframe');
-            iframe.id = 'moduleIframe';
-            iframe.setAttribute('allowtransparency', 'true');
-            overlay.appendChild(iframe);
-            document.body.appendChild(overlay);
-        }
-        iframe.srcdoc = html;
-        if (params) { iframe.onload = function() { iframe.contentWindow.postMessage(params, '*'); }; }
-        overlay.classList.add('activo');
-    };
-})();
-`);
-    scriptParts.push('</scr');
-    scriptParts.push('ipt>');
+    const loadLogic = `// --- MÓDULOS EMBEBIDOS (integrado nativamente) ---
+        var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
+        if (__mod) {
+            var __html = decodeURIComponent(escape(atob(__mod)));
+            IFRAME_VAR.srcdoc = __html;
+        } else {
+            IFRAME_VAR.src = modulo;
+        }`;
 
-    const embedCode = dataTag + scriptParts.join('');
+    // Reemplazar nestedIframe.src = modulo;
+    mainHTML = mainHTML.replace(
+        'nestedIframe.src = modulo;',
+        loadLogic.replace(/IFRAME_VAR/g, 'nestedIframe')
+    );
 
-    // Append at the very end - browsers execute it regardless of position
-    mainHTML += '\n' + embedCode;
+    // Reemplazar iframe.src = modulo; (solo la que está en abrirModulo, no otras)
+    // Usamos un patrón más específico para encontrar la correcta
+    mainHTML = mainHTML.replace(
+        /iframe\.src = modulo;\s*\n\s*overlay\.classList\.add\('activo'\);/,
+        loadLogic.replace(/IFRAME_VAR/g, 'iframe') + '\n        overlay.classList.add(\'activo\');'
+    );
 
+    // =============================================
+    // PASO 3: Inyectar la variable __modulosEmbebidos
+    //         justo antes de "let moduleStack" (inicio de la sección de módulos)
+    // =============================================
+    const dataDeclaration = `// ============================================
+// MÓDULOS EMBEBIDOS (integrado nativamente para uso offline)
+// ============================================
+var __modulosEmbebidos = JSON.parse(decodeURIComponent("${encodeURIComponent(JSON.stringify(moduleData))}"));
+
+`;
+
+    mainHTML = mainHTML.replace(
+        'let moduleStack = [];',
+        dataDeclaration + 'let moduleStack = [];'
+    );
+
+    // =============================================
+    // PASO 4: Descargar archivo final limpio
+    // =============================================
     const blob = new Blob([mainHTML], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -159,7 +143,7 @@ async function empaquetar() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    progreso.textContent = '✅ ¡Archivo descargado exitosamente!';
+    progreso.textContent = '✅ ¡Archivo descargado exitosamente! (Sin parches, 100% integrado)';
     btn.disabled = false;
     btn.textContent = '⬇️ DESCARGAR TODO EN 1 HTML';
 }
