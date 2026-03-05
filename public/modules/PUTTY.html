@@ -1248,7 +1248,7 @@
                 <button class="btn btn-danger" onclick="limpiarCampos()" style="padding: 5px 10px; font-size: 0.6rem;">
                     Limpiar Campos
                 </button>
-                <button class="btn btn-secondary" onclick="window.close()" style="padding: 5px 10px; font-size: 0.6rem;">
+                <button class="btn btn-secondary" onclick="cerrarVentanaPutty()" style="padding: 5px 10px; font-size: 0.6rem;">
                     Cerrar Ventana
                 </button>
             </div>
@@ -1261,6 +1261,14 @@
         let currentBrand = 'nokia';
         let listaONTsProcesada = '';
         let historialComandos = [];
+
+        function cerrarVentanaPutty() {
+            if (window.parent !== window) {
+                window.parent.postMessage('cerrarModulo', '*');
+            } else {
+                window.close();
+            }
+        }
 
         const STORAGE_KEYS = {
             BRAND: 'olt_command_center_brand',

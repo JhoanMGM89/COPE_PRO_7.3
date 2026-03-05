@@ -931,6 +931,25 @@ input:checked + .slider:before {
         gap: 0.35rem;
     }
 }
+
+/* Scrollbar estilo Creación */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
 </style>
 </head>
 <body>
@@ -1662,8 +1681,6 @@ function actualizarCampos() {
             break;
             
         case 'CULMINACION':
-            mostrarSwitchATC = true;
-            mostrar('cont-check-atc');
             mostrar('cont-jira-solo');
             mostrar('cont-inc-ot');
             mostrar('cont-culm-fields');
