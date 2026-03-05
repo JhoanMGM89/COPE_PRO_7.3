@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Reporte de Sistema - Generador de Plantillas Pro</title>
+<style>
+    @media print {
+        body { margin: 0; padding: 20px; }
+        .no-print { display: none !important; }
+        .page-break { page-break-before: always; }
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-size: 12px;
+        color: #1a1a1a;
+        background: #fff;
+        padding: 40px;
+        line-height: 1.6;
+    }
+    
+    .cover {
+        text-align: center;
+        padding: 100px 0 60px;
+        border-bottom: 3px solid #007bff;
+        margin-bottom: 40px;
+    }
+    
+    .cover h1 {
+        font-size: 2.2rem;
+        color: #007bff;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+    }
+    
+    .cover .subtitle {
+        font-size: 1.1rem;
+        color: #555;
+        margin-bottom: 30px;
+    }
+    
+    .cover .date {
+        font-size: 0.95rem;
+        color: #888;
+    }
+    
+    .cover .version {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 5px 20px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        margin-top: 15px;
+    }
+    
+    h2 {
+        font-size: 1.4rem;
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 8px;
+        margin: 35px 0 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    h3 {
+        font-size: 1.1rem;
+        color: #333;
+        margin: 20px 0 10px;
+        padding-left: 10px;
+        border-left: 4px solid #007bff;
+    }
+    
+    h4 {
+        font-size: 0.95rem;
+        color: #555;
+        margin: 12px 0 6px;
+    }
+    
+    p { margin-bottom: 8px; }
+    
+    ul {
+        margin: 8px 0 12px 25px;
+    }
+    
+    li { margin-bottom: 4px; }
+    
+    .module-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 15px 0;
+        border-left: 5px solid #007bff;
+    }
+    
+    .module-card.averias { border-left-color: #ff8c00; }
+    .module-card.atp { border-left-color: #ffc107; }
+    .module-card.creacion { border-left-color: #28a745; }
+    .module-card.servicenow { border-left-color: #0d6efd; }
+    .module-card.putty { border-left-color: #e11d48; }
+    .module-card.general { border-left-color: #6c757d; }
+    
+    .module-card h3 {
+        border-left: none;
+        padding-left: 0;
+        margin-top: 0;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        margin-right: 5px;
+    }
+    
+    .badge-orange { background: #ff8c00; }
+    .badge-yellow { background: #ffc107; color: #333; }
+    .badge-green { background: #28a745; }
+    .badge-blue { background: #0d6efd; }
+    .badge-red { background: #e11d48; }
+    .badge-gray { background: #6c757d; }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 0.85rem;
+    }
+    
+    th, td {
+        border: 1px solid #dee2e6;
+        padding: 8px 12px;
+        text-align: left;
+    }
+    
+    th {
+        background: #007bff;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    tr:nth-child(even) { background: #f8f9fa; }
+    
+    .btn-print {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 25px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
+    }
+    
+    .btn-print:hover { background: #0056b3; }
+    
+    .toc {
+        background: #f8f9fa;
+        padding: 20px 30px;
+        border-radius: 8px;
+        margin: 20px 0 30px;
+    }
+    
+    .toc ol {
+        margin-left: 20px;
+    }
+    
+    .toc li {
+        margin-bottom: 6px;
+        font-size: 0.95rem;
+    }
+    
+    .architecture-diagram {
+        background: #1a1a2e;
+        color: #e0e0e0;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 15px 0;
+        font-family: 'Consolas', monospace;
+        font-size: 0.8rem;
+        line-height: 1.8;
+        text-align: center;
+    }
+    
+    .architecture-diagram .box {
+        display: inline-block;
+        border: 1px solid #555;
+        padding: 8px 16px;
+        border-radius: 6px;
+        margin: 4px;
+    }
+    
+    .status-ok { color: #22c55e; font-weight: bold; }
+    .status-active { color: #007bff; font-weight: bold; }
+    
+    footer {
+        text-align: center;
+        padding: 30px 0 10px;
+        border-top: 1px solid #dee2e6;
+        margin-top: 40px;
+        color: #888;
+        font-size: 0.8rem;
+    }
+</style>
+</head>
+<body>
+
+<button class="btn-print no-print" onclick="window.print()">📄 Guardar como PDF</button>
+
+<!-- ============================
+     PORTADA
+     ============================ -->
+<div class="cover">
+    <h1>Generador de Plantillas Pro</h1>
+    <p class="subtitle">Reporte de Estado del Sistema — Documentación Técnica y Funcional</p>
+    <p class="date">Fecha de generación: <script>document.write(new Date().toLocaleDateString('es-ES', {year:'numeric',month:'long',day:'numeric'}))</script></p>
+    <div class="version">v2.5 — Producción</div>
+</div>
+
+<!-- ============================
+     ÍNDICE
+     ============================ -->
+<h2>Índice de Contenidos</h2>
+<div class="toc">
+    <ol>
+        <li>Descripción General del Sistema</li>
+        <li>Arquitectura Técnica</li>
+        <li>Módulo Central — Generador de Plantillas</li>
+        <li>Módulo AVERÍAS</li>
+        <li>Módulo ATP / ATC</li>
+        <li>Módulo SERVICE NOW</li>
+        <li>Módulo CREACIÓN</li>
+        <li>Herramienta PUTTY (OLT Command Center)</li>
+        <li>Base de Datos de IPs</li>
+        <li>Funcionalidades Transversales</li>
+        <li>Resumen de Plantillas por Módulo</li>
+    </ol>
+</div>
+
+<!-- ============================
+     1. DESCRIPCIÓN GENERAL
+     ============================ -->
+<h2>1. Descripción General del Sistema</h2>
+<p>El <strong>Generador de Plantillas Pro</strong> es una aplicación web diseñada para la gestión operativa de telecomunicaciones. Permite a los agentes generar, copiar y gestionar plantillas estandarizadas para distintas plataformas de trabajo: <strong>Averías</strong>, <strong>ATP/ATC</strong>, <strong>Service Now</strong> y <strong>Creación</strong>.</p>
+
+<p>El sistema opera como una aplicación de página única (SPA) construida con HTML/CSS/JavaScript puro, empaquetada dentro de un contenedor React + Vite. Cada módulo funciona como un archivo HTML independiente cargado dinámicamente mediante iframes.</p>
+
+<h4>Características Principales:</h4>
+<ul>
+    <li>Generación automática de plantillas con formato estandarizado</li>
+    <li>Base de datos interna de IPs con más de 200 registros OLT</li>
+    <li>Sistema de historial con exportación a Excel (CSV)</li>
+    <li>Contadores de gestión por categoría</li>
+    <li>Herramienta PUTTY integrada para comandos Nokia/Huawei</li>
+    <li>Personalización visual (fondo e identidad de agente)</li>
+    <li>Persistencia de datos vía localStorage</li>
+</ul>
+
+<!-- ============================
+     2. ARQUITECTURA
+     ============================ -->
+<div class="page-break"></div>
+<h2>2. Arquitectura Técnica</h2>
+
+<div class="architecture-diagram">
+    <strong style="color:#007bff;">ARQUITECTURA DEL SISTEMA</strong><br><br>
+    <span class="box" style="border-color:#007bff;">React + Vite (Index.tsx)</span><br>
+    ↓ iframe fullscreen ↓<br>
+    <span class="box" style="border-color:#28a745;">GENERADOR_DE_PLANTILLAS.html (Hub Central)</span><br><br>
+    ┌──────────┬──────────┬──────────┬──────────┐<br>
+    ↓ iframe &nbsp;&nbsp;&nbsp;&nbsp; ↓ iframe &nbsp;&nbsp;&nbsp;&nbsp; ↓ modal &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ iframe<br>
+    <span class="box" style="border-color:#ff8c00;">AVERIAS</span>
+    <span class="box" style="border-color:#ffc107;">ATP</span>
+    <span class="box" style="border-color:#28a745;">CREACIÓN</span>
+    <span class="box" style="border-color:#0d6efd;">SERVICE NOW</span><br><br>
+    ↕ Nested Overlay (cualquier módulo) ↕<br>
+    <span class="box" style="border-color:#e11d48;">PUTTY (OLT Command Center)</span><br><br>
+    <span style="color:#888;">Comunicación: postMessage API | Datos: localStorage</span>
+</div>
+
+<h3>Stack Tecnológico</h3>
+<table>
+    <tr><th>Componente</th><th>Tecnología</th><th>Propósito</th></tr>
+    <tr><td>Contenedor</td><td>React 18 + Vite + TypeScript</td><td>Empaquetado y despliegue</td></tr>
+    <tr><td>Módulos</td><td>HTML/CSS/JS puro</td><td>Lógica de negocio y UI</td></tr>
+    <tr><td>Estilos</td><td>CSS Variables + Glass Morphism</td><td>Diseño visual adaptable</td></tr>
+    <tr><td>Comunicación</td><td>postMessage API</td><td>Comunicación entre iframes</td></tr>
+    <tr><td>Persistencia</td><td>localStorage</td><td>Agente, fondo, historial, contadores</td></tr>
+    <tr><td>Navegación</td><td>Module Overlay System</td><td>Apertura/cierre de módulos sin recarga</td></tr>
+</table>
+
+<h3>Sistema de Navegación</h3>
+<ul>
+    <li><strong>Pantalla de Login:</strong> Ingreso de nombre de agente + carga de fondo personalizado</li>
+    <li><strong>Pantalla de Bienvenida:</strong> Grid de 4 botones para seleccionar plataforma + acceso a cambiar agente/fondo</li>
+    <li><strong>Módulos:</strong> Se abren en overlays fullscreen sobre el hub central</li>
+    <li><strong>PUTTY:</strong> Se abre como nested overlay sobre cualquier módulo activo, cerrándose independientemente</li>
+    <li><strong>Auto-login:</strong> Si el agente está guardado en localStorage, se salta la pantalla de login</li>
+</ul>
+
+<!-- ============================
+     3. MÓDULO CENTRAL
+     ============================ -->
+<div class="page-break"></div>
+<h2>3. Módulo Central — Generador de Plantillas</h2>
+<div class="module-card general">
+    <h3><span class="badge badge-gray">HUB</span> GENERADOR_DE_PLANTILLAS.html</h3>
+    <p>Archivo principal (~7200 líneas) que actúa como hub central del sistema. Contiene:</p>
+    
+    <h4>Pantalla de Login</h4>
+    <ul>
+        <li>Campo de texto para nombre de agente</li>
+        <li>Botón "Cargar imagen de fondo" con soporte para imágenes personalizadas</li>
+        <li>Botón de eliminar fondo (🗑️)</li>
+        <li>Almacenamiento en localStorage (nombreAgente, fondoPersonalizado)</li>
+    </ul>
+    
+    <h4>Pantalla de Bienvenida</h4>
+    <ul>
+        <li>Mensaje "BIENVENIDO, [AGENTE]"</li>
+        <li>Grid 2x2 con botones: AVERÍAS, ATP, CREACIÓN, SERVICE NOW</li>
+        <li>Botón "⚙️ Cambiar agente / fondo" para regresar al login</li>
+        <li>Los botones se ocultan al abrir un módulo y reaparecen al cerrarlo</li>
+    </ul>
+    
+    <h4>Módulo CREACIÓN (Modal interno)</h4>
+    <p>A diferencia de los otros módulos, CREACIÓN se ejecuta como un modal dentro del propio archivo, no como iframe externo.</p>
+    <ul>
+        <li>Base de datos interna de IPs (~200+ registros OLT)</li>
+        <li>Detección automática de datos: OLT, localidad, coinversión, tecnología, grupo de trabajo, artículo</li>
+        <li>Soporte para múltiples coinversiones: ONNET, ATP, ATC, ONNET MAXIMO, APAGADA</li>
+        <li>Switches de plataforma: SYTEX, GDM, CAZAMASIVOS</li>
+        <li>Switch de múltiples IPs</li>
+        <li>Estados de creación: Nuevo Caso, Anexo</li>
+        <li>Generación de plantillas en 3 formatos: RESUMEN, DETALLE, PLANTILLA COMPLETA</li>
+        <li>Sistema de historial con búsqueda, contadores y exportación</li>
+        <li>Modal de rechazos con formulario específico y vista previa</li>
+        <li>Herramienta PUTTY accesible desde la interfaz</li>
+    </ul>
+</div>
+
+<!-- ============================
+     4. MÓDULO AVERÍAS
+     ============================ -->
+<h2>4. Módulo AVERÍAS</h2>
+<div class="module-card averias">
+    <h3><span class="badge badge-orange">AVERÍAS</span> AVERIAS.html (~1723 líneas)</h3>
+    <p>Centro de validación para gestión de averías con panel lateral de categorías y generación de plantillas por categoría.</p>
+    
+    <h4>Interfaz</h4>
+    <ul>
+        <li>Header naranja con título y toggle de panel lateral</li>
+        <li>Barra de herramientas: Historial + PUTTY (mismo estilo) + contadores</li>
+        <li>Panel lateral colapsable con switches y categorías</li>
+    </ul>
+    
+    <h4>Switches de Plataforma</h4>
+    <ul>
+        <li>SERVICE NOW (toggle)</li>
+        <li>MAXIMO (toggle — muestra categoría adicional "Estado MAXIMO")</li>
+    </ul>
+    
+    <h4>Categorías de Plantillas</h4>
+    <table>
+        <tr><th>Categoría</th><th># Plantillas</th><th>Contador</th></tr>
+        <tr><td>Marcación</td><td>2</td><td class="status-ok">→ Aprobados</td></tr>
+        <tr><td>Cancelación</td><td>3</td><td class="status-ok">→ Aprobados</td></tr>
+        <tr><td>Inconsistencia Vías</td><td>2</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>Potencia Atenuada</td><td>1</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>Tiempo Excedido 24 Hrs</td><td>2</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>Estado de Averías</td><td>5</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>Estado MAXIMO</td><td>1 (visible con switch)</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>No Procedente</td><td>—</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+        <tr><td>Estado Service Now</td><td>—</td><td style="color:#e11d48;font-weight:bold;">→ Rechazados</td></tr>
+    </table>
+    
+    <h4>Funcionalidades</h4>
+    <ul>
+        <li>Validación de número de formulario mediante alerta emergente</li>
+        <li>Campo de formulario se limpia automáticamente tras copiar</li>
+        <li>Historial con botones de vista previa (👁️) y copiado (📋)</li>
+        <li>Exportación a Excel (formato CSV)</li>
+        <li>Contadores reiniciables de Aprobados/Rechazados</li>
+        <li>Vista previa lateral de plantilla copiada</li>
+    </ul>
+</div>
+
+<!-- ============================
+     5. MÓDULO ATP
+     ============================ -->
+<div class="page-break"></div>
+<h2>5. Módulo ATP / ATC</h2>
+<div class="module-card atp">
+    <h3><span class="badge badge-yellow">ATP/ATC</span> ATP.html (~2163 líneas)</h3>
+    <p>Generador de plantillas para la gestión de casos ATP (Asistencia Técnica Presencial) y ATC.</p>
+    
+    <h4>Plantillas Disponibles</h4>
+    <table>
+        <tr><th>Plantilla</th><th>Modo ATC</th><th>Campos Específicos</th></tr>
+        <tr><td>Cancelación</td><td>No</td><td>INC, OT, OT Ref, Switch nota</td></tr>
+        <tr><td>Cierre de Caso</td><td class="status-ok">Sí</td><td>JIRA/FO, Operativo, INC, OT, CAI, Info, Causa, Solución, Obs</td></tr>
+        <tr><td>Creación OT GESTOT</td><td>No</td><td>INC, OT, OT Gestor</td></tr>
+        <tr><td>Culminación PDR</td><td class="status-ok">Sí</td><td>JIRA/FO, INC, OT, campos culminación</td></tr>
+        <tr><td>Se Acepta PDR</td><td class="status-ok">Sí</td><td>JIRA/FO, Fecha inicio, INC, OT, Motivo PDR</td></tr>
+        <tr><td>Se Rechaza PDR</td><td>No</td><td>INC, OT, Motivo rechazo</td></tr>
+        <tr><td>Solicitud de Cancelación</td><td class="status-ok">Sí</td><td>JIRA/FO, INC, OT, Elemento afectado, Motivo</td></tr>
+        <tr><td>Solicitud Avances</td><td>No</td><td>INC, OT</td></tr>
+        <tr><td>Validación de Servicios</td><td class="status-ok">Sí</td><td>JIRA/FO, INC, OT, Info, Switch nota</td></tr>
+    </table>
+    
+    <h4>Switch Modo ATC</h4>
+    <p>Solo visible en 5 plantillas: Cierre, Culminación PDR, Acepta PDR, Solicitud de Cancelación y Validación. Cambia la etiqueta JIRA → FO en los campos correspondientes.</p>
+    
+    <h4>Contadores</h4>
+    <p>CIERRE | VALIDACIÓN | PDR | AVANCES — reiniciables con botón 🗑️</p>
+    
+    <h4>Funcionalidades</h4>
+    <ul>
+        <li>Selector de color dinámico para el header</li>
+        <li>Switch "Usar nota predeterminada" (Cancelación y Validación)</li>
+        <li>Historial con búsqueda, vista previa y copiado</li>
+        <li>Exportación a CSV</li>
+        <li>Botón PUTTY integrado junto al selector de plantilla</li>
+        <li>Confirmación de cierre con modal personalizado</li>
+    </ul>
+</div>
+
+<!-- ============================
+     6. MÓDULO SERVICE NOW
+     ============================ -->
+<h2>6. Módulo SERVICE NOW</h2>
+<div class="module-card servicenow">
+    <h3><span class="badge badge-blue">SERVICE NOW</span> SERVICE_NOW.html (~2005 líneas)</h3>
+    <p>Generador de plantillas para la gestión de tickets en Service Now.</p>
+    
+    <h4>Plantillas Disponibles</h4>
+    <ul>
+        <li>Acepta PDR</li>
+        <li>Cierre de Caso</li>
+        <li>Culminación PDR</li>
+        <li>Se Rechaza PDR</li>
+        <li>Seguimiento</li>
+        <li>Solicitud Avances</li>
+        <li>Solicitud de Cancelación</li>
+        <li>Validación de Servicios</li>
+        <li>Cierre Administrativo</li>
+    </ul>
+    
+    <h4>Funcionalidades</h4>
+    <ul>
+        <li>Selector de color dinámico para el header</li>
+        <li>Contadores: CIERRE | VALIDACIÓN | PDR | AVANCES</li>
+        <li>Historial con búsqueda por Service Now y tipo de plantilla</li>
+        <li>Botones de vista previa (👁️) y copiado (📋) en historial</li>
+        <li>Botón PUTTY integrado</li>
+        <li>Confirmación de cierre</li>
+    </ul>
+</div>
+
+<!-- ============================
+     7. MÓDULO CREACIÓN (detalle)
+     ============================ -->
+<div class="page-break"></div>
+<h2>7. Módulo CREACIÓN (Detalle)</h2>
+<div class="module-card creacion">
+    <h3><span class="badge badge-green">CREACIÓN</span> Integrado en GENERADOR_DE_PLANTILLAS.html</h3>
+    <p>Módulo más complejo del sistema. Gestiona la creación de casos de fibra óptica con detección automática de infraestructura.</p>
+    
+    <h4>Flujo de Trabajo</h4>
+    <ol>
+        <li>El agente ingresa una IP principal (+ tarjeta/puerto opcionales)</li>
+        <li>El sistema busca en la base de datos interna y auto-rellena: OLT, Localidad, Coinversión, Tecnología, Grupo de Trabajo, Artículo</li>
+        <li>Se selecciona el tipo de falla y estado de creación</li>
+        <li>Se completan datos del caso: FO, incidencia, clientes, observaciones</li>
+        <li>El sistema genera 3 vistas: Resumen, Detalle y Plantilla Completa</li>
+    </ol>
+    
+    <h4>Coinversiones Soportadas</h4>
+    <table>
+        <tr><th>Coinversión</th><th>Color Header</th><th>Plataforma Destino</th></tr>
+        <tr><td>ONNET</td><td style="color:#0d6efd;">Azul</td><td>SERVICE NOW</td></tr>
+        <tr><td>ONNET MAXIMO</td><td style="color:#28a745;">Verde</td><td>SERVICE NOW</td></tr>
+        <tr><td>ATP</td><td style="color:#ffc107;">Amarillo</td><td>MAXIMO</td></tr>
+        <tr><td>ATC</td><td style="color:#B22222;">Rojo oscuro</td><td>MAXIMO</td></tr>
+        <tr><td>APAGADA</td><td style="color:#6c757d;">Gris</td><td>APAGADA</td></tr>
+    </table>
+    
+    <h4>Switches Especiales</h4>
+    <ul>
+        <li><strong>SYTEX:</strong> Activa campos específicos para plataforma SYTEX</li>
+        <li><strong>GDM:</strong> Activa campo de ID GDM</li>
+        <li><strong>CAZAMASIVOS:</strong> Activa campo de ID Cazamasivos</li>
+        <li><strong>Múltiples IPs:</strong> Permite agregar IPs adicionales al caso</li>
+    </ul>
+    
+    <h4>Sistema de Rechazos</h4>
+    <p>Modal dedicado para gestionar rechazos con campos específicos y vista previa independiente.</p>
+</div>
+
+<!-- ============================
+     8. PUTTY
+     ============================ -->
+<h2>8. Herramienta PUTTY (OLT Command Center)</h2>
+<div class="module-card putty">
+    <h3><span class="badge badge-red">PUTTY</span> PUTTY.html (~2094 líneas)</h3>
+    <p>Generador de comandos para equipos OLT Nokia y Huawei. Se abre como nested overlay sobre cualquier módulo activo.</p>
+    
+    <h4>Soporte de Tecnologías</h4>
+    <table>
+        <tr><th>Tecnología</th><th>Color</th><th>Comandos</th></tr>
+        <tr><td>Nokia</td><td style="color:#e11d48;">Rojo</td><td>Comandos CLI Nokia para OLT</td></tr>
+        <tr><td>Huawei</td><td style="color:#0066cc;">Azul</td><td>Comandos CLI Huawei para OLT</td></tr>
+    </table>
+    
+    <h4>Comportamiento</h4>
+    <ul>
+        <li>Se abre desde cualquier módulo (Averías, ATP, Service Now, Creación)</li>
+        <li>Fondo transparente para ver el contexto detrás</li>
+        <li>Cierre independiente: no afecta al módulo padre</li>
+        <li>Recibe parámetros del módulo padre vía postMessage</li>
+        <li>Comunicación de cierre mediante mensaje 'cerrarPutty'</li>
+    </ul>
+</div>
+
+<!-- ============================
+     9. BASE DE IPs
+     ============================ -->
+<div class="page-break"></div>
+<h2>9. Base de Datos de IPs</h2>
+<p>La base de datos está embebida en <code>GENERADOR_DE_PLANTILLAS.html</code> como un objeto JavaScript (<code>baseIP</code>). Contiene más de <strong>200 registros</strong> de OLTs mapeados por dirección IP.</p>
+
+<h4>Estructura de cada registro:</h4>
+<table>
+    <tr><th>Campo</th><th>Descripción</th><th>Ejemplo</th></tr>
+    <tr><td>IP (clave)</td><td>Dirección IP del OLT</td><td>10.37.2.10</td></tr>
+    <tr><td>olt</td><td>Nombre completo del OLT</td><td>OH_BOGHICERD_I_00X2_22000_Cabrera_4</td></tr>
+    <tr><td>localidad</td><td>Ciudad/municipio</td><td>BOGOTA D.C.</td></tr>
+    <tr><td>coinv</td><td>Tipo de coinversión</td><td>ONNET</td></tr>
+    <tr><td>tecno</td><td>Tecnología del equipo</td><td>HUAWEI / NOKIA</td></tr>
+    <tr><td>grupoTrabajo</td><td>Grupo operativo asignado</td><td>O_PECEN</td></tr>
+    <tr><td>articulo</td><td>Artículo del OLT</td><td>OLT_FTTH_S7811_04</td></tr>
+</table>
+
+<h4>Cobertura Geográfica:</h4>
+<p>Bogotá, Soacha, Ibagué, Barranquilla, Cúcuta, Villavicencio, Cartagena, Santa Marta, Bucaramanga, Montería, Neiva, Pasto, Tunja, Fusagasugá, Villa del Rosario, Floridablanca, Girón, entre otros.</p>
+
+<!-- ============================
+     10. FUNCIONALIDADES TRANSVERSALES
+     ============================ -->
+<h2>10. Funcionalidades Transversales</h2>
+
+<h3>Persistencia (localStorage)</h3>
+<table>
+    <tr><th>Clave</th><th>Uso</th></tr>
+    <tr><td>nombreAgente</td><td>Nombre del agente activo (auto-login)</td></tr>
+    <tr><td>fondoPersonalizado</td><td>Imagen de fondo en Base64</td></tr>
+    <tr><td>contadorCreaciones</td><td>Contador de creaciones del módulo CREACIÓN</td></tr>
+    <tr><td>historial (por módulo)</td><td>Registros de plantillas copiadas</td></tr>
+    <tr><td>contadores (por módulo)</td><td>Contadores de gestión por categoría</td></tr>
+</table>
+
+<h3>Sistema de Historial</h3>
+<p>Cada módulo mantiene su propio historial con las siguientes capacidades:</p>
+<ul>
+    <li>Registro automático al copiar plantilla (timestamp, tipo, contenido)</li>
+    <li>Búsqueda/filtrado en tiempo real</li>
+    <li>Vista previa de plantilla (👁️)</li>
+    <li>Copiado directo desde historial (📋)</li>
+    <li>Exportación a Excel (formato CSV con BOM UTF-8)</li>
+    <li>Limpieza total del historial</li>
+</ul>
+
+<h3>Sistema de Comunicación (postMessage)</h3>
+<ul>
+    <li><code>'cerrarModulo'</code> — Cierra el módulo activo y retorna a bienvenida</li>
+    <li><code>'cerrarPutty'</code> — Cierra solo el overlay de PUTTY sin afectar al padre</li>
+    <li><code>{type: 'openModule'}</code> — Abre un módulo con parámetros</li>
+</ul>
+
+<!-- ============================
+     11. RESUMEN
+     ============================ -->
+<div class="page-break"></div>
+<h2>11. Resumen de Plantillas por Módulo</h2>
+<table>
+    <tr><th>Módulo</th><th>Plantillas</th><th>Historial</th><th>Contadores</th><th>PUTTY</th><th>Export</th></tr>
+    <tr>
+        <td><span class="badge badge-orange">AVERÍAS</span></td>
+        <td>~16 (por categoría)</td>
+        <td class="status-ok">✅</td>
+        <td>Aprobados / Rechazados</td>
+        <td class="status-ok">✅</td>
+        <td class="status-ok">Excel (CSV)</td>
+    </tr>
+    <tr>
+        <td><span class="badge badge-yellow">ATP/ATC</span></td>
+        <td>9</td>
+        <td class="status-ok">✅</td>
+        <td>Cierre / Valid. / PDR / Avances</td>
+        <td class="status-ok">✅</td>
+        <td class="status-ok">CSV</td>
+    </tr>
+    <tr>
+        <td><span class="badge badge-blue">SERVICE NOW</span></td>
+        <td>9</td>
+        <td class="status-ok">✅</td>
+        <td>Cierre / Valid. / PDR / Avances</td>
+        <td class="status-ok">✅</td>
+        <td class="status-ok">CSV</td>
+    </tr>
+    <tr>
+        <td><span class="badge badge-green">CREACIÓN</span></td>
+        <td>3 formatos por caso</td>
+        <td class="status-ok">✅</td>
+        <td>Creaciones</td>
+        <td class="status-ok">✅</td>
+        <td class="status-ok">✅</td>
+    </tr>
+    <tr>
+        <td><span class="badge badge-red">PUTTY</span></td>
+        <td>Comandos OLT</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+    </tr>
+</table>
+
+<h3>Estado General del Sistema</h3>
+<table>
+    <tr><th>Componente</th><th>Estado</th></tr>
+    <tr><td>Login / Auto-login</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Fondo personalizado</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Cambio de agente desde bienvenida</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Navegación entre módulos</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Ocultación de botones al abrir módulo</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Retorno de botones al cerrar módulo</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>PUTTY nested overlay</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>PUTTY cierre independiente</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>PUTTY fondo transparente</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>ATP Switch Modo ATC (5 plantillas)</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Contadores Averías (Aprob/Rech)</td><td class="status-ok">✅ Operativo</td></tr>
+    <tr><td>Base de datos IPs</td><td class="status-ok">✅ ~200+ registros</td></tr>
+    <tr><td>Exportación a Excel</td><td class="status-ok">✅ Formato CSV</td></tr>
+</table>
+
+<footer>
+    <p><strong>Generador de Plantillas Pro v2.5</strong> — Documento generado automáticamente</p>
+    <p>Para guardar como PDF: haga clic en "Guardar como PDF" o use Ctrl+P → Guardar como PDF</p>
+</footer>
+
+</body>
+</html>
