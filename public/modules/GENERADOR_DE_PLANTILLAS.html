@@ -3820,10 +3820,15 @@ let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cargar nombre guardado
+    // Cargar nombre guardado y auto-navegar si existe
     const guardado = localStorage.getItem('nombreAgente');
     if (guardado) {
         document.getElementById('inputAgente').value = guardado;
+        // Auto-login: skip to bienvenida
+        nombreAgente = guardado.toUpperCase();
+        document.getElementById('pantallaLogin').style.display = 'none';
+        document.getElementById('pantallaBienvenida').style.display = 'block';
+        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
     }
     
     // Cargar fondo guardado
@@ -7059,7 +7064,44 @@ document.getElementById('consultaOverlay').addEventListener('click', function(e)
 // ============================================
 // MÓDULOS IFRAME OVERLAY
 // ============================================
+let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
+
 function abrirModulo(modulo, params) {
+    // Check if a module is already open - if so, stack it
+    const existingOverlay = document.getElementById('moduleOverlay');
+    if (existingOverlay && existingOverlay.classList.contains('activo')) {
+        // Open PUTTY (or other) as a nested overlay
+        let nestedOverlay = document.getElementById('nestedModuleOverlay');
+        let nestedIframe = document.getElementById('nestedModuleIframe');
+        
+        if (!nestedOverlay) {
+            nestedOverlay = document.createElement('div');
+            nestedOverlay.id = 'nestedModuleOverlay';
+            nestedOverlay.className = 'module-overlay';
+            nestedOverlay.style.background = 'rgba(0, 0, 0, 0.3)';
+            nestedOverlay.onclick = function(e) { if (e.target === nestedOverlay) cerrarModuloAnidado(); };
+            
+            nestedIframe = document.createElement('iframe');
+            nestedIframe.id = 'nestedModuleIframe';
+            nestedIframe.setAttribute('allowtransparency', 'true');
+            nestedOverlay.appendChild(nestedIframe);
+            
+            document.body.appendChild(nestedOverlay);
+        }
+        
+        if (params) {
+            nestedIframe.onload = function() {
+                nestedIframe.contentWindow.postMessage(params, '*');
+            };
+        } else {
+            nestedIframe.onload = null;
+        }
+        
+        nestedIframe.src = modulo;
+        nestedOverlay.classList.add('activo');
+        return;
+    }
+    
     let overlay = document.getElementById('moduleOverlay');
     let iframe = document.getElementById('moduleIframe');
     
@@ -7096,12 +7138,33 @@ function cerrarModulo() {
     
     if (overlay) overlay.classList.remove('activo');
     if (iframe) iframe.src = '';
+    
+    // Also close any nested overlay
+    cerrarModuloAnidado();
+}
+
+function cerrarModuloAnidado() {
+    const nestedOverlay = document.getElementById('nestedModuleOverlay');
+    const nestedIframe = document.getElementById('nestedModuleIframe');
+    
+    if (nestedOverlay) nestedOverlay.classList.remove('activo');
+    if (nestedIframe) nestedIframe.src = '';
 }
 
 // Listen for messages from child iframes
 window.addEventListener('message', function(e) {
     if (e.data === 'cerrarModulo') {
         cerrarModulo();
+    }
+    if (e.data === 'cerrarPutty') {
+        // Only close the nested PUTTY overlay, not the parent module
+        const nestedOverlay = document.getElementById('nestedModuleOverlay');
+        if (nestedOverlay && nestedOverlay.classList.contains('activo')) {
+            cerrarModuloAnidado();
+        } else {
+            // If PUTTY was opened directly (not nested), close the main overlay
+            cerrarModulo();
+        }
     }
     if (e.data && e.data.type === 'openModule') {
         abrirModulo(e.data.module, e.data.params);

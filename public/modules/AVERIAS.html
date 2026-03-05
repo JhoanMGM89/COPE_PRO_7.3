@@ -914,13 +914,13 @@
             
             <h1>Gestión de Averías</h1>
             <div class="subtitle">Centro de Validación y Procesamiento</div>
-            <button class="btn" style="position:absolute;right:15px;top:50%;transform:translateY(-50%);background:#6c757d;color:#fff;font-weight:bold;padding:6px 12px;font-size:0.7rem;" onclick="abrirPuttyDesdeModulo()">PUTTY</button>
         </div>
 
-        <!-- Contadores + Historial (estilo Creación) -->
+        <!-- Contadores + Historial + PUTTY (estilo Creación) -->
         <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(20,20,20,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:8px 15px;border-left:1px solid var(--glass-border);border-right:1px solid var(--glass-border);">
-            <div style="display:flex;align-items:center;">
-                <button style="background:transparent;border:none;color:var(--primary-orange);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;text-transform:uppercase;text-decoration:underline;" onclick="abrirHistorialAverias()">Historial</button>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <button style="background:transparent;border:1px solid var(--primary-orange);color:var(--primary-orange);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;text-transform:uppercase;border-radius:4px;transition:all 0.2s;" onclick="abrirHistorialAverias()" onmouseover="this.style.background='var(--primary-orange)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--primary-orange)'">Historial</button>
+                <button style="background:transparent;border:1px solid var(--primary-orange);color:var(--primary-orange);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;text-transform:uppercase;border-radius:4px;transition:all 0.2s;" onclick="abrirPuttyDesdeModulo()" onmouseover="this.style.background='var(--primary-orange)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--primary-orange)'">PUTTY</button>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
                 <div style="display:flex;align-items:center;gap:4px;font-size:0.75rem;">
@@ -1448,7 +1448,7 @@
             
             // Validar formulario
             if (!formularioNum.trim()) {
-                showToast('⚠️ Ingrese el número de formulario antes de copiar', 'error');
+                alert('⚠️ Ingrese el número de formulario antes de copiar');
                 const formInput = document.getElementById('inputFormulario');
                 if (formInput) { formInput.focus(); formInput.style.borderColor = '#ef4444'; setTimeout(() => formInput.style.borderColor = '', 2000); }
                 return;
@@ -1473,6 +1473,20 @@
                 showToast('Gestión copiada al portapapeles');
                 showToastPreview(finalText);
                 addToHistorial(template, finalText);
+                
+                // Incrementar contadores según categoría
+                const catAprobados = ['marcacion', 'cancelacion'];
+                const catRechazados = ['vias', 'potencia', 'tiempo', 'estado', 'estado-servicenow', 'maximo', 'noprocedente'];
+                if (catAprobados.includes(template.category)) {
+                    incrementarAprobados();
+                } else if (catRechazados.includes(template.category)) {
+                    incrementarRechazados();
+                }
+                
+                // Limpiar input de formulario
+                const formInput = document.getElementById('inputFormulario');
+                if (formInput) formInput.value = '';
+                formularioNum = '';
             });
         }
 
@@ -1632,7 +1646,8 @@
                     <td style="padding:6px;font-size:0.7rem;color:var(--primary-orange);font-weight:bold;">${h.formulario || 'N/A'}</td>
                     <td style="padding:6px;">
                         <div style="display:flex;gap:4px;">
-                            <button class="btn btn-secondary" style="padding:3px 8px;font-size:0.6rem;" onclick="copiarPlantillaAverias(${i})">📋</button>
+                            <button class="btn" style="padding:3px 8px;font-size:0.6rem;background:#17a2b8;color:white;" onclick="verPlantillaAverias(${i})" title="Vista previa">👁️</button>
+                            <button class="btn" style="padding:3px 8px;font-size:0.6rem;background:var(--success);color:white;" onclick="copiarPlantillaAverias(${i})" title="Copiar">📋</button>
                         </div>
                     </td>
                 </tr>`;
@@ -1641,6 +1656,13 @@
 
         function filtrarHistorialAverias() {
             renderHistorialAverias(document.getElementById('searchHistorialAverias').value);
+        }
+
+        function verPlantillaAverias(index) {
+            const h = historialAverias[index];
+            if (h) {
+                alert('📋 Vista Previa de Plantilla:\n\n' + h.contenido);
+            }
         }
 
         function copiarPlantillaAverias(index) {
