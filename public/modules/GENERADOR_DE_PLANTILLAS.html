@@ -3958,6 +3958,9 @@ function abrirModal() {
     limpiarFormulario();
     document.getElementById('modalOverlay').classList.add('activo');
     document.body.style.overflow = 'hidden';
+    // Hide welcome screen buttons
+    const bienvenida = document.getElementById('pantallaBienvenida');
+    if (bienvenida) bienvenida.style.display = 'none';
 }
 
 function cerrarModal() {
@@ -3965,6 +3968,9 @@ function cerrarModal() {
     document.body.style.overflow = '';
     cerrarVistaPrevia();
     cerrarVistaPreviaRechazo();
+    // Show welcome screen buttons again
+    const bienvenida = document.getElementById('pantallaBienvenida');
+    if (bienvenida) bienvenida.style.display = '';
 }
 
 function cerrarModalConfirmar() {
@@ -7067,6 +7073,10 @@ document.getElementById('consultaOverlay').addEventListener('click', function(e)
 let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
 
 function abrirModulo(modulo, params) {
+    // Hide welcome screen buttons when opening a module
+    const bienvenida = document.getElementById('pantallaBienvenida');
+    if (bienvenida) bienvenida.style.display = 'none';
+    
     // Check if a module is already open - if so, stack it
     const existingOverlay = document.getElementById('moduleOverlay');
     if (existingOverlay && existingOverlay.classList.contains('activo')) {
@@ -7078,7 +7088,7 @@ function abrirModulo(modulo, params) {
             nestedOverlay = document.createElement('div');
             nestedOverlay.id = 'nestedModuleOverlay';
             nestedOverlay.className = 'module-overlay';
-            nestedOverlay.style.background = 'rgba(0, 0, 0, 0.3)';
+            nestedOverlay.style.background = 'transparent';
             nestedOverlay.onclick = function(e) { if (e.target === nestedOverlay) cerrarModuloAnidado(); };
             
             nestedIframe = document.createElement('iframe');
@@ -7141,6 +7151,10 @@ function cerrarModulo() {
     
     // Also close any nested overlay
     cerrarModuloAnidado();
+    
+    // Show welcome screen buttons again
+    const bienvenida = document.getElementById('pantallaBienvenida');
+    if (bienvenida) bienvenida.style.display = '';
 }
 
 function cerrarModuloAnidado() {
