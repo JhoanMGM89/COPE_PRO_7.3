@@ -73,10 +73,9 @@ async function empaquetar() {
 
     progreso.textContent = 'Empaquetando en un solo archivo...';
 
-    // Get the main file and modify it to embed modules
     let mainHTML = contenidos['GENERADOR_DE_PLANTILLAS.html'];
 
-    // Create module storage as base64 to avoid escaping issues
+    // Encode modules as base64
     const moduleData = {};
     for (const mod of modulos) {
         if (mod !== 'GENERADOR_DE_PLANTILLAS.html') {
@@ -84,86 +83,71 @@ async function empaquetar() {
         }
     }
 
-    // Inject the embedded modules script before </body>
-    const embedScript = `
-<script>
-// ============================================
-// MÓDULOS EMBEBIDOS (Base64)
-// ============================================
-const __modulosEmbebidos = ${JSON.stringify(moduleData)};
+    // Store module data in a hidden div to avoid script parsing issues
+    const dataTag = '<div id="__embeddedModules__" style="display:none">' + 
+        encodeURIComponent(JSON.stringify(moduleData)) + '</div>';
 
-// Override abrirModulo to use embedded content
-const __originalAbrirModulo = abrirModulo;
-abrirModulo = function(modulo, params) {
-    if (__modulosEmbebidos[modulo]) {
-        const html = decodeURIComponent(escape(atob(__modulosEmbebidos[modulo])));
-        
-        const bienvenida = document.getElementById('pantallaBienvenida');
+    // Build the override script in parts to avoid closing tag issues
+    const scriptParts = [];
+    scriptParts.push('<scr');
+    scriptParts.push('ipt>');
+    scriptParts.push(`
+(function(){
+    var raw = document.getElementById('__embeddedModules__').textContent;
+    var mods = JSON.parse(decodeURIComponent(raw));
+    var origAbrir = window.abrirModulo;
+    window.abrirModulo = function(modulo, params) {
+        if (!mods[modulo]) { origAbrir(modulo, params); return; }
+        var html = decodeURIComponent(escape(atob(mods[modulo])));
+        var bienvenida = document.getElementById('pantallaBienvenida');
         if (bienvenida) bienvenida.style.display = 'none';
-        
-        const existingOverlay = document.getElementById('moduleOverlay');
+        var existingOverlay = document.getElementById('moduleOverlay');
         if (existingOverlay && existingOverlay.classList.contains('activo')) {
-            // Nested module (PUTTY)
-            let nestedOverlay = document.getElementById('nestedModuleOverlay');
-            let nestedIframe = document.getElementById('nestedModuleIframe');
-            
+            var nestedOverlay = document.getElementById('nestedModuleOverlay');
+            var nestedIframe = document.getElementById('nestedModuleIframe');
             if (!nestedOverlay) {
                 nestedOverlay = document.createElement('div');
                 nestedOverlay.id = 'nestedModuleOverlay';
                 nestedOverlay.className = 'module-overlay';
                 nestedOverlay.style.background = 'transparent';
                 nestedOverlay.onclick = function(e) { if (e.target === nestedOverlay) cerrarModuloAnidado(); };
-                
                 nestedIframe = document.createElement('iframe');
                 nestedIframe.id = 'nestedModuleIframe';
                 nestedIframe.setAttribute('allowtransparency', 'true');
                 nestedOverlay.appendChild(nestedIframe);
                 document.body.appendChild(nestedOverlay);
             }
-            
             nestedIframe.srcdoc = html;
-            if (params) {
-                nestedIframe.onload = function() {
-                    nestedIframe.contentWindow.postMessage(params, '*');
-                };
-            }
+            if (params) { nestedIframe.onload = function() { nestedIframe.contentWindow.postMessage(params, '*'); }; }
             nestedOverlay.classList.add('activo');
             return;
         }
-        
-        let overlay = document.getElementById('moduleOverlay');
-        let iframe = document.getElementById('moduleIframe');
-        
+        var overlay = document.getElementById('moduleOverlay');
+        var iframe = document.getElementById('moduleIframe');
         if (!overlay) {
             overlay = document.createElement('div');
             overlay.id = 'moduleOverlay';
             overlay.className = 'module-overlay';
             overlay.onclick = function(e) { if (e.target === overlay) cerrarModulo(); };
-            
             iframe = document.createElement('iframe');
             iframe.id = 'moduleIframe';
             iframe.setAttribute('allowtransparency', 'true');
             overlay.appendChild(iframe);
             document.body.appendChild(overlay);
         }
-        
         iframe.srcdoc = html;
-        if (params) {
-            iframe.onload = function() {
-                iframe.contentWindow.postMessage(params, '*');
-            };
-        }
+        if (params) { iframe.onload = function() { iframe.contentWindow.postMessage(params, '*'); }; }
         overlay.classList.add('activo');
-    } else {
-        __originalAbrirModulo(modulo, params);
-    }
-};
-<\/script>`;
+    };
+})();
+`);
+    scriptParts.push('</scr');
+    scriptParts.push('ipt>');
 
-    // Remove the original abrirModulo function and inject the embedded version
-    mainHTML = mainHTML.replace('</body>', embedScript + '\n</body>');
+    const embedCode = dataTag + scriptParts.join('');
 
-    // Create downloadable file
+    mainHTML = mainHTML.replace('</body>', embedCode + '\n</body>');
+
     const blob = new Blob([mainHTML], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
