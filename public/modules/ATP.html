@@ -278,6 +278,10 @@ textarea.form-control {
     display: flex;
 }
 
+.switch-container.conditional-field.active {
+    display: flex;
+}
+
 /* Resultado */
 .resultado-container {
     margin-top: 1rem;
@@ -1016,7 +1020,7 @@ input:checked + .slider:before {
         </div>
 
         <!-- Switch ATC - Solo visible cuando hay input JIRA -->
-        <div id="cont-check-atc" class="conditional-field" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
+        <div id="cont-check-atc" class="switch-container conditional-field">
             <label class="switch">
                 <input type="checkbox" id="check_atc" onchange="actualizarLabelJIRA(); generar()">
                 <span class="slider"></span>
