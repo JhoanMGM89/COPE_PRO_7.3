@@ -40,6 +40,8 @@ body {
     width: 100%;
     max-width: 650px;
     position: relative;
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
 }
 
 /* Header con selector de color */
@@ -231,6 +233,7 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--primary-blue);
+    box-shadow: none;
 }
 
 select.form-control {
@@ -1679,6 +1682,16 @@ function actualizarCampos() {
             if (!document.getElementById('toggleNotaCancel').checked) {
                 mostrar('cont-obs');
             }
+            break;
+            
+        case 'SOLICITUD_CANCEL':
+            mostrarSwitchATC = true;
+            mostrar('cont-check-atc');
+            mostrar('cont-jira-solo');
+            mostrar('cont-inc-ot');
+            mostrar('cont-elemento-afectado');
+            mostrar('cont-motivo-cancel');
+            mostrar('cont-solicitud-extra');
             break;
     }
     

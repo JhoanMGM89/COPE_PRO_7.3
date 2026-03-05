@@ -327,6 +327,39 @@
         .tag-maximo { background: rgba(249, 115, 22, 0.3); }
         .tag-validar { background: rgba(6, 182, 212, 0.3); }
         .tag-estado-sn { background: rgba(236, 72, 153, 0.3); }
+        .tag-noprocedente { background: rgba(239, 68, 68, 0.3); }
+
+        .modal-overlay-averias {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 3000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay-averias.active { display: flex; }
+        .modal-hist-content {
+            background: rgba(20,20,20,0.95); border-radius: 8px; width: 100%; max-width: 700px;
+            max-height: 80vh; overflow: hidden; border: 1px solid var(--glass-border);
+        }
+        .modal-hist-header {
+            background: var(--primary-orange); padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-hist-header h3 { margin: 0; font-size: 0.9rem; color: white; }
+        .modal-hist-body { padding: 12px; }
+        .toast-preview-container {
+            position: fixed; bottom: 20px; left: 20px; z-index: 4000;
+            display: none; max-width: 400px; width: 100%;
+        }
+        .toast-preview-container.show {
+            display: block; animation: slideInLeftToast 0.3s ease-out;
+        }
+        @keyframes slideInLeftToast {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-preview-content {
+            background: rgba(30,30,30,0.95); border: 2px solid var(--success);
+            border-radius: 8px; overflow: hidden;
+        }
 
         .template-text {
             font-size: 0.75rem;
@@ -896,6 +929,15 @@
                     </div>
                 </div>
 
+                <div id="formularioContainer" style="display:none;margin-top:8px;">
+                    <div class="panel-title">Formulario</div>
+                    <input type="text" id="inputFormulario" class="search-input" placeholder="Nº de Formulario..." oninput="updateFormulario(this.value)" style="width:100%;margin-bottom:8px;">
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <button class="btn" style="width:100%;background:transparent;border:1px solid var(--primary-orange);color:var(--primary-orange);font-size:0.7rem;padding:6px;" onclick="abrirHistorialAverias()">📋 Historial</button>
+                </div>
+
                 <div class="panel-title">Categorías</div>
                 <div class="categories">
                     <button class="category-btn active" onclick="filterCategory('marcacion')">
@@ -934,6 +976,10 @@
                         <span>Validar Potencias</span>
                         <span class="category-count" id="count-validar-potencias">1</span>
                     </button>
+                    <button class="category-btn" onclick="filterCategory('noprocedente')">
+                        <span>No Procedente</span>
+                        <span class="category-count" id="count-noprocedente">1</span>
+                    </button>
                 </div>
             </div>
 
@@ -967,166 +1013,80 @@
 
     <div class="toast" id="toast">Nota copiada al portapapeles</div>
 
+    <!-- Modal Historial Averías -->
+    <div id="modalHistorialAverias" class="modal-overlay-averias">
+        <div class="modal-hist-content">
+            <div class="modal-hist-header">
+                <h3>HISTORIAL DE GESTIONES</h3>
+                <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.7rem;" onclick="cerrarHistorialAverias()">×</button>
+            </div>
+            <div class="modal-hist-body">
+                <input type="text" id="searchHistorialAverias" class="search-input" placeholder="Buscar por formulario, categoría..." oninput="filtrarHistorialAverias()" style="margin-bottom:8px;width:100%;">
+                <div style="max-height:350px;overflow-y:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+                        <thead>
+                            <tr style="background:rgba(255,140,0,0.2);">
+                                <th style="padding:6px;text-align:left;color:var(--primary-orange);">Fecha</th>
+                                <th style="padding:6px;text-align:left;color:var(--primary-orange);">Plataforma</th>
+                                <th style="padding:6px;text-align:left;color:var(--primary-orange);">Categoría</th>
+                                <th style="padding:6px;text-align:left;color:var(--primary-orange);">Formulario</th>
+                                <th style="padding:6px;text-align:left;color:var(--primary-orange);">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaHistorialAverias"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="padding:8px;display:flex;justify-content:space-between;border-top:1px solid var(--glass-border);">
+                <button class="btn btn-secondary" onclick="cerrarHistorialAverias()">Cerrar</button>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn" style="background:#dc3545;color:white;" onclick="limpiarHistorialAverias()">Limpiar</button>
+                    <button class="btn" style="background:var(--success);color:white;" onclick="exportarCSVAverias()">Exportar CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Preview Izquierda -->
+    <div id="toastPreviewContainer" class="toast-preview-container">
+        <div class="toast-preview-content">
+            <div style="background:var(--success);color:white;padding:8px 12px;font-size:0.8rem;font-weight:bold;display:flex;justify-content:space-between;align-items:center;">
+                <span>✓ Plantilla Copiada</span>
+                <button style="background:none;border:none;color:white;cursor:pointer;font-size:1rem;" onclick="closeToastPreview()">×</button>
+            </div>
+            <div style="padding:8px;background:#000;">
+                <pre id="toastPreviewText" style="color:#fff;font-family:Consolas,monospace;font-size:0.75rem;line-height:1.4;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin:0;"></pre>
+            </div>
+            <div style="padding:6px 8px;display:flex;justify-content:space-between;align-items:center;">
+                <span id="toastPreviewTime" style="font-size:0.7rem;color:var(--text-secondary);"></span>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
+        let historialAverias = JSON.parse(localStorage.getItem('historialAverias')) || [];
+        let formularioNum = '';
+
         const templates = [
-            {
-                id: 1,
-                category: 'marcacion',
-                tag: 'Marcación',
-                tagClass: 'tag-marcacion',
-                text: 'Las averías relacionadas ya se encuentran marcadas por GDM.',
-                agent: localStorage.getItem('nombreAgente') || 'GESTOR',
-                platform: 'both'
-            },
-            {
-                id: 13,
-                category: 'marcacion',
-                tag: 'Marcación',
-                tagClass: 'tag-marcacion',
-                text: 'Se realiza validación y se procede con la marcación de las averías relacionadas.',
-                agent: 'JHOAN GORDON',
-                platform: 'both',
-                hasObservation: true
-            },
-            {
-                id: 2,
-                category: 'vias',
-                tag: 'Inconsistencia Vías',
-                tagClass: 'tag-vias',
-                text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo MAXIMO.',
-                agent: 'JHOAN GORDON',
-                platform: 'maximo'
-            },
-            {
-                id: 3,
-                category: 'vias',
-                tag: 'Inconsistencia Vías',
-                tagClass: 'tag-vias',
-                text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo SERVICE NOW.',
-                agent: 'JHOAN GORDON',
-                platform: 'servicenow'
-            },
-            {
-                id: 5,
-                category: 'potencia',
-                tag: 'Potencia Atenuada',
-                tagClass: 'tag-potencia',
-                text: 'No se realiza gestión ya que las averías se encuentran con potencias atenuadas.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 6,
-                category: 'tiempo',
-                tag: 'Tiempo Excedido',
-                tagClass: 'tag-tiempo',
-                text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en MAXIMO.',
-                agent: 'JHOAN GORDON',
-                platform: 'maximo'
-            },
-            {
-                id: 7,
-                category: 'tiempo',
-                tag: 'Tiempo Excedido',
-                tagClass: 'tag-tiempo',
-                text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en SERVICE NOW.',
-                agent: 'JHOAN GORDON',
-                platform: 'servicenow'
-            },
-            {
-                id: 8,
-                category: 'estado',
-                tag: 'Estado de Averías',
-                tagClass: 'tag-estado',
-                text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado CANCELADA.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 9,
-                category: 'estado',
-                tag: 'Estado de Averías',
-                tagClass: 'tag-estado',
-                text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado COMPLETADO.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 10,
-                category: 'estado',
-                tag: 'Estado de Averías',
-                tagClass: 'tag-estado',
-                text: 'Se realiza validación y no se procede con la gestión ya que las averías se encuentran en estado OFFLINE.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 11,
-                category: 'estado',
-                tag: 'Estado de Averías',
-                tagClass: 'tag-estado',
-                text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado INICIADO.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 16,
-                category: 'estado',
-                tag: 'Estado de Averías',
-                tagClass: 'tag-estado',
-                text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado EN RUTA.',
-                agent: 'JHOAN GORDON',
-                platform: 'both'
-            },
-            {
-                id: 12,
-                category: 'cancelacion',
-                tag: 'Cancelación',
-                tagClass: 'tag-cancelacion',
-                text: 'Se realiza validación y se procede con la cancelación de las averías relacionadas.',
-                agent: 'JHOAN GORDON',
-                platform: 'both',
-                hasObservation: true
-            },
-            {
-                id: 14,
-                category: 'cancelacion',
-                tag: 'Cancelación',
-                tagClass: 'tag-cancelacion',
-                text: 'Se realiza validación y se procede con la marcación y cancelación de las averías relacionadas.',
-                agent: 'JHOAN GORDON',
-                platform: 'both',
-                hasObservation: true
-            },
-            {
-                id: 15,
-                category: 'maximo',
-                tag: 'Estado MAXIMO',
-                tagClass: 'tag-maximo',
-                text: 'Se realiza validación, no es posible hacer la cancelación ya que el MAXIMO se encuentra en estado INPRG, tener presente que para la cancelación es necesario que el MAXIMO se encuentre en estado CLOSED.',
-                agent: 'JHOAN GORDON',
-                platform: 'maximo'
-            },
-            {
-                id: 17,
-                category: 'estado-servicenow',
-                tag: 'Estado SERVICE NOW',
-                tagClass: 'tag-estado-sn',
-                text: 'Se realiza validación, no es posible hacer la cancelación ya que el SERVICE NOW se encuentra en estado {ESTADO}, tener presente que para la cancelación es necesario que el SERVICE NOW se encuentre en estado CERRADO.',
-                agent: 'JHOAN GORDON',
-                platform: 'servicenow',
-                hasEstadoSelect: true
-            },
-            {
-                id: 18,
-                category: 'validar-potencias',
-                tag: 'Validar Potencias',
-                tagClass: 'tag-validar',
-                text: '',
-                agent: '',
-                platform: 'both',
-                isValidarPotencias: true
-            }
+            { id: 1, category: 'marcacion', tag: 'Marcación', tagClass: 'tag-marcacion', text: 'Las averías relacionadas ya se encuentran marcadas por GDM.', agent: nombreAgente, platform: 'both' },
+            { id: 13, category: 'marcacion', tag: 'Marcación', tagClass: 'tag-marcacion', text: 'Se realiza validación y se procede con la marcación de las averías relacionadas.', agent: nombreAgente, platform: 'both', hasObservation: true },
+            { id: 2, category: 'vias', tag: 'Inconsistencia Vías', tagClass: 'tag-vias', text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo MAXIMO.', agent: nombreAgente, platform: 'maximo' },
+            { id: 3, category: 'vias', tag: 'Inconsistencia Vías', tagClass: 'tag-vias', text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo SERVICE NOW.', agent: nombreAgente, platform: 'servicenow' },
+            { id: 5, category: 'potencia', tag: 'Potencia Atenuada', tagClass: 'tag-potencia', text: 'No se realiza gestión ya que las averías se encuentran con potencias atenuadas.', agent: nombreAgente, platform: 'both' },
+            { id: 6, category: 'tiempo', tag: 'Tiempo Excedido', tagClass: 'tag-tiempo', text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en MAXIMO.', agent: nombreAgente, platform: 'maximo' },
+            { id: 7, category: 'tiempo', tag: 'Tiempo Excedido', tagClass: 'tag-tiempo', text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en SERVICE NOW.', agent: nombreAgente, platform: 'servicenow' },
+            { id: 8, category: 'estado', tag: 'Estado de Averías', tagClass: 'tag-estado', text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado CANCELADA.', agent: nombreAgente, platform: 'both' },
+            { id: 9, category: 'estado', tag: 'Estado de Averías', tagClass: 'tag-estado', text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado COMPLETADO.', agent: nombreAgente, platform: 'both' },
+            { id: 10, category: 'estado', tag: 'Estado de Averías', tagClass: 'tag-estado', text: 'Se realiza validación y no se procede con la gestión ya que las averías se encuentran en estado OFFLINE.', agent: nombreAgente, platform: 'both' },
+            { id: 11, category: 'estado', tag: 'Estado de Averías', tagClass: 'tag-estado', text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado INICIADO.', agent: nombreAgente, platform: 'both' },
+            { id: 16, category: 'estado', tag: 'Estado de Averías', tagClass: 'tag-estado', text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado EN RUTA.', agent: nombreAgente, platform: 'both' },
+            { id: 12, category: 'cancelacion', tag: 'Cancelación', tagClass: 'tag-cancelacion', text: 'Se realiza validación y se procede con la cancelación de las averías relacionadas.', agent: nombreAgente, platform: 'both', hasObservation: true },
+            { id: 14, category: 'cancelacion', tag: 'Cancelación', tagClass: 'tag-cancelacion', text: 'Se realiza validación y se procede con la marcación y cancelación de las averías relacionadas.', agent: nombreAgente, platform: 'both', hasObservation: true },
+            { id: 15, category: 'maximo', tag: 'Estado MAXIMO', tagClass: 'tag-maximo', text: 'Se realiza validación, no es posible hacer la cancelación ya que el MAXIMO se encuentra en estado INPRG, tener presente que para la cancelación es necesario que el MAXIMO se encuentre en estado CLOSED.', agent: nombreAgente, platform: 'maximo' },
+            { id: 17, category: 'estado-servicenow', tag: 'Estado SERVICE NOW', tagClass: 'tag-estado-sn', text: 'Se realiza validación, no es posible hacer la cancelación ya que el SERVICE NOW se encuentra en estado {ESTADO}, tener presente que para la cancelación es necesario que el SERVICE NOW se encuentre en estado CERRADO.', agent: nombreAgente, platform: 'servicenow', hasEstadoSelect: true },
+            { id: 18, category: 'validar-potencias', tag: 'Validar Potencias', tagClass: 'tag-validar', text: '', agent: '', platform: 'both', isValidarPotencias: true },
+            { id: 19, category: 'noprocedente', tag: 'No Procedente', tagClass: 'tag-noprocedente', text: 'No es posible realizar la gestión ya que la AVERIA no esta relacionada a este MAXIMO.', agent: nombreAgente, platform: 'both' }
         ];
 
         let selectedTemplate = null;
@@ -1134,7 +1094,7 @@
         let activePlatform = null;
 
         function updateCategoryCounts() {
-            const categories = ['marcacion', 'vias', 'potencia', 'tiempo', 'estado', 'cancelacion', 'maximo', 'estado-servicenow', 'validar-potencias'];
+            const categories = ['marcacion', 'vias', 'potencia', 'tiempo', 'estado', 'cancelacion', 'maximo', 'estado-servicenow', 'validar-potencias', 'noprocedente'];
 
             categories.forEach(cat => {
                 const count = templates.filter(t => {
@@ -1186,6 +1146,12 @@
             renderTemplates();
             updatePlatformTitle();
             updateCategoryVisibility();
+            
+            // Show/hide formulario input
+            const formContainer = document.getElementById('formularioContainer');
+            if (formContainer) {
+                formContainer.style.display = activePlatform ? 'block' : 'none';
+            }
         }
 
         function updateCategoryVisibility() {
@@ -1436,27 +1402,33 @@
                 return;
             }
             
+            // Validar formulario
+            if (!formularioNum.trim()) {
+                showToast('⚠️ Ingrese el número de formulario antes de copiar', 'error');
+                const formInput = document.getElementById('inputFormulario');
+                if (formInput) { formInput.focus(); formInput.style.borderColor = '#ef4444'; setTimeout(() => formInput.style.borderColor = '', 2000); }
+                return;
+            }
+            
             const template = templates.find(t => t.id === id);
             if (!template) return;
             
-            if (template.isValidarPotencias) return; // No copiar para validar potencias
+            if (template.isValidarPotencias) return;
 
             let finalText = `${template.text} ${template.agent}`;
             
             if (template.hasObservation) {
                 const textEl = document.getElementById(`text-${id}`);
-                if (textEl) {
-                    finalText = textEl.textContent;
-                }
+                if (textEl) finalText = textEl.textContent;
             } else if (template.hasEstadoSelect) {
                 const textEl = document.getElementById(`text-${id}`);
-                if (textEl) {
-                    finalText = textEl.textContent;
-                }
+                if (textEl) finalText = textEl.textContent;
             }
             
             navigator.clipboard.writeText(finalText).then(() => {
                 showToast('Gestión copiada al portapapeles');
+                showToastPreview(finalText);
+                addToHistorial(template, finalText);
             });
         }
 
@@ -1564,6 +1536,121 @@
             } else {
                 toggleBtn.title = 'Ocultar panel lateral';
             }
+        }
+
+        // ============ FORMULARIO ============
+        function updateFormulario(value) {
+            formularioNum = value;
+        }
+
+        // ============ HISTORIAL ============
+        function addToHistorial(template, contenido) {
+            const entry = {
+                id: Date.now(), timestamp: Date.now(),
+                category: template.tag, platform: activePlatform,
+                formulario: formularioNum, contenido: contenido, agente: nombreAgente
+            };
+            historialAverias.unshift(entry);
+            localStorage.setItem('historialAverias', JSON.stringify(historialAverias));
+        }
+
+        function abrirHistorialAverias() {
+            renderHistorialAverias();
+            document.getElementById('modalHistorialAverias').classList.add('active');
+        }
+
+        function cerrarHistorialAverias() {
+            document.getElementById('modalHistorialAverias').classList.remove('active');
+        }
+
+        function renderHistorialAverias(filtro) {
+            const tbody = document.getElementById('tablaHistorialAverias');
+            let datos = historialAverias;
+            if (filtro) {
+                const f = filtro.toLowerCase();
+                datos = datos.filter(h => 
+                    (h.formulario && h.formulario.toLowerCase().includes(f)) ||
+                    (h.category && h.category.toLowerCase().includes(f)) ||
+                    (h.contenido && h.contenido.toLowerCase().includes(f))
+                );
+            }
+            if (datos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:2rem;">No hay registros</td></tr>';
+                return;
+            }
+            tbody.innerHTML = datos.map((h, i) => {
+                const fecha = new Date(h.timestamp);
+                const fechaStr = fecha.toLocaleDateString('es-ES') + ' ' + fecha.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
+                return `<tr style="border-bottom:1px solid rgba(255,140,0,0.15);">
+                    <td style="padding:6px;font-size:0.7rem;">${fechaStr}</td>
+                    <td style="padding:6px;font-size:0.7rem;">${h.platform ? h.platform.toUpperCase() : 'N/A'}</td>
+                    <td style="padding:6px;font-size:0.7rem;">${h.category || 'N/A'}</td>
+                    <td style="padding:6px;font-size:0.7rem;color:var(--primary-orange);font-weight:bold;">${h.formulario || 'N/A'}</td>
+                    <td style="padding:6px;">
+                        <div style="display:flex;gap:4px;">
+                            <button class="btn btn-secondary" style="padding:3px 8px;font-size:0.6rem;" onclick="copiarPlantillaAverias(${i})">📋</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function filtrarHistorialAverias() {
+            renderHistorialAverias(document.getElementById('searchHistorialAverias').value);
+        }
+
+        function copiarPlantillaAverias(index) {
+            const h = historialAverias[index];
+            if (h) {
+                navigator.clipboard.writeText(h.contenido).then(() => {
+                    showToast('Plantilla copiada del historial');
+                    showToastPreview(h.contenido);
+                });
+            }
+        }
+
+        function limpiarHistorialAverias() {
+            if (confirm('¿Está seguro que desea limpiar todo el historial?')) {
+                historialAverias = [];
+                localStorage.setItem('historialAverias', JSON.stringify(historialAverias));
+                renderHistorialAverias();
+            }
+        }
+
+        function exportarCSVAverias() {
+            if (historialAverias.length === 0) { alert('No hay datos para exportar'); return; }
+            let csv = 'Fecha,Plataforma,Categoría,Formulario,Plantilla\n';
+            historialAverias.forEach(h => {
+                const fecha = new Date(h.timestamp).toLocaleString('es-ES');
+                csv += `"${fecha}","${h.platform || ''}","${h.category || ''}","${h.formulario || ''}","${(h.contenido || '').replace(/"/g, '""')}"\n`;
+            });
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Historial_Averias_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+
+        // ============ TOAST PREVIEW ============
+        function showToastPreview(contenido) {
+            const container = document.getElementById('toastPreviewContainer');
+            const preview = document.getElementById('toastPreviewText');
+            const time = document.getElementById('toastPreviewTime');
+            if (container && preview) {
+                preview.textContent = contenido;
+                if (time) time.textContent = new Date().toLocaleTimeString('es-ES');
+                container.classList.add('show');
+                setTimeout(() => closeToastPreview(), 8000);
+            }
+        }
+
+        function closeToastPreview() {
+            const container = document.getElementById('toastPreviewContainer');
+            if (container) container.classList.remove('show');
         }
     </script>
 </body>
