@@ -2534,19 +2534,16 @@ input:checked + .slider:before {
     height: 100%;
     background: rgba(0, 0, 0, 0.05);
     display: none;
-    justify-content: center;
-    align-items: flex-start;
     z-index: 5000;
     padding: 0;
-    overflow-y: auto;
+    overflow: hidden;
 }
 .module-overlay.activo {
-    display: flex;
+    display: block;
 }
 .module-overlay iframe {
     width: 100%;
-    max-width: 700px;
-    min-height: 100vh;
+    height: 100%;
     border: none;
     background: transparent;
 }

@@ -32,16 +32,17 @@
 
         body {
             background: transparent;
-            /* background-attachment: fixed; */
             color: var(--text-primary);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             font-size: 12px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             padding: 20px;
             min-width: 650px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         /* FONDO PERSONALIZADO - AQUÍ PUEDES IMPLEMENTAR TU PROPIO FONDO */
@@ -914,7 +915,10 @@
             <h1>Gestión de Averías</h1>
             <div class="subtitle">Centro de Validación y Procesamiento</div>
             <button class="btn" style="position:absolute;right:15px;top:50%;transform:translateY(-50%);background:#6c757d;color:#fff;font-weight:bold;padding:6px 12px;font-size:0.7rem;" onclick="abrirPuttyDesdeModulo()">PUTTY</button>
+        </div>
 
+        <div class="main-grid" id="mainGrid">
+            <div class="sidebar" id="sidebarPanel">
                 <div class="switch-container">
                     <div class="switch-title">Plataforma</div>
                     <div class="switch-wrapper">
@@ -929,7 +933,7 @@
                     </div>
                 </div>
 
-                <div id="formularioContainer" style="display:none;margin-top:8px;">
+                <div id="formularioContainer" style="display:none;">
                     <div class="panel-title">Formulario</div>
                     <input type="text" id="inputFormulario" class="search-input" placeholder="Nº de Formulario..." oninput="updateFormulario(this.value)" style="width:100%;margin-bottom:8px;">
                 </div>
