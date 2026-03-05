@@ -7,7 +7,7 @@
 :root {
     --primary-blue: #FFB400;
     --primary-hover: #e6a200;
-    --bg-card: rgba(26, 26, 26, 0.95);
+    --bg-card: rgba(26, 26, 26, 0.45);
     --bg-input: #ffffff;
     --text-primary: #ffffff;
     --text-secondary: #b0b0b0;
@@ -123,9 +123,10 @@ body {
     align-items: center;
     background: var(--bg-card);
     padding: 0.5rem 0.75rem;
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
+    border-left: 1px solid rgba(255,255,255,0.15);
+    border-right: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .stats-left {
@@ -195,10 +196,11 @@ body {
 /* Formularios */
 .form-container {
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 0 0 8px 8px;
     padding: 1.25rem;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .form-group {
@@ -229,7 +231,6 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(255, 180, 0, 0.15);
 }
 
 select.form-control {
@@ -963,12 +964,8 @@ input:checked + .slider:before {
                 <span class="stat-value" id="statPDR">0</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">Cancel:</span>
-                <span class="stat-value" id="statCancel">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">OT:</span>
-                <span class="stat-value" id="statOT">0</span>
+                <span class="stat-label">Avances:</span>
+                <span class="stat-value" id="statAvances">0</span>
             </div>
             <button class="btn-reset-all" onclick="resetTodosContadores()" title="Reiniciar todos los contadores">🗑️</button>
         </div>
@@ -976,21 +973,24 @@ input:checked + .slider:before {
 
     <!-- Formulario Principal -->
     <div class="form-container">
-        <!-- Selector de Plantilla -->
-        <div class="form-group">
-            <label class="form-label" style="text-align: center;">Seleccione Plantilla</label>
-            <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
-                <option value="" disabled selected>SELECCIONE PLANTILLA</option>
-                <option value="CANCELACION">CANCELACIÓN</option>
-                <option value="CIERRE">CIERRE DE CASO</option>
-                <option value="CREACION_OT">CREACION OT GESTOT</option>
-                <option value="CULMINACION">CULMINACIÓN PDR</option>
-                <option value="ACEPTA_PDR">SE ACEPTA PDR</option>
-                <option value="RECHAZA_PDR">SE RECHAZA PDR</option>
-                <option value="SOLICITUD_CANCEL">SOLICITUD DE CANCELACIÓN</option>
-                <option value="SOLICITUD">SOLICITUD AVANCES</option>
-                <option value="VALIDACION">VALIDACION DE SERVICIOS</option>
-            </select>
+        <!-- Selector de Plantilla con Botón PUTTY -->
+        <div class="plantilla-row" style="display:flex;gap:0.5rem;align-items:flex-start;">
+            <div class="form-group" style="flex:1;">
+                <label class="form-label" style="text-align: center;">Seleccione Plantilla</label>
+                <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
+                    <option value="" disabled selected>SELECCIONE PLANTILLA</option>
+                    <option value="CANCELACION">CANCELACIÓN</option>
+                    <option value="CIERRE">CIERRE DE CASO</option>
+                    <option value="CREACION_OT">CREACION OT GESTOT</option>
+                    <option value="CULMINACION">CULMINACIÓN PDR</option>
+                    <option value="ACEPTA_PDR">SE ACEPTA PDR</option>
+                    <option value="RECHAZA_PDR">SE RECHAZA PDR</option>
+                    <option value="SOLICITUD_CANCEL">SOLICITUD DE CANCELACIÓN</option>
+                    <option value="SOLICITUD">SOLICITUD AVANCES</option>
+                    <option value="VALIDACION">VALIDACION DE SERVICIOS</option>
+                </select>
+            </div>
+            <button class="btn" style="background:#6c757d;color:#fff;font-weight:bold;margin-top:1.375rem;white-space:nowrap;padding:0.625rem 1rem;" onclick="abrirPuttyDesdeModulo()">PUTTY</button>
         </div>
 
         <!-- Switch ATC - Solo visible cuando hay input JIRA -->
@@ -1061,10 +1061,32 @@ input:checked + .slider:before {
             <textarea id="elemento_afectado" class="form-control" rows="2" placeholder="Describa el elemento afectado..." oninput="generar()"></textarea>
         </div>
 
-        <!-- Motivo Cancelación -->
+        <!-- Switch Nota Predeterminada Cancelación -->
+        <div id="cont-switch-cancel" class="conditional-field" style="margin-bottom: 1rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;background:#2a2a2a;padding:12px;border-radius:6px;border:1px solid #444;">
+                <label class="switch">
+                    <input type="checkbox" id="toggleNotaCancel" checked onchange="toggleNotaCancelacion()">
+                    <span class="slider"></span>
+                </label>
+                <span style="font-size:0.9rem;color:#fff;font-weight:bold;">Usar nota predeterminada</span>
+            </div>
+        </div>
+
+        <!-- Motivo Cancelación (solo cuando switch desactivado) -->
         <div id="cont-motivo-cancel" class="form-group conditional-field">
-            <label class="form-label">Motivo de Cancelación</label>
-            <textarea id="motivo_cancel" class="form-control" rows="2" placeholder="Motivo de la cancelación..." oninput="generar()"></textarea>
+            <label class="form-label">Observación</label>
+            <textarea id="motivo_cancel" class="form-control" rows="2" placeholder="Observación personalizada..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- Switch Nota Predeterminada Validación -->
+        <div id="cont-switch-validacion" class="conditional-field" style="margin-bottom: 1rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;background:#2a2a2a;padding:12px;border-radius:6px;border:1px solid #444;">
+                <label class="switch">
+                    <input type="checkbox" id="toggleNotaValidacion" checked onchange="toggleNotaValidacion()">
+                    <span class="slider"></span>
+                </label>
+                <span style="font-size:0.9rem;color:#fff;font-weight:bold;">Usar nota predeterminada</span>
+            </div>
         </div>
 
         <!-- Solicitud Extra (Cancelación) -->
@@ -1260,8 +1282,7 @@ let contadores = JSON.parse(localStorage.getItem('contadoresATPATC')) || {
     CIERRE: 0,
     VALIDACION: 0,
     PDR: 0,
-    CANCELACION: 0,
-    OT: 0
+    AVANCES: 0
 };
 let previewActual = '';
 let accionPendiente = null;
@@ -1296,8 +1317,7 @@ function actualizarEstadisticas() {
     document.getElementById('statCierre').textContent = contadores.CIERRE;
     document.getElementById('statValidacion').textContent = contadores.VALIDACION;
     document.getElementById('statPDR').textContent = contadores.PDR;
-    document.getElementById('statCancel').textContent = contadores.CANCELACION;
-    document.getElementById('statOT').textContent = contadores.OT;
+    document.getElementById('statAvances').textContent = contadores.AVANCES || 0;
 }
 
 function resetTodosContadores() {
@@ -1305,7 +1325,7 @@ function resetTodosContadores() {
         'Reiniciar Contadores',
         '¿Está seguro que desea reiniciar todos los contadores a cero? Esta acción no se puede deshacer.',
         () => {
-            contadores = { CIERRE: 0, VALIDACION: 0, PDR: 0, CANCELACION: 0, OT: 0 };
+            contadores = { CIERRE: 0, VALIDACION: 0, PDR: 0, AVANCES: 0 };
             guardarDatos();
             actualizarEstadisticas();
         }
@@ -1344,12 +1364,9 @@ function confirmarCerrar() {
         'Confirmar Cierre',
         '¿Está seguro que desea cerrar la aplicación?',
         () => {
-            window.close();
-            setTimeout(() => {
-                if (window.parent !== window) {
-                    window.parent.postMessage('cerrarATPATC', '*');
-                }
-            }, 100);
+            if (window.parent !== window) {
+                window.parent.postMessage('cerrarModulo', '*');
+            }
         }
     );
 }
@@ -1614,7 +1631,11 @@ function actualizarCampos() {
             mostrar('cont-jira-solo');
             mostrar('cont-inc-ot');
             mostrar('cont-info');
-            mostrar('cont-obs');
+            mostrar('cont-switch-validacion');
+            // Show obs only if switch is off
+            if (!document.getElementById('toggleNotaValidacion').checked) {
+                mostrar('cont-obs');
+            }
             break;
             
         case 'SOLICITUD':
@@ -1653,17 +1674,11 @@ function actualizarCampos() {
         case 'CANCELACION':
             mostrar('cont-inc-ot');
             mostrar('cont-inc-ot-ref');
-            mostrar('cont-obs');
-            break;
-            
-        case 'SOLICITUD_CANCEL':
-            mostrarSwitchATC = true;
-            mostrar('cont-check-atc');
-            mostrar('cont-jira-solo');
-            mostrar('cont-inc-ot');
-            mostrar('cont-elemento-afectado');
-            mostrar('cont-motivo-cancel');
-            mostrar('cont-solicitud-extra');
+            mostrar('cont-switch-cancel');
+            // Show obs only if switch is off
+            if (!document.getElementById('toggleNotaCancel').checked) {
+                mostrar('cont-obs');
+            }
             break;
     }
     
@@ -1794,7 +1809,14 @@ function generar() {
             break;
             
         case 'VALIDACION':
-            resultado = `⚠VALIDACIÓN DE SERVICIOS⚠\n${etiquetaPrincipal}: ${val('jira_solo')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\n${val('infoCaso')}\nOBSERVACION: ${val('observacion')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            const toggleVal = document.getElementById('toggleNotaValidacion');
+            let obsVal = '';
+            if (toggleVal && toggleVal.checked) {
+                obsVal = 'Buen día, validando consola putty se identifica que el servicio sigue en falla, por favor validar muchas gracias.';
+            } else {
+                obsVal = val('observacion');
+            }
+            resultado = `⚠VALIDACIÓN DE SERVICIOS⚠\n${etiquetaPrincipal}: ${val('jira_solo')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\n${val('infoCaso')}\nOBSERVACION: ${obsVal}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
             
         case 'SOLICITUD':
@@ -1820,7 +1842,14 @@ function generar() {
             break;
             
         case 'CANCELACION':
-            resultado = `⛔CANCELACIÓN⛔\nSe cancela INCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nSe trabajó con INCIDENCIA: ${val('inc_ref')} OT: ${val('ot_ref')}\nOBSERVACIONES: ${val('observacion')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            const toggleCancel = document.getElementById('toggleNotaCancel');
+            let obsCancel = '';
+            if (toggleCancel && toggleCancel.checked) {
+                obsCancel = 'Caso Duplicado';
+            } else {
+                obsCancel = val('motivo_cancel');
+            }
+            resultado = `⛔CANCELACIÓN⛔\nSe cancela INCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nSe trabajó con INCIDENCIA: ${val('inc_ref')} OT: ${val('ot_ref')}\nOBSERVACIONES: ${obsCancel}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
             
         case 'SOLICITUD_CANCEL':
@@ -2020,7 +2049,7 @@ function registrarCaso(contenido) {
         };
         
         historial.unshift(caso);
-        if (historial.length > 50) historial = historial.slice(0, 50);
+        // No limit on historial for local use
         
         // Actualizar contadores
         switch(plantilla) {
@@ -2035,12 +2064,8 @@ function registrarCaso(contenido) {
             case 'CULMINACION':
                 contadores.PDR++;
                 break;
-            case 'CANCELACION':
-            case 'SOLICITUD_CANCEL':
-                contadores.CANCELACION++;
-                break;
-            case 'CREACION_OT':
-                contadores.OT++;
+            case 'SOLICITUD':
+                contadores.AVANCES = (contadores.AVANCES || 0) + 1;
                 break;
         }
         
@@ -2052,6 +2077,36 @@ function registrarCaso(contenido) {
 function guardarDatos() {
     localStorage.setItem('historialATPATC', JSON.stringify(historial));
     localStorage.setItem('contadoresATPATC', JSON.stringify(contadores));
+}
+
+function toggleNotaCancelacion() {
+    const toggle = document.getElementById('toggleNotaCancel');
+    if (toggle.checked) {
+        document.getElementById('cont-motivo-cancel').classList.remove('active');
+        document.getElementById('motivo_cancel').value = '';
+    } else {
+        document.getElementById('cont-motivo-cancel').classList.add('active');
+        document.getElementById('motivo_cancel').focus();
+    }
+    generar();
+}
+
+function toggleNotaValidacion() {
+    const toggle = document.getElementById('toggleNotaValidacion');
+    if (toggle.checked) {
+        document.getElementById('cont-obs').classList.remove('active');
+        document.getElementById('observacion').value = '';
+    } else {
+        document.getElementById('cont-obs').classList.add('active');
+        document.getElementById('observacion').focus();
+    }
+    generar();
+}
+
+function abrirPuttyDesdeModulo() {
+    if (window.parent !== window) {
+        window.parent.postMessage({type: 'openModule', module: 'PUTTY.html'}, '*');
+    }
 }
 
 // Event listeners para cerrar modales al hacer clic fuera

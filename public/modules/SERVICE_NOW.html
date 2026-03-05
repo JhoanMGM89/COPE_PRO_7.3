@@ -7,7 +7,7 @@
 :root {
     --primary-blue: #0d6efd;
     --primary-hover: #0b5ed7;
-    --bg-card: rgba(26, 26, 26, 0.95);
+    --bg-card: rgba(26, 26, 26, 0.45);
     --bg-input: #ffffff;
     --text-primary: #ffffff;
     --text-secondary: #b0b0b0;
@@ -122,9 +122,10 @@ body {
     align-items: center;
     background: var(--bg-card);
     padding: 0.5rem 0.75rem;
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
+    border-left: 1px solid rgba(255,255,255,0.15);
+    border-right: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .stats-left {
@@ -194,10 +195,11 @@ body {
 /* Formularios */
 .form-container {
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 0 0 8px 8px;
     padding: 1.25rem;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .form-group {
@@ -228,7 +230,6 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
 }
 
 select.form-control {
@@ -1031,7 +1032,7 @@ input:checked + .slider:before {
                     <option value="VALIDACION">VALIDACION DE SERVICIOS</option>
                 </select>
             </div>
-            <button class="btn-putty" title="Putty (Próximamente)">PUTTY</button>
+            <button class="btn-putty" title="Abrir PUTTY" onclick="abrirPuttyDesdeModulo()">PUTTY</button>
         </div>
 
         <!-- Campo SN para SEGUIMIENTO y CIERRE_ADMIN -->
@@ -1747,7 +1748,8 @@ function parseFecha(str) {
     if (!str) return null;
     str = str.trim().replace(/\s+/g, ' ');
     
-    const match1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    // Format: DD/MM/YYYY HH:MM:SS or DD-MM-YYYY HH:MM:SS (with optional AM/PM)
+    const match1 = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*(AM|PM))?$/i);
     if (match1) {
         let [, d, mo, y, h, mi, s, ap] = match1;
         d = parseInt(d, 10);
@@ -1768,6 +1770,7 @@ function parseFecha(str) {
         return new Date(y, mo, d, h, mi, s);
     }
     
+    // Format: YYYY-MM-DD HH:MM:SS
     const match2 = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
     if (match2) {
         let [, y, mo, d, h, mi, s] = match2;
@@ -1914,7 +1917,7 @@ function registrarCaso(contenido) {
         };
         
         historial.unshift(caso);
-        if (historial.length > 50) historial = historial.slice(0, 50);
+        // No limit on historial storage for local use
         
         // Actualizar contadores según el tipo de plantilla
         switch(plantilla) {
@@ -1952,14 +1955,16 @@ function cerrarVentana() {
     document.getElementById('tipoPlantilla').value = '';
     actualizarCampos();
     
-    window.close();
-    
-    setTimeout(() => {
-        document.querySelector('.container').style.display = 'none';
-        if (window.parent !== window) {
-            window.parent.postMessage('cerrarServiceNow', '*');
-        }
-    }, 100);
+    // Tell parent to close this module
+    if (window.parent !== window) {
+        window.parent.postMessage('cerrarModulo', '*');
+    }
+}
+
+function abrirPuttyDesdeModulo() {
+    if (window.parent !== window) {
+        window.parent.postMessage({type: 'openModule', module: 'PUTTY.html'}, '*');
+    }
 }
 
 document.getElementById('modalHistorial').addEventListener('click', (e) => {

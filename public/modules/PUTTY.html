@@ -1372,6 +1372,18 @@
             }
 
             cargarValoresGuardados();
+
+            // Listen for params from parent (creacion passes IP/tarjeta/puerto)
+            window.addEventListener('message', function(e) {
+                if (e.data && e.data.type === 'puttyParams') {
+                    document.getElementById('oltIp').value = e.data.ip || '0.0.0.0';
+                    document.getElementById('tarjeta').value = e.data.tarjeta || '0';
+                    document.getElementById('puerto').value = e.data.puerto || '0';
+                    actualizarSSHCommands();
+                    renderizarComandosNokia();
+                    renderizarComandosHuawei();
+                }
+            });
             renderizarComandosNokia();
             renderizarComandosHuawei();
             
