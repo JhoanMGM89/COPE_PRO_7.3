@@ -7074,7 +7074,6 @@ function usarIPConsulta(ip) {
 document.getElementById('consultaOverlay').addEventListener('click', function(e) {
     if (e.target === this) cerrarConsulta();
 });
-</script>
 
 // ============================================
 // MÓDULOS IFRAME OVERLAY
@@ -7085,7 +7084,6 @@ function abrirModulo(modulo) {
     let iframe = document.getElementById('moduleIframe');
     
     if (!overlay) {
-        // Create overlay elements dynamically
         overlay = document.createElement('div');
         overlay.id = 'moduleOverlay';
         overlay.className = 'module-overlay';
