@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Empaquetar Proyecto</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: #0a0a0a;
+        color: white;
+        font-family: 'Segoe UI', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        flex-direction: column;
+        gap: 20px;
+    }
+    h1 { font-size: 1.5rem; }
+    .status { color: #888; font-size: 0.9rem; }
+    .btn {
+        padding: 15px 40px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn:hover { background: #0056b3; transform: translateY(-2px); }
+    .btn:disabled { background: #555; cursor: wait; }
+    .progress { color: #22c55e; font-size: 0.85rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>📦 Empaquetar Proyecto</h1>
+<p class="status">Empaqueta toda la aplicación en un solo archivo HTML descargable</p>
+<button class="btn" id="btnDescargar" onclick="empaquetar()">⬇️ DESCARGAR TODO EN 1 HTML</button>
+<div id="progreso" class="progress"></div>
+
+<script>
+async function empaquetar() {
+    const btn = document.getElementById('btnDescargar');
+    const progreso = document.getElementById('progreso');
+    btn.disabled = true;
+    btn.textContent = '⏳ Empaquetando...';
+
+    const modulos = [
+        'AVERIAS.html',
+        'ATP.html',
+        'SERVICE_NOW.html',
+        'PUTTY.html',
+        'GENERADOR_DE_PLANTILLAS.html'
+    ];
+
+    const contenidos = {};
+
+    for (let i = 0; i < modulos.length; i++) {
+        progreso.textContent = `Cargando ${modulos[i]}... (${i+1}/${modulos.length})`;
+        try {
+            const resp = await fetch('/modules/' + modulos[i]);
+            contenidos[modulos[i]] = await resp.text();
+        } catch(e) {
+            progreso.textContent = `Error cargando ${modulos[i]}: ${e.message}`;
+            btn.disabled = false;
+            btn.textContent = '⬇️ DESCARGAR TODO EN 1 HTML';
+            return;
+        }
+    }
+
+    progreso.textContent = 'Empaquetando en un solo archivo...';
+
+    // Get the main file and modify it to embed modules
+    let mainHTML = contenidos['GENERADOR_DE_PLANTILLAS.html'];
+
+    // Create module storage as base64 to avoid escaping issues
+    const moduleData = {};
+    for (const mod of modulos) {
+        if (mod !== 'GENERADOR_DE_PLANTILLAS.html') {
+            moduleData[mod] = btoa(unescape(encodeURIComponent(contenidos[mod])));
+        }
+    }
+
+    // Inject the embedded modules script before </body>
+    const embedScript = `
+<script>
+// ============================================
+// MÓDULOS EMBEBIDOS (Base64)
+// ============================================
+const __modulosEmbebidos = ${JSON.stringify(moduleData)};
+
+// Override abrirModulo to use embedded content
+const __originalAbrirModulo = abrirModulo;
+abrirModulo = function(modulo, params) {
+    if (__modulosEmbebidos[modulo]) {
+        const html = decodeURIComponent(escape(atob(__modulosEmbebidos[modulo])));
+        
+        const bienvenida = document.getElementById('pantallaBienvenida');
+        if (bienvenida) bienvenida.style.display = 'none';
+        
+        const existingOverlay = document.getElementById('moduleOverlay');
+        if (existingOverlay && existingOverlay.classList.contains('activo')) {
+            // Nested module (PUTTY)
+            let nestedOverlay = document.getElementById('nestedModuleOverlay');
+            let nestedIframe = document.getElementById('nestedModuleIframe');
+            
+            if (!nestedOverlay) {
+                nestedOverlay = document.createElement('div');
+                nestedOverlay.id = 'nestedModuleOverlay';
+                nestedOverlay.className = 'module-overlay';
+                nestedOverlay.style.background = 'transparent';
+                nestedOverlay.onclick = function(e) { if (e.target === nestedOverlay) cerrarModuloAnidado(); };
+                
+                nestedIframe = document.createElement('iframe');
+                nestedIframe.id = 'nestedModuleIframe';
+                nestedIframe.setAttribute('allowtransparency', 'true');
+                nestedOverlay.appendChild(nestedIframe);
+                document.body.appendChild(nestedOverlay);
+            }
+            
+            nestedIframe.srcdoc = html;
+            if (params) {
+                nestedIframe.onload = function() {
+                    nestedIframe.contentWindow.postMessage(params, '*');
+                };
+            }
+            nestedOverlay.classList.add('activo');
+            return;
+        }
+        
+        let overlay = document.getElementById('moduleOverlay');
+        let iframe = document.getElementById('moduleIframe');
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'moduleOverlay';
+            overlay.className = 'module-overlay';
+            overlay.onclick = function(e) { if (e.target === overlay) cerrarModulo(); };
+            
+            iframe = document.createElement('iframe');
+            iframe.id = 'moduleIframe';
+            iframe.setAttribute('allowtransparency', 'true');
+            overlay.appendChild(iframe);
+            document.body.appendChild(overlay);
+        }
+        
+        iframe.srcdoc = html;
+        if (params) {
+            iframe.onload = function() {
+                iframe.contentWindow.postMessage(params, '*');
+            };
+        }
+        overlay.classList.add('activo');
+    } else {
+        __originalAbrirModulo(modulo, params);
+    }
+};
+<\/script>`;
+
+    // Remove the original abrirModulo function and inject the embedded version
+    mainHTML = mainHTML.replace('</body>', embedScript + '\n</body>');
+
+    // Create downloadable file
+    const blob = new Blob([mainHTML], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Generador_de_Plantillas_Pro_v2.5.html';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    progreso.textContent = '✅ ¡Archivo descargado exitosamente!';
+    btn.disabled = false;
+    btn.textContent = '⬇️ DESCARGAR TODO EN 1 HTML';
+}
+</script>
+
+</body>
+</html>
