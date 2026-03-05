@@ -1016,7 +1016,7 @@ input:checked + .slider:before {
         </div>
 
         <!-- Switch ATC - Solo visible cuando hay input JIRA -->
-        <div id="cont-check-atc" class="switch-container conditional-field">
+        <div id="cont-check-atc" class="conditional-field" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
             <label class="switch">
                 <input type="checkbox" id="check_atc" onchange="actualizarLabelJIRA(); generar()">
                 <span class="slider"></span>
@@ -1085,7 +1085,7 @@ input:checked + .slider:before {
 
         <!-- Switch Nota Predeterminada Cancelación -->
         <div id="cont-switch-cancel" class="conditional-field" style="margin-bottom: 1rem;">
-            <div style="display:flex;align-items:center;gap:0.5rem;background:#2a2a2a;padding:12px;border-radius:6px;border:1px solid #444;">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
                 <label class="switch">
                     <input type="checkbox" id="toggleNotaCancel" checked onchange="toggleNotaCancelacion()">
                     <span class="slider"></span>
@@ -1102,7 +1102,7 @@ input:checked + .slider:before {
 
         <!-- Switch Nota Predeterminada Validación -->
         <div id="cont-switch-validacion" class="conditional-field" style="margin-bottom: 1rem;">
-            <div style="display:flex;align-items:center;gap:0.5rem;background:#2a2a2a;padding:12px;border-radius:6px;border:1px solid #444;">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
                 <label class="switch">
                     <input type="checkbox" id="toggleNotaValidacion" checked onchange="toggleNotaValidacion()">
                     <span class="slider"></span>
@@ -1681,6 +1681,8 @@ function actualizarCampos() {
             break;
             
         case 'CULMINACION':
+            mostrarSwitchATC = true;
+            mostrar('cont-check-atc');
             mostrar('cont-jira-solo');
             mostrar('cont-inc-ot');
             mostrar('cont-culm-fields');

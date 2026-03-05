@@ -1264,7 +1264,7 @@
 
         function cerrarVentanaPutty() {
             if (window.parent !== window) {
-                window.parent.postMessage('cerrarModulo', '*');
+                window.parent.postMessage('cerrarPutty', '*');
             } else {
                 window.close();
             }
