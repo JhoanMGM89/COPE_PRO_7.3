@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Service Now - Generador de Plantillas</title>
+<style>
+:root {
+    --primary-blue: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --bg-card: rgba(26, 26, 26, 0.95);
+    --bg-input: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333;
+    --danger: #dc3545;
+    --success: #198754;
+    --gray: #6c757d;
+    --warning: #ffc107;
+    --info: #17a2b8;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: transparent;
+    color: var(--text-primary);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 650px;
+    position: relative;
+}
+
+/* Header con selector de color */
+.header {
+    background: var(--primary-blue);
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    border-bottom: 1px solid #0a58ca;
+    position: relative;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Selector de color dinámico */
+.color-picker-container {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.color-picker-wrapper {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.color-picker-wrapper:hover {
+    transform: scale(1.1);
+}
+
+.color-picker-arrow {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 12px solid white;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    pointer-events: none;
+}
+
+#colorPicker {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.color-preview {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-blue);
+    transition: background 0.3s;
+}
+
+/* Contadores compactos con historial pequeño a la izquierda */
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 0.5rem 0.75rem;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+.stats-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-history-small {
+    background: transparent;
+    border: 1px solid var(--primary-blue);
+    color: var(--primary-blue);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: all 0.2s;
+}
+
+.btn-history-small:hover {
+    background: var(--primary-blue);
+    color: white;
+}
+
+.stats-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.stat-value {
+    color: var(--text-primary);
+    font-weight: bold;
+    min-width: 18px;
+}
+
+.btn-reset-all {
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 0.2rem;
+}
+
+.btn-reset-all:hover {
+    opacity: 1;
+}
+
+/* Formularios */
+.form-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    padding: 1.25rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 0.375rem;
+    text-transform: uppercase;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.625rem;
+    background: var(--bg-input);
+    color: #000;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: Arial, sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+}
+
+select.form-control {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    text-align: center;
+    text-align-last: center;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Layout inline - Campos en misma fila - SIEMPRE MANTIENE ESTRUCTURA */
+.inline-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.inline-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+/* Selector de plantilla con botón PUTTY */
+.plantilla-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.plantilla-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.btn-putty {
+    background: #6c757d;
+    color: #ffffff;
+    border: 2px solid #6c757d;
+    padding: 0.625rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+    height: fit-content;
+    margin-top: 1.375rem;
+}
+
+.btn-putty:hover {
+    background: #5a6268;
+    border-color: #5a6268;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Campos condicionales */
+.conditional-field {
+    display: none;
+}
+
+.conditional-field.active {
+    display: block;
+}
+
+.inline-row.conditional-field.active {
+    display: flex;
+}
+
+/* Resultado */
+.resultado-container {
+    margin-top: 1rem;
+}
+
+.resultado {
+    width: 100%;
+    min-height: 150px;
+    background: #000;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 0.875rem;
+    color: #fff;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+/* Acciones alineadas a la derecha */
+.actions-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: normal;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--gray);
+    color: white;
+}
+
+/* Switch toggle */
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-blue);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.switch-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Modal de Historial */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-history {
+    background: #1e1e1e;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    background: #28a745;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.btn-close-modal {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Tabla de historial */
+.history-search {
+    width: 100%;
+    padding: 0.75rem;
+    background: white;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: #000;
+    font-size: 0.9rem;
+}
+
+.history-table-container {
+    background: #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.history-table th {
+    background: #333;
+    color: white;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.history-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #444;
+    color: #fff;
+    vertical-align: middle;
+}
+
+.history-table tr:hover {
+    background: #3a3a3a;
+}
+
+.history-sn {
+    color: var(--primary-blue);
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.history-type {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.history-type.SEGUIMIENTO { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+.history-type.CIERRE, .history-type.CIERRE_ADMIN { background: rgba(25, 135, 84, 0.2); color: var(--success); }
+.history-type.VALIDACION { background: rgba(23, 162, 184, 0.2); color: var(--info); }
+.history-type.SOLICITUD { background: rgba(253, 126, 20, 0.2); color: #fd7e14; }
+.history-type.ACEPTA_PDR { background: rgba(40, 167, 69, 0.2); color: #28a745; }
+.history-type.RECHAZA_PDR { background: rgba(220, 53, 69, 0.2); color: var(--danger); }
+.history-type.CULMINACION { background: rgba(111, 66, 193, 0.2); color: #6f42c1; }
+
+/* Acciones en tabla */
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn-action:hover {
+    transform: scale(1.1);
+    opacity: 0.9;
+}
+
+.btn-view {
+    background: var(--info);
+    color: white;
+}
+
+.btn-copy {
+    background: var(--success);
+    color: white;
+}
+
+.modal-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    border-top: 1px solid #444;
+    gap: 1rem;
+}
+
+.btn-export {
+    background: var(--success);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Modal de vista previa */
+.preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 3500;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.preview-modal.active {
+    display: flex;
+}
+
+.preview-content {
+    background: #1e1e1e;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    background: var(--primary-blue);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preview-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.preview-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.preview-text {
+    background: #000;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 1rem;
+    color: #fff;
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.preview-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background: #2a2a2a;
+    border-top: 1px solid #444;
+}
+
+/* Toast - AHORA DESDE LA IZQUIERDA CON VISTA PREVIA */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 4000;
+    display: none;
+    max-width: 500px;
+    width: 100%;
+}
+
+.toast-container.show {
+    display: block;
+    animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-content {
+    background: var(--bg-card);
+    border: 2px solid var(--success);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.toast-header {
+    background: var(--success);
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.toast-body {
+    padding: 1rem;
+    background: #000;
+}
+
+.toast-preview {
+    color: #fff;
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+.toast-footer {
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toast-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Modal de Confirmación */
+.confirm-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 5000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.confirm-modal.active {
+    display: flex;
+}
+
+.confirm-content {
+    background: var(--bg-card);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-header {
+    background: var(--warning);
+    color: #000;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.confirm-body {
+    padding: 1.5rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.confirm-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background: #2a2a2a;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Responsive - MANTIENE ESTRUCTURA FIJA, SOLO REDUCE TAMAÑOS */
+@media (max-width: 640px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    /* Mantiene inline-row siempre en fila */
+    .inline-row {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .inline-row .form-group {
+        flex: 1;
+    }
+    
+    /* Mantiene plantilla-row siempre en fila */
+    .plantilla-row {
+        flex-direction: row;
+        gap: 0.35rem;
+    }
+    
+    .btn-putty {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        margin-top: 1.2rem;
+    }
+    
+    /* Reduce tamaño de fuente en móvil pero mantiene layout */
+    .form-control {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+    }
+    
+    .form-label {
+        font-size: 0.7rem;
+    }
+    
+    /* Stats row se mantiene en fila pero con gap reducido */
+    .stats-row {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .stats-left {
+        width: auto;
+    }
+    
+    .stats-right {
+        width: auto;
+        flex: 1;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .stat-item {
+        font-size: 0.7rem;
+    }
+    
+    .stat-label {
+        font-size: 0.6rem;
+    }
+    
+    /* Botones más compactos */
+    .btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Header ajustado */
+    .header h1 {
+        font-size: 1.2rem;
+    }
+    
+    .color-picker-container {
+        position: static;
+        transform: none;
+        margin-top: 0.5rem;
+        justify-content: center;
+    }
+    
+    /* Modal ajustes */
+    .modal-history {
+        max-width: 100%;
+        margin: 10px;
+    }
+    
+    .history-table {
+        font-size: 0.75rem;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 0.5rem;
+    }
+    
+    .actions-cell {
+        flex-direction: row;
+    }
+    
+    /* Toast ajustado */
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+}
+
+/* Para pantallas muy pequeñas - mantiene estructura pero más compacto */
+@media (max-width: 480px) {
+    .stats-right {
+        gap: 0.35rem;
+    }
+    
+    .stat-item {
+        font-size: 0.65rem;
+    }
+    
+    .inline-row {
+        gap: 0.35rem;
+    }
+    
+    .btn-putty {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <!-- Header con selector de color -->
+    <div class="header" id="mainHeader">
+        <h1>SERVICE NOW</h1>
+        <div class="color-picker-container">
+            <div class="color-picker-wrapper">
+                <div class="color-preview" id="colorPreview"></div>
+                <div class="color-picker-arrow"></div>
+                <input type="color" id="colorPicker" value="#0d6efd" onchange="cambiarColor(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Contadores con historial pequeño a la izquierda -->
+    <div class="stats-row">
+        <div class="stats-left">
+            <button class="btn-history-small" onclick="abrirHistorial()">Historial</button>
+        </div>
+        <div class="stats-right">
+            <div class="stat-item">
+                <span class="stat-label">Cierre:</span>
+                <span class="stat-value" id="statCierre">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Avances:</span>
+                <span class="stat-value" id="statAvances">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Seguimiento:</span>
+                <span class="stat-value" id="statSeguimiento">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Validación:</span>
+                <span class="stat-value" id="statValidacion">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">PDR:</span>
+                <span class="stat-value" id="statPDR">0</span>
+            </div>
+            <button class="btn-reset-all" onclick="resetTodosContadores()" title="Reiniciar todos los contadores">🗑️</button>
+        </div>
+    </div>
+
+    <!-- Formulario Principal -->
+    <div class="form-container">
+        <!-- Selector de Plantilla con Botón PUTTY -->
+        <div class="plantilla-row">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label" style="text-align: center;">Seleccione Plantilla</label>
+                <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
+                    <option value="" disabled selected>SELECCIONE PLANTILLA</option>
+                    <option value="ACEPTA_PDR">ACEPTA PDR</option>
+                    <option value="CIERRE">CIERRE DE CASO</option>
+                    <option value="CIERRE_ADMIN">CIERRE DE CASO ADMINISTRATIVO</option>
+                    <option value="CULMINACION">CULMINACIÓN PDR</option>
+                    <option value="RECHAZA_PDR">RECHAZA PDR</option>
+                    <option value="SEGUIMIENTO">SEGUIMIENTO</option>
+                    <option value="SOLICITUD">SOLICITUD AVANCES</option>
+                    <option value="VALIDACION">VALIDACION DE SERVICIOS</option>
+                </select>
+            </div>
+            <button class="btn-putty" title="Putty (Próximamente)">PUTTY</button>
+        </div>
+
+        <!-- Campo SN para SEGUIMIENTO y CIERRE_ADMIN -->
+        <div id="campoSN_Seguimiento" class="form-group conditional-field">
+            <label class="form-label">Service Now (CS / TC)</label>
+            <input type="text" id="snSeguimiento" class="form-control" placeholder="CS..." oninput="generar()">
+        </div>
+
+        <!-- CIERRE: SN y Fecha de Cierre en misma fila -->
+        <div id="camposCierre" class="inline-row conditional-field">
+            <div class="form-group">
+                <label class="form-label">Service Now (CS / TC)</label>
+                <input type="text" id="sn" class="form-control" placeholder="CS..." oninput="generar()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha de Cierre</label>
+                <input type="text" id="cierre" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS" oninput="generar()">
+            </div>
+        </div>
+
+        <!-- CIERRE: Valido EN -->
+        <div id="campoValido" class="form-group conditional-field">
+            <label class="form-label">VALIDO EN</label>
+            <input type="text" id="validoEn" class="form-control" placeholder="Información de validación..." oninput="generar()">
+        </div>
+
+        <!-- CIERRE: Info del Caso -->
+        <div id="campoInfo" class="form-group conditional-field">
+            <label class="form-label">Información del Caso (Desde Localidad Hasta el Cai)</label>
+            <textarea id="info" class="form-control" rows="3" placeholder="Desde Localidad hasta el CAI..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- CIERRE: Solucion -->
+        <div id="campoSolucion" class="form-group conditional-field">
+            <label class="form-label">Solución de Falla</label>
+            <textarea id="solucion" class="form-control" rows="3" placeholder="Describa la solución aplicada..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- ACEPTA_PDR: SN y Fecha Inicio en misma fila -->
+        <div id="camposAceptaPDR" class="inline-row conditional-field">
+            <div class="form-group">
+                <label class="form-label">Service Now (CS / TC)</label>
+                <input type="text" id="snAcepta" class="form-control" placeholder="CS..." oninput="generar()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha y Hora Inicio</label>
+                <input type="text" id="inicioAcepta" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generar()">
+            </div>
+        </div>
+
+        <!-- ACEPTA_PDR: Motivo PDR -->
+        <div id="campoMotivo" class="form-group conditional-field">
+            <label class="form-label">Motivo PDR</label>
+            <select id="motivoPdr" class="form-control" onchange="toggleOtroMotivo(); generar()">
+                <option value="" selected disabled>Seleccione Motivo</option>
+                <option value="ACCESO AL SITIO">ACCESO AL SITIO</option>
+                <option value="LLUVIAS">LLUVIAS</option>
+                <option value="ZONA INSEGURA">ZONA INSEGURA</option>
+                <option value="TRAMITE A TERCEROS">TRAMITE A TERCEROS</option>
+                <option value="OTRO">OTRO</option>
+            </select>
+            <input type="text" id="otroMotivo" class="form-control conditional-field" style="margin-top: 0.5rem;" placeholder="Especifique otro motivo" oninput="generar()">
+        </div>
+
+        <!-- SN Solo (para RECHAZA_PDR, VALIDACION, SOLICITUD, CULMINACION) -->
+        <div id="campoSN" class="form-group conditional-field">
+            <label class="form-label">Service Now (CS / TC)</label>
+            <input type="text" id="snSolo" class="form-control" placeholder="CS..." oninput="generar()">
+        </div>
+
+        <!-- VALIDACION: Información del Caso (después del SN) -->
+        <div id="campoInfoValidacion" class="form-group conditional-field">
+            <label class="form-label">Información del Caso</label>
+            <textarea id="infoValidacion" class="form-control" rows="3" placeholder="Ingrese la información del caso..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- CULMINACION: Fecha Inicio y Fin en misma fila -->
+        <div id="camposCulminacion" class="inline-row conditional-field">
+            <div class="form-group">
+                <label class="form-label">Fecha y Hora Inicio</label>
+                <input type="text" id="inicioCulminacion" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generar()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha y Hora Fin</label>
+                <input type="text" id="finCulminacion" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generar()">
+            </div>
+        </div>
+
+        <!-- CULMINACION: Tiempo Restriccion -->
+        <div id="campoRestriccion" class="form-group conditional-field">
+            <label class="form-label">Tiempo de Restricción</label>
+            <input type="text" id="restriccion" class="form-control" readonly>
+        </div>
+
+        <!-- VALIDACION: Switch -->
+        <div id="switchValidacion" class="conditional-field" style="margin-bottom: 1rem;">
+            <div class="switch-container">
+                <label class="switch">
+                    <input type="checkbox" id="toggleValidacion" checked onchange="toggleValidacionObs()">
+                    <span class="slider"></span>
+                </label>
+                <span class="switch-label">Usar nota predeterminada</span>
+            </div>
+        </div>
+
+        <!-- VALIDACION: Observacion (solo cuando switch esta desactivado) -->
+        <div id="campoObsValidacion" class="form-group conditional-field">
+            <label class="form-label">Observación</label>
+            <textarea id="obsValidacion" class="form-control" rows="3" placeholder="Ingrese observación personalizada..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- Observacion normal (para SEGUIMIENTO, CIERRE_ADMIN, ACEPTA_PDR, RECHAZA_PDR) -->
+        <div id="campoObs" class="form-group conditional-field">
+            <label class="form-label" id="labelObs">Observación</label>
+            <textarea id="obs" class="form-control" rows="3" placeholder="Ingrese observaciones..." oninput="generar()"></textarea>
+        </div>
+
+        <!-- Resultado -->
+        <div class="resultado-container">
+            <textarea id="resultado" class="resultado" readonly placeholder="La plantilla generada aparecerá aquí..."></textarea>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions-footer">
+            <button class="btn btn-success" onclick="copiar()">Copiar</button>
+            <button class="btn btn-danger" onclick="confirmarLimpiar()">Limpiar</button>
+            <button class="btn btn-secondary" onclick="confirmarCerrar()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Historial -->
+<div id="modalHistorial" class="modal-overlay">
+    <div class="modal-history">
+        <div class="modal-header">
+            <h2>HISTORIAL DE CASOS</h2>
+            <button class="btn-close-modal" onclick="cerrarHistorial()">×</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" class="history-search" id="searchHistorial" placeholder="Buscar por Service Now, tipo de plantilla..." oninput="filtrarHistorial()">
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Service Now</th>
+                            <th>Plantilla</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorial">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarHistorial()">Cerrar</button>
+            <button class="btn btn-danger" onclick="limpiarHistorialModal()">Limpiar Historial</button>
+            <button class="btn btn-export" onclick="exportarExcel()">
+                Exportar a Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Vista Previa -->
+<div id="modalPreview" class="preview-modal">
+    <div class="preview-content">
+        <div class="preview-header">
+            <h3>VISTA DE PLANTILLA</h3>
+            <button class="btn-close-modal" onclick="cerrarPreview()">×</button>
+        </div>
+        <div class="preview-body">
+            <div class="preview-text" id="previewText"></div>
+        </div>
+        <div class="preview-footer">
+            <button class="btn btn-secondary" onclick="cerrarPreview()">Cerrar</button>
+            <button class="btn btn-success" onclick="copiarDesdePreview()">Copiar Plantilla</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toastContainer" class="toast-container">
+    <div class="toast-content">
+        <div class="toast-header">
+            <span>✓</span>
+            <span>¡Plantilla Copiada!</span>
+        </div>
+        <div class="toast-body">
+            <pre class="toast-preview" id="toastPreview"></pre>
+        </div>
+        <div class="toast-footer">
+            <span class="toast-time" id="toastTime"></span>
+            <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" onclick="cerrarToast()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="modalConfirm" class="confirm-modal">
+    <div class="confirm-content">
+        <div class="confirm-header">
+            <span>⚠️</span>
+            <span id="confirmTitle">Confirmar Acción</span>
+        </div>
+        <div class="confirm-body" id="confirmMessage">
+            ¿Está seguro de realizar esta acción?
+        </div>
+        <div class="confirm-footer">
+            <button class="btn btn-secondary" onclick="cerrarConfirmacion()">Cancelar</button>
+            <button class="btn btn-danger" id="confirmBtn" onclick="ejecutarConfirmacion()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const agente = localStorage.getItem('nombreAgente') || 'GESTOR';
+let historial = JSON.parse(localStorage.getItem('historialServiceNow')) || [];
+let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
+    CIERRE: 0,
+    SOLICITUD: 0,
+    SEGUIMIENTO: 0,
+    VALIDACION: 0,
+    PDR: 0
+};
+let previewActual = '';
+let accionPendiente = null;
+let colorActual = localStorage.getItem('colorServiceNow') || '#0d6efd';
+
+document.addEventListener('DOMContentLoaded', () => {
+    actualizarEstadisticas();
+    actualizarCampos();
+    aplicarColor(colorActual);
+});
+
+function cambiarColor(color) {
+    colorActual = color;
+    aplicarColor(color);
+    localStorage.setItem('colorServiceNow', color);
+}
+
+function aplicarColor(color) {
+    document.documentElement.style.setProperty('--primary-blue', color);
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const hoverColor = `rgb(${Math.floor(r * 0.85)}, ${Math.floor(g * 0.85)}, ${Math.floor(b * 0.85)})`;
+    document.documentElement.style.setProperty('--primary-hover', hoverColor);
+    document.getElementById('colorPreview').style.background = color;
+    document.getElementById('mainHeader').style.background = color;
+}
+
+function actualizarEstadisticas() {
+    document.getElementById('statCierre').textContent = contadores.CIERRE;
+    document.getElementById('statAvances').textContent = contadores.SOLICITUD;
+    document.getElementById('statSeguimiento').textContent = contadores.SEGUIMIENTO;
+    document.getElementById('statValidacion').textContent = contadores.VALIDACION;
+    document.getElementById('statPDR').textContent = contadores.PDR;
+}
+
+function resetTodosContadores() {
+    if (confirm('¿Reiniciar todos los contadores?')) {
+        contadores = { CIERRE: 0, SOLICITUD: 0, SEGUIMIENTO: 0, VALIDACION: 0, PDR: 0 };
+        guardarDatos();
+        actualizarEstadisticas();
+    }
+}
+
+function mostrarConfirmacion(titulo, mensaje, callback) {
+    document.getElementById('confirmTitle').textContent = titulo;
+    document.getElementById('confirmMessage').textContent = mensaje;
+    accionPendiente = callback;
+    document.getElementById('modalConfirm').classList.add('active');
+}
+
+function cerrarConfirmacion() {
+    document.getElementById('modalConfirm').classList.remove('active');
+    accionPendiente = null;
+}
+
+function ejecutarConfirmacion() {
+    if (accionPendiente) {
+        accionPendiente();
+        cerrarConfirmacion();
+    }
+}
+
+function confirmarLimpiar() {
+    mostrarConfirmacion(
+        'Confirmar Limpieza',
+        '¿Está seguro que desea limpiar todos los campos del formulario? Se perderán los datos ingresados.',
+        limpiarFormularioCompleto
+    );
+}
+
+function confirmarCerrar() {
+    mostrarConfirmacion(
+        'Confirmar Cierre',
+        '¿Está seguro que desea cerrar la aplicación?',
+        cerrarVentana
+    );
+}
+
+function limpiarFormularioCompleto() {
+    // Guardar la plantilla actual seleccionada
+    const plantillaActual = document.getElementById('tipoPlantilla').value;
+    
+    // Limpiar TODOS los inputs de texto y textarea excepto resultado
+    const todosLosInputs = document.querySelectorAll('input[type="text"], textarea');
+    todosLosInputs.forEach(el => {
+        if (el.id !== 'resultado') {
+            el.value = '';
+        }
+    });
+    
+    // NO resetear el select de plantilla - mantener la plantilla actual seleccionada
+    document.getElementById('tipoPlantilla').value = plantillaActual;
+    
+    // Resetear select de motivo PDR
+    const motivoSelect = document.getElementById('motivoPdr');
+    if (motivoSelect) {
+        motivoSelect.value = '';
+    }
+    
+    // Ocultar campo otro motivo
+    const otroMotivo = document.getElementById('otroMotivo');
+    if (otroMotivo) {
+        otroMotivo.classList.remove('active');
+        otroMotivo.value = '';
+    }
+    
+    // Resetear switch de validación
+    const toggle = document.getElementById('toggleValidacion');
+    if (toggle) {
+        toggle.checked = true;
+    }
+    
+    // Ocultar campo observación validación
+    const campoObsValidacion = document.getElementById('campoObsValidacion');
+    if (campoObsValidacion) {
+        campoObsValidacion.classList.remove('active');
+    }
+    
+    // Limpiar el textarea de resultado
+    document.getElementById('resultado').value = '';
+    
+    // Forzar actualización de campos para mantener visibles los de la plantilla actual
+    actualizarCampos();
+}
+
+function abrirHistorial() {
+    renderizarTablaHistorial();
+    document.getElementById('modalHistorial').classList.add('active');
+}
+
+function cerrarHistorial() {
+    document.getElementById('modalHistorial').classList.remove('active');
+}
+
+function renderizarTablaHistorial(filtro = '') {
+    const tbody = document.getElementById('tablaHistorial');
+    const nombresPlantilla = {
+        'SEGUIMIENTO': 'Seguimiento',
+        'CIERRE_ADMIN': 'Cierre Adm',
+        'CIERRE': 'Cierre Caso',
+        'ACEPTA_PDR': 'Acepta PDR',
+        'RECHAZA_PDR': 'Rechaza PDR',
+        'VALIDACION': 'Validación',
+        'SOLICITUD': 'Solicitud Avances',
+        'CULMINACION': 'Culminación PDR'
+    };
+    
+    let datos = historial;
+    if (filtro) {
+        const f = filtro.toLowerCase();
+        datos = historial.filter(h => 
+            h.sn.toLowerCase().includes(f) || 
+            nombresPlantilla[h.tipo].toLowerCase().includes(f) ||
+            h.tipo.toLowerCase().includes(f)
+        );
+    }
+    
+    if (datos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888; padding: 2rem;">No hay casos registrados</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = datos.map((h, index) => {
+        const fecha = new Date(h.timestamp);
+        const fechaStr = fecha.toLocaleDateString('es-ES') + ' ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+            <tr>
+                <td>${fechaStr}</td>
+                <td><span class="history-type ${h.tipo}">${h.tipo}</span></td>
+                <td class="history-sn">${h.sn}</td>
+                <td>${nombresPlantilla[h.tipo] || h.tipo}</td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-action btn-view" onclick="verPlantilla(${index})" title="Ver plantilla">👁️</button>
+                        <button class="btn-action btn-copy" onclick="copiarPlantillaHistorial(${index})" title="Copiar plantilla">📋</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filtrarHistorial() {
+    const filtro = document.getElementById('searchHistorial').value;
+    renderizarTablaHistorial(filtro);
+}
+
+function limpiarHistorialModal() {
+    if (confirm('¿Limpiar todo el historial?')) {
+        historial = [];
+        guardarDatos();
+        renderizarTablaHistorial();
+    }
+}
+
+function verPlantilla(index) {
+    previewActual = historial[index].contenido;
+    document.getElementById('previewText').textContent = previewActual;
+    document.getElementById('modalPreview').classList.add('active');
+}
+
+function cerrarPreview() {
+    document.getElementById('modalPreview').classList.remove('active');
+    previewActual = '';
+}
+
+function copiarDesdePreview() {
+    if (!previewActual) return;
+    
+    navigator.clipboard.writeText(previewActual).then(() => {
+        mostrarToast(previewActual);
+        cerrarPreview();
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
+function copiarPlantillaHistorial(index) {
+    const contenido = historial[index].contenido;
+    navigator.clipboard.writeText(contenido).then(() => {
+        mostrarToast(contenido);
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
+function exportarExcel() {
+    if (historial.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    const nombresPlantilla = {
+        'SEGUIMIENTO': 'Seguimiento',
+        'CIERRE_ADMIN': 'Cierre Administrativo',
+        'CIERRE': 'Cierre de Caso',
+        'ACEPTA_PDR': 'Acepta PDR',
+        'RECHAZA_PDR': 'Rechaza PDR',
+        'VALIDACION': 'Validación de Servicios',
+        'SOLICITUD': 'Solicitud de Avances',
+        'CULMINACION': 'Culminación PDR'
+    };
+    
+    // Agrupar por SN + Tipo, quedarnos con el más reciente
+    const unicos = {};
+    
+    historial.forEach(h => {
+        const clave = `${h.sn}_${h.tipo}`;
+        if (!unicos[clave] || h.timestamp > unicos[clave].timestamp) {
+            unicos[clave] = h;
+        }
+    });
+    
+    const datos = Object.values(unicos).sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Encabezados separados por comas para CSV (sin columna Observacion)
+    let csv = 'Fecha,Tipo,Service Now,Plantilla\n';
+    
+    datos.forEach(h => {
+        const fecha = new Date(h.timestamp).toLocaleString('es-ES');
+        const tipo = h.tipo;
+        const sn = h.sn || 'S/N';
+        const plantilla = nombresPlantilla[h.tipo] || h.tipo;
+        
+        // Escapar comillas para CSV
+        const plantillaLimpia = '"' + plantilla.replace(/"/g, '""') + '"';
+        
+        csv += `"${fecha}","${tipo}","${sn}",${plantillaLimpia}\n`;
+    });
+    
+    // Crear blob con BOM para UTF-8 y tipo CSV correcto
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    // Crear enlace de descarga
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Historial_ServiceNow_${new Date().toISOString().slice(0,10)}.csv`;
+    
+    // Agregar al DOM, hacer clic y remover (no abrir automáticamente)
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Limpiar URL object
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+function toggleValidacionObs() {
+    const toggle = document.getElementById('toggleValidacion');
+    const campoObsValidacion = document.getElementById('campoObsValidacion');
+    
+    if (toggle.checked) {
+        campoObsValidacion.classList.remove('active');
+        document.getElementById('obsValidacion').value = '';
+    } else {
+        campoObsValidacion.classList.add('active');
+        document.getElementById('obsValidacion').focus();
+    }
+    generar();
+}
+
+function actualizarCampos() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    
+    // Primero ocultar TODOS los campos condicionales
+    document.querySelectorAll('.conditional-field').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    const labelObs = document.getElementById('labelObs');
+    labelObs.textContent = 'Observación';
+    
+    // Si no hay plantilla seleccionada, salir
+    if (!plantilla) {
+        document.getElementById('resultado').value = '';
+        return;
+    }
+    
+    // Mostrar campos según la plantilla seleccionada
+    switch(plantilla) {
+        case 'SEGUIMIENTO':
+            document.getElementById('campoSN_Seguimiento').classList.add('active');
+            document.getElementById('campoObs').classList.add('active');
+            break;
+            
+        case 'CIERRE_ADMIN':
+            document.getElementById('campoSN_Seguimiento').classList.add('active');
+            document.getElementById('campoObs').classList.add('active');
+            labelObs.textContent = 'Información del Caso';
+            break;
+            
+        case 'CIERRE':
+            document.getElementById('camposCierre').classList.add('active');
+            document.getElementById('campoValido').classList.add('active');
+            document.getElementById('campoInfo').classList.add('active');
+            document.getElementById('campoSolucion').classList.add('active');
+            break;
+            
+        case 'ACEPTA_PDR':
+            document.getElementById('camposAceptaPDR').classList.add('active');
+            document.getElementById('campoMotivo').classList.add('active');
+            document.getElementById('campoObs').classList.add('active');
+            break;
+            
+        case 'RECHAZA_PDR':
+            document.getElementById('campoSN').classList.add('active');
+            document.getElementById('campoObs').classList.add('active');
+            break;
+            
+        case 'VALIDACION':
+            document.getElementById('campoSN').classList.add('active');
+            document.getElementById('campoInfoValidacion').classList.add('active');
+            document.getElementById('switchValidacion').classList.add('active');
+            document.getElementById('toggleValidacion').checked = true;
+            toggleValidacionObs();
+            break;
+            
+        case 'SOLICITUD':
+            document.getElementById('campoSN').classList.add('active');
+            break;
+            
+        case 'CULMINACION':
+            document.getElementById('campoSN').classList.add('active');
+            document.getElementById('camposCulminacion').classList.add('active');
+            document.getElementById('campoRestriccion').classList.add('active');
+            break;
+    }
+    
+    generar();
+}
+
+function toggleOtroMotivo() {
+    const select = document.getElementById('motivoPdr');
+    const otroInput = document.getElementById('otroMotivo');
+    
+    if (select.value === 'OTRO') {
+        otroInput.classList.add('active');
+    } else {
+        otroInput.classList.remove('active');
+        otroInput.value = '';
+    }
+    generar();
+}
+
+function generar() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    if (!plantilla) {
+        document.getElementById('resultado').value = '';
+        return '';
+    }
+    
+    const sn = document.getElementById('sn')?.value || document.getElementById('snSolo')?.value || document.getElementById('snAcepta')?.value || '';
+    const cierre = document.getElementById('cierre')?.value || '';
+    const info = document.getElementById('info')?.value || '';
+    const solucion = document.getElementById('solucion')?.value || '';
+    const validoEn = document.getElementById('validoEn')?.value || '';
+    const inicioAcepta = document.getElementById('inicioAcepta')?.value || '';
+    const inicioCulminacion = document.getElementById('inicioCulminacion')?.value || '';
+    const finCulminacion = document.getElementById('finCulminacion')?.value || '';
+    const infoValidacion = document.getElementById('infoValidacion')?.value || '';
+    let obs = document.getElementById('obs')?.value || '';
+    let obsValidacion = document.getElementById('obsValidacion')?.value || '';
+    
+    let motivoPdr = document.getElementById('motivoPdr')?.value || '';
+    if (motivoPdr === 'OTRO') {
+        motivoPdr = document.getElementById('otroMotivo')?.value || '';
+    }
+    
+    let restriccion = '';
+    if (plantilla === 'CULMINACION' && inicioCulminacion && finCulminacion) {
+        restriccion = calcularRestriccion(inicioCulminacion, finCulminacion);
+        document.getElementById('restriccion').value = restriccion;
+    }
+    
+    let resultado = '';
+    
+    switch(plantilla) {
+        case 'SEGUIMIENTO':
+            const snSeg = document.getElementById('snSeguimiento')?.value || '';
+            resultado = `SERVICE NOW: ${snSeg || 'N/A'}\nSeguimiento caso en service now pendiente respuesta por parte de ONNET.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'CIERRE_ADMIN':
+            const snAdmin = document.getElementById('snSeguimiento')?.value || '';
+            resultado = `✅NOTIFICACIÓN CIERRE DE CASO ADMINISTRATIVO✅\n${snAdmin ? 'SERVICE NOW: ' + snAdmin + '\n' : ''}Estimados señores de EECC. Se ha validado la falla por parte de ONNET confirmando la solución sin embargo el cliente sigue apareciendo en falla por consola ya pasaron 48h por lo que se procede a cerrar caso.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'CIERRE':
+            resultado = `✅CIERRE DE CASO✅\nFECHA DE CIERRE: ${cierre || 'N/A'}\nSERVICE NOW: ${sn || 'N/A'}\nVALIDO EN: ${validoEn || 'N/A'}${info ? '\n' + info : ''}\nOBSERVACION: ${solucion || 'N/A'}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'ACEPTA_PDR':
+            resultado = `✅SE ACEPTA PDR⏱✅\nSERVICE NOW: ${sn || 'N/A'}\nMOTIVO PDR: ${motivoPdr || 'N/A'}\nSe documenta PDR con Fecha y Hora Inicio ${inicioAcepta || 'N/A'}${obs ? '\nOBSERVACIONES: ' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'RECHAZA_PDR':
+            resultado = `‼SE RECHAZA PDR⏱‼\nSERVICE NOW: ${sn || 'N/A'}${obs ? '\nMOTIVO RECHAZO: ' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'VALIDACION':
+            const toggle = document.getElementById('toggleValidacion');
+            let obsTexto = '';
+            if (toggle && toggle.checked) {
+                obsTexto = 'Buen día, validando consola putty se identifica que el servicio sigue en falla, por favor validar muchas gracias.';
+            } else {
+                obsTexto = obsValidacion || 'Sin observaciones';
+            }
+            resultado = `⚠ VALIDACION DE SERVICIOS ⚠\nSERVICE NOW: ${sn || 'N/A'}${infoValidacion ? '\n' + infoValidacion : ''}\nOBSERVACIONES: ${obsTexto}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'SOLICITUD':
+            resultado = `🚨🚸SOLICITUD_AVANCES🚸🚨\nSERVICE NOW: ${sn || 'N/A'}\nOBSERVACION: Buen día me colaboran con el avance del caso, muchas gracias\nGESTOR: ${agente}`;
+            break;
+            
+        case 'CULMINACION':
+            resultado = `⏱CULMINACIÓN PDR⏱\nSERVICE NOW: ${sn || 'N/A'}\nFecha y Hora Inicio: ${inicioCulminacion || 'N/A'}\nFecha y Hora Fin: ${finCulminacion || 'N/A'}\nTiempo de Restricción: ${restriccion || 'N/A'}\nGESTOR: ${agente}`;
+            break;
+    }
+    
+    document.getElementById('resultado').value = resultado;
+    return resultado;
+}
+
+function calcularRestriccion(inicio, fin) {
+    try {
+        const f1 = parseFecha(inicio);
+        const f2 = parseFecha(fin);
+        
+        if (!f1 || !f2) return 'Error de formato';
+        if (f2 < f1) return 'Tiempo inválido (Fin < Inicio)';
+        
+        const diff = (f2 - f1) / 1000;
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = Math.floor(diff % 60);
+        
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    } catch (e) {
+        return 'Error de cálculo';
+    }
+}
+
+function parseFecha(str) {
+    if (!str) return null;
+    str = str.trim().replace(/\s+/g, ' ');
+    
+    const match1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (match1) {
+        let [, d, mo, y, h, mi, s, ap] = match1;
+        d = parseInt(d, 10);
+        mo = parseInt(mo, 10) - 1;
+        y = parseInt(y, 10);
+        h = parseInt(h, 10);
+        mi = parseInt(mi, 10);
+        s = parseInt(s, 10);
+        
+        if (y < 100) y += 2000;
+        
+        if (ap) {
+            ap = ap.toUpperCase();
+            if (ap === 'PM' && h < 12) h += 12;
+            if (ap === 'AM' && h === 12) h = 0;
+        }
+        
+        return new Date(y, mo, d, h, mi, s);
+    }
+    
+    const match2 = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+    if (match2) {
+        let [, y, mo, d, h, mi, s] = match2;
+        return new Date(parseInt(y, 10), parseInt(mo, 10) - 1, parseInt(d, 10), parseInt(h, 10), parseInt(mi, 10), parseInt(s, 10));
+    }
+    
+    return null;
+}
+
+function validar() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    if (!plantilla) {
+        alert('Seleccione una plantilla');
+        return false;
+    }
+    
+    const camposRequeridos = [];
+    
+    switch(plantilla) {
+        case 'SEGUIMIENTO':
+            if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
+            // Observación es opcional para SEGUIMIENTO
+            break;
+        case 'CIERRE_ADMIN':
+            if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('obs').value.trim()) camposRequeridos.push('Información del Caso');
+            break;
+        case 'CIERRE':
+            if (!document.getElementById('sn').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('cierre').value.trim()) camposRequeridos.push('Fecha de Cierre');
+            if (!document.getElementById('validoEn').value.trim()) camposRequeridos.push('VALIDO EN');
+            if (!document.getElementById('info').value.trim()) camposRequeridos.push('Información del Caso');
+            if (!document.getElementById('solucion').value.trim()) camposRequeridos.push('Solución de Falla');
+            break;
+        case 'ACEPTA_PDR':
+            if (!document.getElementById('snAcepta').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('motivoPdr').value) camposRequeridos.push('Motivo PDR');
+            if (document.getElementById('motivoPdr').value === 'OTRO' && !document.getElementById('otroMotivo').value.trim()) {
+                camposRequeridos.push('Especificar otro motivo');
+            }
+            if (!document.getElementById('inicioAcepta').value.trim()) camposRequeridos.push('Fecha y Hora Inicio');
+            if (!document.getElementById('obs').value.trim()) camposRequeridos.push('Observación');
+            break;
+        case 'RECHAZA_PDR':
+            if (!document.getElementById('snSolo').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('obs').value.trim()) camposRequeridos.push('Motivo de Rechazo');
+            break;
+        case 'VALIDACION':
+            if (!document.getElementById('snSolo').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('infoValidacion').value.trim()) camposRequeridos.push('Información del Caso');
+            if (!document.getElementById('toggleValidacion').checked && !document.getElementById('obsValidacion').value.trim()) {
+                camposRequeridos.push('Observación personalizada');
+            }
+            break;
+        case 'SOLICITUD':
+            if (!document.getElementById('snSolo').value.trim()) camposRequeridos.push('Service Now');
+            break;
+        case 'CULMINACION':
+            if (!document.getElementById('snSolo').value.trim()) camposRequeridos.push('Service Now');
+            if (!document.getElementById('inicioCulminacion').value.trim()) camposRequeridos.push('Fecha y Hora Inicio');
+            if (!document.getElementById('finCulminacion').value.trim()) camposRequeridos.push('Fecha y Hora Fin');
+            break;
+    }
+    
+    if (camposRequeridos.length > 0) {
+        alert('⚠️ Campos requeridos para esta plantilla:\n\n• ' + camposRequeridos.join('\n• ') + '\n\nPor favor complete todos los campos antes de copiar.');
+        return false;
+    }
+    
+    return true;
+}
+
+function copiar() {
+    if (!validar()) return;
+    
+    const resultado = document.getElementById('resultado');
+    if (!resultado.value.trim()) {
+        alert('Genere una plantilla primero');
+        return;
+    }
+    
+    const textoFormateado = resultado.value;
+    
+    navigator.clipboard.writeText(textoFormateado).then(() => {
+        registrarCaso(textoFormateado);
+        mostrarToast(textoFormateado);
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
+function mostrarToast(contenido) {
+    const container = document.getElementById('toastContainer');
+    const preview = document.getElementById('toastPreview');
+    const time = document.getElementById('toastTime');
+    
+    preview.textContent = contenido;
+    time.textContent = new Date().toLocaleTimeString('es-ES');
+    
+    container.classList.add('show');
+    
+    setTimeout(() => {
+        cerrarToast();
+    }, 8000);
+}
+
+function cerrarToast() {
+    document.getElementById('toastContainer').classList.remove('show');
+}
+
+function registrarCaso(contenido) {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    let sn = '';
+    
+    // Obtener SN según la plantilla
+    if (plantilla === 'CIERRE') {
+        sn = document.getElementById('sn')?.value?.trim() || 'S/N';
+    } else if (plantilla === 'ACEPTA_PDR') {
+        sn = document.getElementById('snAcepta')?.value?.trim() || 'S/N';
+    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN') {
+        sn = document.getElementById('snSeguimiento')?.value?.trim() || 'S/N';
+    } else {
+        sn = document.getElementById('snSolo')?.value?.trim() || 'S/N';
+    }
+    
+    const ahora = new Date().getTime();
+    const UNA_HORA = 60 * 60 * 1000; // 1 hora en milisegundos
+    
+    // Verificar duplicado solo si pasó menos de 1 hora
+    const duplicadoReciente = historial.some(h => 
+        h.sn === sn && 
+        h.tipo === plantilla && 
+        (ahora - h.timestamp) < UNA_HORA
+    );
+    
+    // Si no es duplicado reciente (más de 1 hora o nuevo), registrar
+    if (!duplicadoReciente) {
+        const caso = {
+            id: Date.now(),
+            sn: sn,
+            tipo: plantilla,
+            timestamp: ahora,
+            contenido: contenido
+        };
+        
+        historial.unshift(caso);
+        if (historial.length > 50) historial = historial.slice(0, 50);
+        
+        // Actualizar contadores según el tipo de plantilla
+        switch(plantilla) {
+            case 'CIERRE':
+            case 'CIERRE_ADMIN':
+                contadores.CIERRE++;
+                break;
+            case 'SOLICITUD':
+                contadores.SOLICITUD++;
+                break;
+            case 'SEGUIMIENTO':
+                contadores.SEGUIMIENTO++;
+                break;
+            case 'VALIDACION':
+                contadores.VALIDACION++;
+                break;
+            case 'ACEPTA_PDR':
+            case 'RECHAZA_PDR':
+            case 'CULMINACION':
+                contadores.PDR++;
+                break;
+        }
+        
+        guardarDatos();
+        actualizarEstadisticas();
+    }
+}
+
+function guardarDatos() {
+    localStorage.setItem('historialServiceNow', JSON.stringify(historial));
+    localStorage.setItem('contadoresServiceNow', JSON.stringify(contadores));
+}
+
+function cerrarVentana() {
+    document.getElementById('tipoPlantilla').value = '';
+    actualizarCampos();
+    
+    window.close();
+    
+    setTimeout(() => {
+        document.querySelector('.container').style.display = 'none';
+        if (window.parent !== window) {
+            window.parent.postMessage('cerrarServiceNow', '*');
+        }
+    }, 100);
+}
+
+document.getElementById('modalHistorial').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarHistorial();
+});
+
+document.getElementById('modalPreview').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarPreview();
+});
+
+document.getElementById('modalConfirm').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarConfirmacion();
+});
+</script>
+
+</body>
+</html>

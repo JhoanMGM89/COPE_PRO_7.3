@@ -1,0 +1,2072 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLT Command Center - Nokia/Huawei</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --nokia-red: #e11d48;
+            --nokia-red-dark: #be123c;
+            --huawei-blue: #0066cc;
+            --huawei-blue-dark: #0052a3;
+            --bg-dark: #0a0a0a;
+            --bg-card: #111111;
+            --border-color: #333;
+            --text-primary: #ffffff;
+            --text-secondary: #ffffff;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        body {
+            background-color: rgba(0, 0, 0, 0.9);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 12px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            min-width: 650px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            min-width: 650px;
+            background: var(--bg-card);
+            border: 2px solid var(--nokia-red);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8);
+            transition: border-color 0.3s ease;
+        }
+
+        .container.huawei {
+            border-color: var(--huawei-blue);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--nokia-red) 0%, var(--nokia-red-dark) 100%);
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--nokia-red-dark);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .container.huawei .header {
+            background: linear-gradient(135deg, var(--huawei-blue) 0%, var(--huawei-blue-dark) 100%);
+            border-bottom-color: var(--huawei-blue-dark);
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .brand-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .brand-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+        }
+
+        .brand-label.active {
+            color: white;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .brand-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .brand-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .brand-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--nokia-red-dark);
+            transition: .3s;
+            border-radius: 24px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .brand-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        input:checked + .brand-slider {
+            background-color: var(--huawei-blue-dark);
+        }
+
+        input:checked + .brand-slider:before {
+            transform: translateX(20px);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            min-height: 520px;
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .main-grid.sidebar-collapsed {
+            grid-template-columns: 0 1fr;
+        }
+
+        .sidebar {
+            background: #0f0f0f;
+            border-right: 1px solid var(--border-color);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 600px;
+            min-width: 240px;
+            transition: opacity 0.3s ease, width 0.3s ease, padding 0.3s ease, min-width 0.3s ease;
+        }
+
+        .main-grid.sidebar-collapsed .sidebar {
+            opacity: 0;
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--nokia-red);
+            font-weight: 700;
+            margin-bottom: 6px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+            transition: color 0.3s;
+        }
+
+        .container.huawei .panel-title {
+            color: var(--huawei-blue);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .input-group label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .input-field {
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 7px 9px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: 'Consolas', monospace;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--nokia-red);
+            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2);
+        }
+
+        .container.huawei .input-field:focus {
+            border-color: var(--huawei-blue);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+        }
+
+        .input-field::placeholder {
+            color: #555;
+        }
+
+        .slot-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .slot-input {
+            text-align: center;
+            font-size: 0.85rem;
+            padding: 5px 6px;
+        }
+
+        .btn {
+            background: var(--nokia-red);
+            color: white;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn:hover {
+            background: var(--nokia-red-dark);
+            transform: translateY(-1px);
+        }
+
+        .container.huawei .btn {
+            background: var(--huawei-blue);
+        }
+
+        .container.huawei .btn:hover {
+            background: var(--huawei-blue-dark);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: var(--nokia-red);
+        }
+
+        .container.huawei .btn-danger {
+            background: var(--huawei-blue);
+        }
+
+        .btn-danger:hover {
+            background: var(--nokia-red-dark);
+        }
+
+        .container.huawei .btn-danger:hover {
+            background: var(--huawei-blue-dark);
+        }
+
+        .input-with-copy {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .input-with-copy .input-field {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-copy-small {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 7px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            min-width: 50px;
+            height: 32px;
+        }
+
+        .btn-copy-small:hover {
+            background: var(--nokia-red);
+        }
+
+        .container.huawei .btn-copy-small:hover {
+            background: var(--huawei-blue);
+        }
+
+        .btn-copy-small.copied {
+            background: var(--success);
+        }
+
+        .content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 600px;
+            min-width: 300px;
+            transition: all 0.3s ease;
+        }
+
+        .olt-config-bar {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+            align-items: flex-end;
+        }
+
+        .olt-config-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .olt-config-group.ip-group {
+            flex: 2;
+        }
+
+        .olt-config-group.slot-group {
+            flex: 0.5;
+        }
+
+        .olt-config-group label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .olt-config-input {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 10px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            font-family: 'Consolas', monospace;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .olt-config-input:focus {
+            outline: none;
+            border-color: var(--nokia-red);
+            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2);
+        }
+
+        .container.huawei .olt-config-input:focus {
+            border-color: var(--huawei-blue);
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+        }
+
+        .olt-config-input.slot-input {
+            text-align: center;
+        }
+
+        .section {
+            background: #0f0f0f;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 400px;
+        }
+
+        .section-header {
+            background: linear-gradient(90deg, var(--nokia-red) 0%, transparent 100%);
+            padding: 8px 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .container.huawei .section-header {
+            background: linear-gradient(90deg, var(--huawei-blue) 0%, transparent 100%);
+        }
+
+        .command-list {
+            padding: 6px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .command-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 6px;
+            align-items: center;
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .command-item:hover {
+            border-color: var(--nokia-red);
+            background: #222;
+        }
+
+        .container.huawei .command-item:hover {
+            border-color: var(--huawei-blue);
+        }
+
+        .command-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+        }
+
+        .command-title {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .command-preview {
+            display: none;
+        }
+
+        .command-inputs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .cmd-input {
+            width: 45px;
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 4px;
+            color: var(--text-primary);
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        .cmd-input:focus {
+            outline: none;
+            border-color: var(--nokia-red);
+        }
+
+        .container.huawei .cmd-input:focus {
+            border-color: var(--huawei-blue);
+        }
+
+        .btn-copy {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            min-width: 50px;
+        }
+
+        .btn-copy:hover {
+            background: var(--nokia-red);
+        }
+
+        .container.huawei .btn-copy:hover {
+            background: var(--huawei-blue);
+        }
+
+        .btn-copy.copied {
+            background: var(--success);
+        }
+
+        .builder-area {
+            padding: 6px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .builder-area.hidden {
+            display: none;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .switch-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--nokia-red);
+        }
+
+        .container.huawei input:checked + .slider {
+            background-color: var(--huawei-blue);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        .organizador-content {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .organizador-content.visible {
+            display: block;
+        }
+
+        .organizador-textarea {
+            width: 100%;
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px;
+            color: var(--text-primary);
+            font-family: 'Consolas', monospace;
+            font-size: 0.75rem;
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 8px;
+        }
+
+        .organizador-textarea:focus {
+            outline: none;
+            border-color: var(--nokia-red);
+        }
+
+        .container.huawei .organizador-textarea:focus {
+            border-color: var(--huawei-blue);
+        }
+
+        .organizador-preview {
+            background: #0a0a0a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px;
+            color: var(--success);
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            min-height: 24px;
+            word-break: break-all;
+        }
+
+        .organizador-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .history-section {
+            flex-shrink: 0;
+        }
+
+        .history-panel {
+            height: 70px;
+            min-height: 70px;
+            max-height: 70px;
+            overflow-y: auto;
+            background: #0a0a0a;
+            border-radius: 4px;
+            padding: 6px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 6px;
+            margin-bottom: 2px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 20px;
+        }
+
+        .history-item:hover {
+            background: #252525;
+        }
+
+        .history-time {
+            color: var(--text-secondary);
+            font-size: 0.55rem;
+        }
+
+        .footer {
+            background: #0f0f0f;
+            padding: 10px 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .footer-info {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--nokia-red);
+        }
+
+        .container.huawei ::-webkit-scrollbar-thumb:hover {
+            background: var(--huawei-blue);
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: var(--nokia-red);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s ease;
+            padding: 0;
+        }
+
+        .container.huawei .sidebar-toggle {
+            background: var(--huawei-blue);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--nokia-red-dark);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .container.huawei .sidebar-toggle:hover {
+            background: var(--huawei-blue-dark);
+        }
+
+        .sidebar-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .menu-icon {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 18px;
+            align-items: center;
+        }
+
+        .menu-icon span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+            width: 20px;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+            width: 20px;
+        }
+
+        .brand-section {
+            display: none;
+        }
+
+        .brand-section.active {
+            display: block;
+        }
+
+        .dual-command {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dual-command .input-field {
+            font-size: 0.75rem;
+            padding: 5px 7px;
+        }
+    </style>
+<base target="_blank">
+
+<style>
+	@font-face {
+		font-family: 'CameraPlainVariable';
+		src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
+		font-weight: 100 900;
+		font-style: normal;
+		font-display: swap;
+	}
+
+	#lovable-badge {
+		--badge-bg: #1b1b1b;
+		--badge-text: #c5c1b9;
+		--badge-text-hover: #dcdad5;
+		--badge-radius: 6px;
+		--badge-padding: 8px;
+		--badge-gap: 6px;
+		--badge-shadow: 
+			0 0 0 1px rgba(0, 0, 0, 0.88),
+			0 1px 0 0 rgba(0, 0, 0, 0.04),
+			0 2px 2px -1px rgba(0, 0, 0, 0.08),
+			0 4px 4px -2px rgba(0, 0, 0, 0.08),
+			0 8px 8px -4px rgba(0, 0, 0, 0.08),
+			0 16px 16px -8px rgba(0, 0, 0, 0.08);
+		--badge-transition-duration: 0.2s;
+		--badge-transition-easing: cubic-bezier(0.16, 1, 0.32, 1);
+		--focus-color: #575ECF;
+		--focus-offset: 2px;
+		--focus-width: 2px;
+		
+		position: fixed;
+		bottom: 12px;
+		right: 12px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		z-index: 1000000;
+		background-color: var(--badge-bg);
+		color: var(--badge-text);
+		border-radius: var(--badge-radius);
+		box-shadow: var(--badge-shadow);
+		font-size: 12px;
+		font-family: CameraPlainVariable, "CameraPlainVariable Fallback", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-weight: 400 !important;
+		text-transform: none !important;
+		font-feature-settings: normal !important;
+		transform: translateZ(0);
+		will-change: transform, opacity;
+	}
+
+	#lovable-badge-cta {
+		display: flex;
+		align-items: center;
+		gap: var(--badge-gap);
+		padding: 0 var(--badge-padding);
+		height: 100%;
+		color: inherit;
+		text-decoration: none;
+		white-space: nowrap;
+		border-radius: var(--badge-radius) 0 0 var(--badge-radius);
+		transition: 
+			background-color var(--badge-transition-duration) ease,
+			color var(--badge-transition-duration) ease,
+			transform 0.1s ease;
+	}
+
+	#lovable-badge-cta:hover {
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--badge-text-hover);
+	}
+
+	#lovable-badge-cta:active {
+		transform: scale(0.98);
+	}
+
+	#lovable-badge-cta:focus {
+		outline: none;
+	}
+
+	#lovable-badge-cta:focus-visible {
+		outline: var(--focus-width) solid var(--focus-color);
+		outline-offset: var(--focus-offset);
+		z-index: 1;
+	}
+
+	#lovable-badge-text {
+		line-height: 1;
+	}
+
+	#lovable-badge-divider {
+		width: 1px;
+		height: 24px;
+		background-color: rgba(255, 255, 255, 0.04);
+		flex-shrink: 0;
+	}
+
+	#lovable-badge-close {
+		width: 24px;
+		height: 24px;
+		min-width: 24px;
+		min-height: 24px;
+		cursor: pointer;
+		background: none;
+		border: none;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0 var(--badge-radius) var(--badge-radius) 0;
+		flex-shrink: 0;
+		transition: 
+			background-color var(--badge-transition-duration) ease,
+			transform 0.1s ease;
+	}
+
+	#lovable-badge-close:hover {
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+	#lovable-badge-close:active {
+		transform: scale(0.92);
+	}
+
+	#lovable-badge-close:focus {
+		outline: none;
+	}
+
+	#lovable-badge-close:focus-visible {
+		outline: var(--focus-width) solid var(--focus-color);
+		outline-offset: calc(var(--focus-offset) * -1);
+		z-index: 1;
+	}
+
+	#lovable-badge-close svg path {
+		fill: var(--badge-text);
+		transition: fill var(--badge-transition-duration) ease;
+	}
+
+	#lovable-badge-close:hover svg path {
+		fill: var(--badge-text-hover);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#lovable-badge-cta,
+		#lovable-badge-close,
+		#lovable-badge-close svg path {
+			transition: none;
+		}
+		
+		#lovable-badge-cta:active,
+		#lovable-badge-close:active {
+			transform: none;
+		}
+	}
+
+	@media (prefers-contrast: high) {
+		#lovable-badge {
+			--badge-bg: #000;
+			--badge-text: #fff;
+			--badge-text-hover: #fff;
+			border: 2px solid currentColor;
+		}
+		
+		#lovable-badge-cta:focus-visible,
+		#lovable-badge-close:focus-visible {
+			outline-width: 3px;
+		}
+	}
+</style>
+<meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/42dac8cb-b4ae-442a-b7df-972f2cf51372/id-preview-9b7f60d1--f7c04430-83c8-4022-b2bd-d93bd3d93d65.lovable.app-1772670871620.png" /></head>
+<body>
+
+    <div class="container" id="mainContainer">
+        <div class="header">
+            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Ocultar panel lateral">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </button>
+            
+            <h1 id="headerTitle">Nokia OLT Command Center</h1>
+            
+            <div class="brand-switch-container">
+                <span class="brand-label active" id="labelNokia">Nokia</span>
+                <label class="brand-switch">
+                    <input type="checkbox" id="brandSwitch" onchange="toggleBrand()">
+                    <span class="brand-slider"></span>
+                </label>
+                <span class="brand-label" id="labelHuawei">Huawei</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <div id="nokiaSidebar" class="brand-section active">
+                    <div>
+                        <div class="panel-title">Acceso PUTTY</div>
+                        
+                        <div class="input-group">
+                            <label>IP de Acceso</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaIpAcceso" value="10.201.40.173">
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaIpAcceso', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Usuario SSH</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaSshUser" value="eypatiopi" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaSshUser', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaSshPass" value="Vegeta_26+">
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaSshPass', this)">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="panel-title">Ingreso a Tecnología</div>
+                        
+                        <div class="input-group">
+                            <label>Comando SSH</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaSshCommand" value="ssh 0.0.0.0" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaSshCommand', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaTechPass1" value="B4p!m6@Cx7" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaTechPass1', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña / Secundaria</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="nokiaTechPass2" value="&p+X3hF=" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('nokiaTechPass2', this)">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="huaweiSidebar" class="brand-section">
+                    <div>
+                        <div class="panel-title">Acceso PUTTY</div>
+                        
+                        <div class="input-group">
+                            <label>Host Name / IP</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiIpAcceso" value="10.201.40.173">
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiIpAcceso', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Usuario</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiSshUser" value="eypatiopi" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiSshUser', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiSshPass" value="Vegeta_26+">
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiSshPass', this)">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="panel-title">Ingreso a Tecnología</div>
+                        
+                        <div class="input-group">
+                            <label>Comando SSH</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiSshCommand" value="ssh eypatiopi@telecom@0.0.0.0" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiSshCommand', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiTechPass1" value="B4p!m6@Cx7" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiTechPass1', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Contraseña / Secundaria</label>
+                            <div class="input-with-copy">
+                                <input type="text" class="input-field" id="huaweiTechPass2" value="&p+X3hF=" readonly>
+                                <button class="btn-copy-small" onclick="copiarCampo('huaweiTechPass2', this)">Copiar</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 6px;">
+                            <label>Confirmar Enable + Config</label>
+                            <div class="dual-command">
+                                <input type="text" class="input-field" id="huaweiEnable" value="enable" readonly>
+                                <input type="text" class="input-field" id="huaweiConfig" value="config" readonly>
+                            </div>
+                            <button class="btn-copy-small" onclick="copiarEnableConfig(this)" style="width: 100%; margin-top: 4px;">Copiar Ambos</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="olt-config-bar">
+                    <div class="olt-config-group ip-group">
+                        <label>Dirección IP OLT</label>
+                        <input type="text" class="olt-config-input" id="oltIp" placeholder="Esperando datos...">
+                    </div>
+                    <div class="olt-config-group slot-group">
+                        <label>Tarjeta</label>
+                        <input type="text" class="olt-config-input slot-input" id="tarjeta" placeholder="-">
+                    </div>
+                    <div class="olt-config-group slot-group">
+                        <label>Puerto</label>
+                        <input type="text" class="olt-config-input slot-input" id="puerto" placeholder="-">
+                    </div>
+                </div>
+
+                <div id="nokiaCommands" class="brand-section active">
+                    <div class="section">
+                        <div class="section-header">Comandos Rápidos Nokia</div>
+                        <div class="command-list" id="nokiaCommandList"></div>
+                    </div>
+                </div>
+
+                <div id="huaweiCommands" class="brand-section">
+                    <div class="section">
+                        <div class="section-header">Comandos Rápidos Huawei</div>
+                        <div class="command-list" id="huaweiCommandList"></div>
+                    </div>
+                </div>
+
+                <div class="builder-area" id="organizadorSection">
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="customSwitch" onchange="toggleOrganizador()">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="switch-label">Organizador de ONTs</span>
+                    </div>
+                    <div class="organizador-content" id="organizadorContent">
+                        <textarea class="organizador-textarea" id="organizadorInput" placeholder="Pegue aquí la lista de ONTs o números sueltos"></textarea>
+                        <span class="organizador-label">Resultado procesado</span>
+                        <div class="organizador-preview" id="organizadorPreview">Esperando entrada...</div>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <div class="panel-title">Historial</div>
+                    <div class="history-panel" id="historyPanel"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-info" id="footerInfo">
+                Integrado con Generador CREACION v2.2 | Modo: Nokia
+            </div>
+            <div class="footer-buttons">
+                <button class="btn btn-danger" onclick="limpiarCampos()" style="padding: 5px 10px; font-size: 0.6rem;">
+                    Limpiar Campos
+                </button>
+                <button class="btn btn-secondary" onclick="window.close()" style="padding: 5px 10px; font-size: 0.6rem;">
+                    Cerrar Ventana
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Campos limpiados</div>
+
+    <script>
+        let currentBrand = 'nokia';
+        let listaONTsProcesada = '';
+        let historialComandos = [];
+
+        const STORAGE_KEYS = {
+            BRAND: 'olt_command_center_brand',
+            NOKIA_IP_ACCESO: 'nokia_olt_ip_acceso',
+            NOKIA_SSH_PASS: 'nokia_olt_ssh_pass',
+            HUAWEI_IP_ACCESO: 'huawei_olt_ip_acceso',
+            HUAWEI_SSH_PASS: 'huawei_olt_ssh_pass'
+        };
+
+        const nokiaComandos = [
+            {
+                id: 'dyng-gasp',
+                titulo: 'Dyng-Gasp / Estado ONT Individual',
+                comando: (t, p, ont) => `show equipment ont operational-data 1/1/${t}/${p}/${ont} | match exact:1`,
+                requiereOnt: true,
+                ontDefault: '',
+                esListaComas: false
+            },
+            {
+                id: 'optics-single',
+                titulo: 'Valida ONT Individual',
+                comando: (t, p, ont) => `show equipment ont optics 1/1/${t}/${p}/${ont}`,
+                requiereOnt: true,
+                ontDefault: '',
+                esListaComas: false
+            },
+            {
+                id: 'optics-range',
+                titulo: 'Rango de ONTs [1-128]',
+                comando: (t, p, r1, r2) => `show equipment ont optics 1/1/${t}/${p}/[${r1}...${r2}]`,
+                esRango: true,
+                rangoDefault: ['', '']
+            },
+            {
+                id: 'optics-port',
+                titulo: 'Estado ONT (All Tarjeta y Puerto)',
+                comando: () => `show equipment ont optics`,
+                requiereOnt: false
+            },
+            {
+                id: 'status-pon',
+                titulo: 'Status Spliter (No Recomendado)',
+                comando: (t, p) => `show equipment ont status pon 1/1/${t}/${p}`,
+                requiereOnt: false
+            },
+            {
+                id: 'status-filter',
+                titulo: 'Filtra Spliter (2+ Nivel)',
+                comando: (t, p, filter) => `show equipment ont status pon 1/1/${t}/${p} | match exact:1`,
+                requiereOnt: false
+            },
+            {
+                id: 'status-down',
+                titulo: 'Filtra Servicios Offline',
+                comando: (t, p) => `show equipment ont status pon 1/1/${t}/${p} | match exact:down`,
+                requiereOnt: false
+            },
+            {
+                id: 'optics-comma-list',
+                titulo: 'Valida ONTs Específicas (Cto / Spliter)',
+                comando: (t, p, lista) => `show equipment ont optics 1/1/${t}/${p}/[${lista}] | match exact:1/1/${t}/${p}`,
+                requiereOnt: true,
+                ontDefault: '',
+                esListaComas: true,
+                esOrganizador: true
+            },
+            {
+                id: 'operational-comma-list',
+                titulo: 'Dyng-Gasp ONTs Específicas (Cto / Spliter)',
+                comando: (t, p, lista) => `show equipment ont operational-data 1/1/${t}/${p}/[${lista}] | match exact:1/1/${t}/${p}`,
+                requiereOnt: true,
+                ontDefault: '',
+                esListaComas: true,
+                esOrganizador: true
+            }
+        ];
+
+        // COMANDOS HUAWEI CORREGIDOS - Solo comandos funcionales
+        const huaweiComandos = [
+            {
+                id: 'info-summary',
+                titulo: 'Valida Dying Gasp / Lobi Status Spliter',
+                esSimple: true,
+                comando: (t, p) => `display ont info summary 0/${t}/${p}`
+            },
+            {
+                id: 'board-status',
+                titulo: 'Valida Estado de La Tarjeta (Slot)',
+                esSimple: true,
+                comando: (t) => `display board 0/${t}`
+            },
+            {
+                id: 'ont-filter-online',
+                titulo: 'Filtra ONTs Online (Activas)',
+                esSimple: true,
+                comando: (t, p) => `display ont info summary 0/${t}/${p} | include online`
+            },
+            {
+                id: 'ont-filter-offline',
+                titulo: 'Filtra ONTs Offline (Inactivas)',
+                esSimple: true,
+                comando: (t, p) => `display ont info summary 0/${t}/${p} | include offline`
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const brandGuardada = localStorage.getItem(STORAGE_KEYS.BRAND);
+            if (brandGuardada === 'huawei') {
+                document.getElementById('brandSwitch').checked = true;
+                toggleBrand(false);
+            }
+
+            cargarValoresGuardados();
+            renderizarComandosNokia();
+            renderizarComandosHuawei();
+            
+            window.addEventListener('message', (e) => {
+                if (e.data.action === 'setParams') {
+                    let ipLimpia = (e.data.ip || '').replace(/\s+/g, '');
+                    document.getElementById('oltIp').value = ipLimpia;
+                    document.getElementById('tarjeta').value = e.data.tarjeta || '';
+                    document.getElementById('puerto').value = e.data.puerto || '';
+                    actualizarSSHCommands();
+                    renderizarComandosNokia();
+                    renderizarComandosHuawei();
+                }
+            });
+
+            document.getElementById('oltIp').addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\s+/g, '');
+                actualizarSSHCommands();
+                renderizarComandosNokia();
+                renderizarComandosHuawei();
+            });
+
+            ['tarjeta', 'puerto'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    actualizarSSHCommands();
+                    renderizarComandosNokia();
+                    renderizarComandosHuawei();
+                });
+            });
+
+            document.getElementById('nokiaIpAcceso').addEventListener('input', guardarValores);
+            document.getElementById('nokiaSshPass').addEventListener('input', guardarValores);
+            document.getElementById('huaweiIpAcceso').addEventListener('input', guardarValores);
+            document.getElementById('huaweiSshPass').addEventListener('input', guardarValores);
+
+            document.getElementById('organizadorInput').addEventListener('input', procesarOrganizadorONTs);
+
+            setTimeout(() => {
+                if (!document.getElementById('oltIp').value) {
+                    document.getElementById('oltIp').value = '0.0.0.0';
+                    document.getElementById('tarjeta').value = '0';
+                    document.getElementById('puerto').value = '0';
+                    actualizarSSHCommands();
+                    renderizarComandosNokia();
+                    renderizarComandosHuawei();
+                }
+            }, 100);
+        });
+
+        function toggleBrand(guardar = true) {
+            const switchEl = document.getElementById('brandSwitch');
+            const container = document.getElementById('mainContainer');
+            const labelNokia = document.getElementById('labelNokia');
+            const labelHuawei = document.getElementById('labelHuawei');
+            const headerTitle = document.getElementById('headerTitle');
+            const footerInfo = document.getElementById('footerInfo');
+            const organizadorSection = document.getElementById('organizadorSection');
+
+            if (switchEl.checked) {
+                currentBrand = 'huawei';
+                container.classList.add('huawei');
+                labelNokia.classList.remove('active');
+                labelHuawei.classList.add('active');
+                headerTitle.textContent = 'Huawei OLT Command Center';
+                footerInfo.textContent = 'Integrado con Generador CREACION v2.2 | Modo: Huawei';
+                
+                document.getElementById('huaweiSidebar').classList.add('active');
+                document.getElementById('nokiaSidebar').classList.remove('active');
+                document.getElementById('huaweiCommands').classList.add('active');
+                document.getElementById('nokiaCommands').classList.remove('active');
+                
+                organizadorSection.classList.add('hidden');
+            } else {
+                currentBrand = 'nokia';
+                container.classList.remove('huawei');
+                labelNokia.classList.add('active');
+                labelHuawei.classList.remove('active');
+                headerTitle.textContent = 'Nokia OLT Command Center';
+                footerInfo.textContent = 'Integrado con Generador CREACION v2.2 | Modo: Nokia';
+                
+                document.getElementById('nokiaSidebar').classList.add('active');
+                document.getElementById('huaweiSidebar').classList.remove('active');
+                document.getElementById('nokiaCommands').classList.add('active');
+                document.getElementById('huaweiCommands').classList.remove('active');
+                
+                organizadorSection.classList.remove('hidden');
+            }
+
+            if (guardar) {
+                localStorage.setItem(STORAGE_KEYS.BRAND, currentBrand);
+            }
+
+            actualizarSSHCommands();
+        }
+
+        function cargarValoresGuardados() {
+            const nokiaIp = localStorage.getItem(STORAGE_KEYS.NOKIA_IP_ACCESO);
+            if (nokiaIp) document.getElementById('nokiaIpAcceso').value = nokiaIp;
+            
+            const nokiaPass = localStorage.getItem(STORAGE_KEYS.NOKIA_SSH_PASS);
+            if (nokiaPass) document.getElementById('nokiaSshPass').value = nokiaPass;
+
+            const huaweiIp = localStorage.getItem(STORAGE_KEYS.HUAWEI_IP_ACCESO);
+            if (huaweiIp) document.getElementById('huaweiIpAcceso').value = huaweiIp;
+            
+            const huaweiPass = localStorage.getItem(STORAGE_KEYS.HUAWEI_SSH_PASS);
+            if (huaweiPass) document.getElementById('huaweiSshPass').value = huaweiPass;
+        }
+
+        function guardarValores() {
+            if (currentBrand === 'nokia') {
+                localStorage.setItem(STORAGE_KEYS.NOKIA_IP_ACCESO, document.getElementById('nokiaIpAcceso').value);
+                localStorage.setItem(STORAGE_KEYS.NOKIA_SSH_PASS, document.getElementById('nokiaSshPass').value);
+            } else {
+                localStorage.setItem(STORAGE_KEYS.HUAWEI_IP_ACCESO, document.getElementById('huaweiIpAcceso').value);
+                localStorage.setItem(STORAGE_KEYS.HUAWEI_SSH_PASS, document.getElementById('huaweiSshPass').value);
+            }
+        }
+
+        function actualizarSSHCommands() {
+            const ip = document.getElementById('oltIp').value || '0.0.0.0';
+            document.getElementById('nokiaSshCommand').value = `ssh ${ip}`;
+            document.getElementById('huaweiSshCommand').value = `ssh eypatiopi@telecom@${ip}`;
+        }
+
+        function limpiarCampos() {
+            const comandos = currentBrand === 'nokia' ? nokiaComandos : huaweiComandos;
+            comandos.forEach((cmd, index) => {
+                if (cmd.requiereOnt && !cmd.esRango && !cmd.esListaComas) {
+                    const input = document.getElementById(`${currentBrand}_ont_${index}`);
+                    if (input) input.value = '';
+                }
+                if (cmd.esRango) {
+                    const r1 = document.getElementById(`${currentBrand}_r1_${index}`);
+                    const r2 = document.getElementById(`${currentBrand}_r2_${index}`);
+                    if (r1) r1.value = '';
+                    if (r2) r2.value = '';
+                }
+                if (cmd.esListaComas) {
+                    const input = document.getElementById(`${currentBrand}_ont_${index}`);
+                    if (input) input.value = '';
+                }
+            });
+
+            listaONTsProcesada = '';
+            const organizadorInput = document.getElementById('organizadorInput');
+            const organizadorPreview = document.getElementById('organizadorPreview');
+            if (organizadorInput) organizadorInput.value = '';
+            if (organizadorPreview) organizadorPreview.textContent = 'Esperando entrada...';
+
+            historialComandos = [];
+            const panel = document.getElementById('historyPanel');
+            if (panel) panel.innerHTML = '';
+
+            renderizarComandosNokia();
+            renderizarComandosHuawei();
+            
+            mostrarToast('Campos limpiados');
+        }
+
+        function procesarOrganizadorONTs() {
+            const input = document.getElementById('organizadorInput').value;
+            const preview = document.getElementById('organizadorPreview');
+            
+            if (!input.trim()) {
+                listaONTsProcesada = '';
+                preview.textContent = 'Esperando entrada...';
+                renderizarComandosNokia();
+                return;
+            }
+
+            const lineas = input.split('\n');
+            
+            let numerosONT = lineas
+                .map(linea => linea.trim())
+                .filter(linea => linea.toUpperCase().startsWith('ONT:'))
+                .map(linea => {
+                    const sinPrefijo = linea.replace(/^ONT:/i, '').trim();
+                    const numero = sinPrefijo.match(/^\d+/)?.[0] || '';
+                    return numero;
+                })
+                .filter(numero => numero !== '');
+
+            if (numerosONT.length === 0) {
+                numerosONT = lineas
+                    .map(linea => linea.trim())
+                    .filter(linea => /^\d+$/.test(linea))
+                    .map(linea => linea.match(/^\d+/)?.[0] || '')
+                    .filter(numero => numero !== '');
+            }
+
+            if (numerosONT.length === 0) {
+                const todosNumeros = input.match(/\d+/g) || [];
+                listaONTsProcesada = todosNumeros.join(',');
+            } else {
+                listaONTsProcesada = numerosONT.join(',');
+            }
+
+            preview.textContent = listaONTsProcesada || 'No se encontraron ONTs válidos';
+            renderizarComandosNokia();
+        }
+
+        function toggleOrganizador() {
+            const switchEl = document.getElementById('customSwitch');
+            const content = document.getElementById('organizadorContent');
+            
+            if (switchEl.checked) {
+                content.classList.add('visible');
+                document.getElementById('organizadorInput').focus();
+            } else {
+                content.classList.remove('visible');
+                document.getElementById('organizadorInput').value = '';
+                listaONTsProcesada = '';
+                document.getElementById('organizadorPreview').textContent = 'Esperando entrada...';
+                renderizarComandosNokia();
+            }
+        }
+
+        function copiarCampo(fieldId, btn) {
+            const campo = document.getElementById(fieldId);
+            let texto = campo.value;
+            
+            navigator.clipboard.writeText(texto + '\n').then(() => {
+                mostrarToast('Copiado');
+                agregarAHistorial(texto);
+                
+                const textoOriginal = btn.textContent;
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = textoOriginal;
+                    btn.classList.remove('copied');
+                }, 1200);
+            });
+        }
+
+        function copiarEnableConfig(btn) {
+            const enable = document.getElementById('huaweiEnable').value;
+            const config = document.getElementById('huaweiConfig').value;
+            const texto = enable + '\n' + config;
+            
+            navigator.clipboard.writeText(texto + '\n').then(() => {
+                mostrarToast('Comandos copiados');
+                agregarAHistorial(texto);
+                
+                const textoOriginal = btn.textContent;
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = textoOriginal;
+                    btn.classList.remove('copied');
+                }, 1200);
+            });
+        }
+
+        function renderizarComandosNokia() {
+            const container = document.getElementById('nokiaCommandList');
+            const t = document.getElementById('tarjeta').value || '1';
+            const p = document.getElementById('puerto').value || '7';
+            
+            container.innerHTML = '';
+
+            nokiaComandos.forEach((cmd, index) => {
+                const item = document.createElement('div');
+                item.className = 'command-item';
+                
+                let inputsHtml = '';
+                let comandoFinal = '';
+
+                if (cmd.esRango) {
+                    const r1Val = document.getElementById(`nokia_r1_${index}`)?.value ?? '';
+                    const r2Val = document.getElementById(`nokia_r2_${index}`)?.value ?? '';
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" id="nokia_r1_${index}" value="${r1Val}" oninput="actualizarPreviewNokia(${index})">
+                            <input type="text" class="cmd-input" id="nokia_r2_${index}" value="${r2Val}" oninput="actualizarPreviewNokia(${index})">
+                        </div>
+                    `;
+                    if (r1Val && r2Val) {
+                        comandoFinal = cmd.comando(t, p, r1Val, r2Val);
+                    } else {
+                        comandoFinal = 'Ingrese rango...';
+                    }
+                } else if (cmd.esOrganizador && listaONTsProcesada) {
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" style="width: 80px; background: var(--nokia-red-dark);" id="nokia_ont_${index}" value="${listaONTsProcesada}" readonly>
+                        </div>
+                    `;
+                    comandoFinal = cmd.comando(t, p, listaONTsProcesada);
+                } else if (cmd.esListaComas) {
+                    const valorActual = document.getElementById(`nokia_ont_${index}`)?.value ?? '';
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" style="width: 80px;" id="nokia_ont_${index}" value="${valorActual}" oninput="actualizarPreviewNokia(${index})">
+                        </div>
+                    `;
+                    if (valorActual) {
+                        comandoFinal = cmd.comando(t, p, valorActual);
+                    } else {
+                        comandoFinal = 'Ingrese lista de ONTs...';
+                    }
+                } else if (cmd.requiereOnt) {
+                    const valorActual = document.getElementById(`nokia_ont_${index}`)?.value ?? '';
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" id="nokia_ont_${index}" value="${valorActual}" oninput="actualizarPreviewNokia(${index})">
+                        </div>
+                    `;
+                    if (valorActual) {
+                        comandoFinal = cmd.comando(t, p, valorActual);
+                    } else {
+                        comandoFinal = 'Ingrese ONT...';
+                    }
+                } else {
+                    comandoFinal = cmd.comando(t, p);
+                }
+
+                item.innerHTML = `
+                    <div class="command-info">
+                        <div class="command-title">${cmd.titulo}</div>
+                        <div class="command-preview" id="nokia_preview_${index}">${comandoFinal}</div>
+                    </div>
+                    ${inputsHtml}
+                    <button class="btn-copy" onclick="copiarComandoNokia(${index})" id="nokia_btn_${index}">Copiar</button>
+                `;
+
+                container.appendChild(item);
+            });
+        }
+
+        // RENDERIZAR COMANDOS HUAWEI CORREGIDOS
+        function renderizarComandosHuawei() {
+            const container = document.getElementById('huaweiCommandList');
+            const t = document.getElementById('tarjeta').value || '0';
+            const p = document.getElementById('puerto').value || '0';
+            
+            container.innerHTML = '';
+
+            huaweiComandos.forEach((cmd, index) => {
+                const item = document.createElement('div');
+                item.className = 'command-item';
+                
+                let inputsHtml = '';
+                let comandoFinal = '';
+                let esSimple = cmd.esSimple || false;
+                let requiereOnt = cmd.requiereOnt || false;
+                let esListaComas = cmd.esListaComas || false;
+
+                if (requiereOnt && esListaComas) {
+                    // Comando para lista de ONTs específicas (1,2,3)
+                    const valorActual = document.getElementById(`huawei_ont_${index}`)?.value ?? '';
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" style="width: 80px;" id="huawei_ont_${index}" value="${valorActual}" oninput="actualizarPreviewHuawei(${index})" placeholder="1,2,3">
+                        </div>
+                    `;
+                    if (valorActual) {
+                        comandoFinal = cmd.comando(t, p, valorActual);
+                    } else {
+                        comandoFinal = 'Ingrese ONTs separadas por coma...';
+                    }
+                } else if (requiereOnt) {
+                    // ONT individual
+                    const valorActual = document.getElementById(`huawei_ont_${index}`)?.value ?? '';
+                    inputsHtml = `
+                        <div class="command-inputs">
+                            <input type="text" class="cmd-input" id="huawei_ont_${index}" value="${valorActual}" oninput="actualizarPreviewHuawei(${index})">
+                        </div>
+                    `;
+                    if (valorActual) {
+                        comandoFinal = cmd.comando(t, p, valorActual);
+                    } else {
+                        comandoFinal = 'Ingrese ONT...';
+                    }
+                } else if (esSimple) {
+                    // Comandos simples sin inputs adicionales
+                    comandoFinal = cmd.comando(t, p);
+                } else {
+                    comandoFinal = cmd.comando(t, p);
+                }
+
+                item.innerHTML = `
+                    <div class="command-info">
+                        <div class="command-title">${cmd.titulo}</div>
+                        <div class="command-preview" id="huawei_preview_${index}">${comandoFinal}</div>
+                    </div>
+                    ${inputsHtml}
+                    <button class="btn-copy" onclick="copiarComandoHuawei(${index})" id="huawei_btn_${index}">Copiar</button>
+                `;
+
+                container.appendChild(item);
+            });
+        }
+
+        function actualizarPreviewNokia(index) {
+            const t = document.getElementById('tarjeta').value || '1';
+            const p = document.getElementById('puerto').value || '7';
+            const cmd = nokiaComandos[index];
+            
+            let comandoFinal = '';
+            
+            if (cmd.esRango) {
+                const r1 = document.getElementById(`nokia_r1_${index}`)?.value || '';
+                const r2 = document.getElementById(`nokia_r2_${index}`)?.value || '';
+                if (r1 && r2) {
+                    comandoFinal = cmd.comando(t, p, r1, r2);
+                } else {
+                    comandoFinal = 'Ingrese rango...';
+                }
+            } else if (cmd.esListaComas || cmd.esOrganizador) {
+                const lista = document.getElementById(`nokia_ont_${index}`)?.value || '';
+                if (lista) {
+                    comandoFinal = cmd.comando(t, p, lista);
+                } else {
+                    comandoFinal = 'Ingrese lista de ONTs...';
+                }
+            } else if (cmd.requiereOnt) {
+                const ont = document.getElementById(`nokia_ont_${index}`)?.value || '';
+                if (ont) {
+                    comandoFinal = cmd.comando(t, p, ont);
+                } else {
+                    comandoFinal = 'Ingrese ONT...';
+                }
+            } else {
+                comandoFinal = cmd.comando(t, p);
+            }
+            
+            const previewEl = document.getElementById(`nokia_preview_${index}`);
+            if (previewEl) {
+                previewEl.textContent = comandoFinal;
+            }
+        }
+
+        function actualizarPreviewHuawei(index) {
+            const t = document.getElementById('tarjeta').value || '0';
+            const p = document.getElementById('puerto').value || '0';
+            const cmd = huaweiComandos[index];
+            
+            let comandoFinal = '';
+            
+            if (cmd.requiereOnt && cmd.esListaComas) {
+                const lista = document.getElementById(`huawei_ont_${index}`)?.value || '';
+                if (lista) {
+                    comandoFinal = cmd.comando(t, p, lista);
+                } else {
+                    comandoFinal = 'Ingrese ONTs separadas por coma...';
+                }
+            } else if (cmd.requiereOnt) {
+                const ont = document.getElementById(`huawei_ont_${index}`)?.value || '';
+                if (ont) {
+                    comandoFinal = cmd.comando(t, p, ont);
+                } else {
+                    comandoFinal = 'Ingrese ONT...';
+                }
+            } else if (cmd.esSimple) {
+                comandoFinal = cmd.comando(t, p);
+            } else {
+                comandoFinal = cmd.comando(t, p);
+            }
+            
+            const previewEl = document.getElementById(`huawei_preview_${index}`);
+            if (previewEl) {
+                previewEl.textContent = comandoFinal;
+            }
+        }
+
+        function copiarComandoNokia(index) {
+            const t = document.getElementById('tarjeta').value || '1';
+            const p = document.getElementById('puerto').value || '7';
+            const cmd = nokiaComandos[index];
+            
+            let texto = '';
+            
+            if (cmd.esRango) {
+                const r1 = document.getElementById(`nokia_r1_${index}`)?.value || '';
+                const r2 = document.getElementById(`nokia_r2_${index}`)?.value || '';
+                if (r1 && r2) {
+                    texto = cmd.comando(t, p, r1, r2);
+                }
+            } else if (cmd.esListaComas || cmd.esOrganizador) {
+                const lista = document.getElementById(`nokia_ont_${index}`)?.value || '';
+                if (lista) {
+                    texto = cmd.comando(t, p, lista);
+                }
+            } else if (cmd.requiereOnt) {
+                const ont = document.getElementById(`nokia_ont_${index}`)?.value || '';
+                if (ont) {
+                    texto = cmd.comando(t, p, ont);
+                }
+            } else {
+                texto = cmd.comando(t, p);
+            }
+            
+            if (!texto || texto.includes('Ingrese')) {
+                mostrarToast('Complete los campos primero');
+                return;
+            }
+            
+            navigator.clipboard.writeText(texto + '\n').then(() => {
+                mostrarToast('Comando copiado');
+                agregarAHistorial(texto);
+                
+                const btn = document.getElementById(`nokia_btn_${index}`);
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = 'Copiar';
+                    btn.classList.remove('copied');
+                }, 1200);
+            });
+        }
+
+        // COPIAR COMANDO HUAWEI CORREGIDO
+        function copiarComandoHuawei(index) {
+            const t = document.getElementById('tarjeta').value || '0';
+            const p = document.getElementById('puerto').value || '0';
+            const cmd = huaweiComandos[index];
+            
+            let texto = '';
+            
+            if (cmd.requiereOnt && cmd.esListaComas) {
+                const lista = document.getElementById(`huawei_ont_${index}`)?.value || '';
+                if (lista) {
+                    texto = cmd.comando(t, p, lista);
+                }
+            } else if (cmd.requiereOnt) {
+                const ont = document.getElementById(`huawei_ont_${index}`)?.value || '';
+                if (ont) {
+                    texto = cmd.comando(t, p, ont);
+                }
+            } else if (cmd.esSimple) {
+                texto = cmd.comando(t, p);
+            } else {
+                texto = cmd.comando(t, p);
+            }
+            
+            if (!texto || texto.includes('Ingrese')) {
+                mostrarToast('Complete los campos primero');
+                return;
+            }
+            
+            navigator.clipboard.writeText(texto + '\n').then(() => {
+                mostrarToast('Comando copiado');
+                agregarAHistorial(texto);
+                
+                const btn = document.getElementById(`huawei_btn_${index}`);
+                btn.textContent = '✓';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = 'Copiar';
+                    btn.classList.remove('copied');
+                }, 1200);
+            });
+        }
+
+        function agregarAHistorial(comando) {
+            const hora = new Date().toTimeString().split(' ')[0];
+            historialComandos.unshift({ comando, hora });
+            if (historialComandos.length > 6) historialComandos.pop();
+            
+            const panel = document.getElementById('historyPanel');
+            panel.innerHTML = '';
+            
+            historialComandos.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<span>${item.comando}</span><span class="history-time">${item.hora}</span>`;
+                div.onclick = () => {
+                    const switchEl = document.getElementById('customSwitch');
+                    const textarea = document.getElementById('organizadorInput');
+                    switchEl.checked = true;
+                    document.getElementById('organizadorContent').classList.add('visible');
+                    textarea.value = item.comando;
+                    procesarOrganizadorONTs();
+                };
+                panel.appendChild(div);
+            });
+        }
+
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensaje;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+
+        window.OLTModule = {
+            setParams: (ip, tarjeta, puerto) => {
+                let ipLimpia = ip.replace(/\s+/g, '');
+                document.getElementById('oltIp').value = ipLimpia;
+                document.getElementById('tarjeta').value = tarjeta;
+                document.getElementById('puerto').value = puerto;
+                actualizarSSHCommands();
+                renderizarComandosNokia();
+                renderizarComandosHuawei();
+            },
+            setBrand: (brand) => {
+                if (brand === 'huawei') {
+                    document.getElementById('brandSwitch').checked = true;
+                } else {
+                    document.getElementById('brandSwitch').checked = false;
+                }
+                toggleBrand();
+            }
+        };
+
+        function toggleSidebar() {
+            const mainGrid = document.querySelector('.main-grid');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            
+            toggleBtn.classList.toggle('collapsed');
+            mainGrid.classList.toggle('sidebar-collapsed');
+            
+            if (toggleBtn.classList.contains('collapsed')) {
+                toggleBtn.title = 'Mostrar panel lateral';
+            } else {
+                toggleBtn.title = 'Ocultar panel lateral';
+            }
+        }
+    </script>
+
+<aside 
+	id="lovable-badge" 
+	role="complementary"
+	dir="ltr"
+	lang="en"
+	aria-label="Edit with Lovable">
+	<a 
+		id="lovable-badge-cta" 
+		target="_blank" 
+		href="https://lovable.dev/projects/f7c04430-83c8-4022-b2bd-d93bd3d93d65?utm_source=lovable-badge"
+		rel="noopener"
+		aria-label="Edit with Lovable">
+		<span id="lovable-badge-text">Edit with</span>
+		<svg xmlns="http://www.w3.org/2000/svg" width="52" height="16" fill="none" viewBox="0 0 52 16">
+  <path fill="#FCFBF8" fill-rule="evenodd" d="M20.318 5.25c.643 0 1.206.14 1.69.418a2.81 2.81 0 0 1 1.118 1.191c.266.513.4 1.115.4 1.807s-.134 1.296-.4 1.812a2.81 2.81 0 0 1-1.118 1.193c-.484.278-1.047.418-1.69.418s-1.208-.14-1.695-.418a2.85 2.85 0 0 1-1.125-1.193c-.262-.516-.393-1.12-.393-1.812s.131-1.294.393-1.807a2.848 2.848 0 0 1 1.125-1.191c.487-.279 1.052-.418 1.695-.418Zm0 1.425c-.27 0-.504.076-.7.228-.193.147-.34.37-.443.67-.102.295-.153.66-.153 1.093 0 .435.05.801.153 1.1.102.3.25.524.443.676.196.147.43.22.7.22.27 0 .502-.073.694-.22.193-.152.341-.375.443-.67.103-.299.153-.667.153-1.106 0-.65-.112-1.145-.337-1.481a1.08 1.08 0 0 0-.953-.51ZM32.7 5.25c.61 0 1.127.1 1.549.3.422.197.74.48.953.849.217.368.325.809.325 1.32v2.704c0 .29.02.562.062.812.044.245.108.4.19.466V12h-1.935a5.895 5.895 0 0 1-.105-.684 7.745 7.745 0 0 1-.02-.228 2.293 2.293 0 0 1-.151.203c-.205.242-.47.437-.793.584-.32.143-.685.215-1.094.215-.406 0-.77-.08-1.094-.24a1.845 1.845 0 0 1-.756-.682 1.984 1.984 0 0 1-.27-1.045c0-.606.178-1.069.535-1.388.356-.324.87-.534 1.542-.633l1.125-.16c.225-.032.403-.074.534-.123a.622.622 0 0 0 .288-.196.549.549 0 0 0 .093-.327.65.65 0 0 0-.11-.367.702.702 0 0 0-.32-.27c-.14-.07-.31-.105-.51-.105-.32 0-.576.083-.768.251-.193.164-.298.39-.314.676h-1.923c.016-.434.147-.82.393-1.155.25-.34.596-.604 1.039-.792.442-.189.954-.283 1.535-.283Zm.99 3.498a.98.98 0 0 1-.215.14 2.49 2.49 0 0 1-.584.178l-.473.092c-.315.061-.553.156-.713.283-.155.127-.233.305-.233.534 0 .23.084.412.252.547.168.135.383.203.645.203s.494-.058.694-.173c.201-.118.355-.282.461-.49.11-.21.166-.448.166-.714v-.6Zm4.526-2.375c.065-.125.138-.243.221-.349.197-.25.437-.44.719-.571.282-.135.6-.203.952-.203.528 0 .988.138 1.377.412.389.275.688.67.896 1.186.21.512.314 1.12.314 1.824 0 .7-.107 1.309-.32 1.825-.213.512-.518.906-.915 1.18-.393.275-.854.412-1.383.412-.352 0-.667-.062-.946-.184a1.832 1.832 0 0 1-.7-.554 2.2 2.2 0 0 1-.234-.383V12h-1.843V3h1.862v3.373Zm1.284.296c-.274 0-.51.085-.707.253-.192.163-.338.397-.436.7a3.376 3.376 0 0 0-.148 1.05c0 .406.05.759.148 1.058.098.299.243.53.436.694.197.164.433.246.707.246.279 0 .512-.082.7-.246.193-.164.336-.395.43-.694.099-.3.148-.652.148-1.058 0-.405-.05-.757-.147-1.056-.095-.299-.238-.53-.43-.694a1.015 1.015 0 0 0-.7-.253Zm9.416-1.419c.602 0 1.136.131 1.604.393.466.262.829.643 1.086 1.143.263.5.394 1.097.394 1.794 0 .25-.002.449-.006.596H47.51c.018.288.071.538.164.75a1.3 1.3 0 0 0 .491.596c.214.13.465.196.757.196.319 0 .583-.082.792-.246.209-.167.34-.403.393-.706h1.862a2.48 2.48 0 0 1-.485 1.235 2.54 2.54 0 0 1-1.051.805c-.439.188-.949.283-1.53.283-.655 0-1.225-.125-1.708-.375a2.672 2.672 0 0 1-1.13-1.143c-.267-.508-.4-1.137-.4-1.887 0-.712.14-1.327.418-1.843a2.86 2.86 0 0 1 1.155-1.186c.491-.27 1.051-.405 1.678-.405Zm-.044 1.345c-.274 0-.516.068-.725.203a1.29 1.29 0 0 0-.479.59 2.045 2.045 0 0 0-.132.498h2.562a1.873 1.873 0 0 0-.138-.602 1.061 1.061 0 0 0-.418-.516 1.243 1.243 0 0 0-.67-.173Z" clip-rule="evenodd"/>
+  <path fill="#FCFBF8" d="m26.605 9.995 1.342-4.566h1.924L27.628 12h-2.07l-2.33-6.57h1.98l1.397 4.565Zm-13.013.143h2.256c1.632 0 1.421 1.837 1.418 1.861h-5.603V3h1.93v7.138Zm31.516 1.861h-1.862V3h1.862v8.999Z"/>
+  <path fill="url(#a)" fill-rule="evenodd" d="M2.7 3c1.492 0 2.7 1.192 2.7 2.663v1.012h.9c1.49 0 2.7 1.192 2.7 2.662S7.791 12 6.3 12H0V5.663C0 4.193 1.209 3 2.7 3Z" clip-rule="evenodd"/>
+  <defs>
+    <radialGradient id="a" cx="0" cy="0" r="1" gradientTransform="matrix(-1.54236 7.07838 -10.231 -2.15602 4.627 5.022)" gradientUnits="userSpaceOnUse">
+      <stop offset=".106" stop-color="#FE7B02"/>
+      <stop offset=".394" stop-color="#FE3F21"/>
+      <stop offset=".608" stop-color="#F858BC"/>
+      <stop offset=".929" stop-color="#575ECF"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+
+	</a>
+	
+	<span id="lovable-badge-divider" aria-hidden="true"></span>
+	
+	<button 
+		id="lovable-badge-close"
+		aria-label="Dismiss"
+		title="Dismiss"
+		type="button">
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
+			<path d="M10.646 4.646a.5.5 0 1 1 .707.708L8.707 8l2.646 2.646a.5.5 0 1 1-.707.707L8 8.707l-2.646 2.646a.5.5 0 1 1-.708-.707L7.293 8 4.646 5.354a.5.5 0 1 1 .708-.708L8 7.293l2.646-2.647Z"/>
+		</svg>
+	</button>
+</aside>
+<script>
+	// Don't show the lovable-badge if the page is in an iframe or if it's being rendered by puppeteer (screenshot service)
+	if (window.self !== window.top || navigator.userAgent.includes('puppeteer')) {
+		// the page is in an iframe
+		var badge = document.getElementById('lovable-badge');
+		if (badge) {
+			badge.style.display = 'none';
+		}
+	}
+
+	// Add click event listener to close button with animation
+	var closeButton = document.getElementById('lovable-badge-close');
+	if (closeButton) {
+		closeButton.addEventListener('click', function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+			var badge = document.getElementById('lovable-badge');
+			if (badge) {
+				badge.classList.add('closing');
+				setTimeout(function() {
+					if (badge) {
+						badge.style.display = 'none';
+					}
+				}, 240);
+			}
+		});
+	}
+</script>
+</body>
+</html>

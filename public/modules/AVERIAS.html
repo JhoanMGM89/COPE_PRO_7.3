@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Averías - Centro de Validación</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-orange: #ff8c00;
+            --primary-orange-dark: #e67e00;
+            --bg-dark: #0a0a0a;
+            --bg-card: rgba(20, 20, 20, 0.7);
+            --border-color: rgba(255, 140, 0, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --glass-bg: rgba(30, 30, 30, 0.4);
+            --glass-border: rgba(255, 140, 0, 0.2);
+            --aceptable: #22c55e;
+            --atenuacion: #f59e0b;
+            --sin-potencia: #ef4444;
+        }
+
+        body {
+            background: transparent;
+            /* background-attachment: fixed; */
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 12px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            min-width: 650px;
+        }
+
+        /* FONDO PERSONALIZADO - AQUÍ PUEDES IMPLEMENTAR TU PROPIO FONDO */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* EJEMPLO: Aquí puedes agregar tu imagen o patrón personalizado */
+            /* background-image: url('tu-imagen.jpg'); */
+            /* background-size: cover; */
+            /* background-position: center; */
+            
+            /* Ejemplo con gradientes radiales suaves */
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 140, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 140, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(255, 140, 0, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            min-width: 650px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid var(--primary-orange);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 140, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%);
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--primary-orange-dark);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .header .subtitle {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            margin-top: 4px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            min-height: 520px;
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .main-grid.sidebar-collapsed {
+            grid-template-columns: 0 1fr;
+        }
+
+        .sidebar {
+            background: rgba(15, 15, 15, 0.3);
+            border-right: 1px solid var(--glass-border);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 600px;
+            min-width: 240px;
+            transition: opacity 0.3s ease, width 0.3s ease, padding 0.3s ease, min-width 0.3s ease;
+        }
+
+        .main-grid.sidebar-collapsed .sidebar {
+            opacity: 0;
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary-orange);
+            font-weight: 700;
+            margin-bottom: 6px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(26, 26, 26, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 8px 10px 8px 32px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: 'Consolas', monospace;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .categories {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .category-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .category-btn:hover {
+            background: rgba(255, 140, 0, 0.1);
+            border-color: var(--glass-border);
+            color: var(--text-primary);
+        }
+
+        .category-btn.active {
+            background: rgba(255, 140, 0, 0.15);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+
+        .category-count {
+            margin-left: auto;
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+        }
+
+        .category-btn.active .category-count {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            max-height: 600px;
+            min-width: 300px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .section {
+            background: rgba(15, 15, 15, 0.2);
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            backdrop-filter: blur(5px);
+            min-height: 0;
+        }
+
+        .section-header {
+            background: linear-gradient(90deg, var(--primary-orange) 0%, transparent 100%);
+            padding: 8px 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+            color: #ffffff;
+        }
+
+        .template-list {
+            padding: 6px;
+            overflow-y: scroll;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .template-item {
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            margin-bottom: 4px;
+            background: rgba(26, 26, 26, 0.3);
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            width: 100%;
+        }
+
+        .template-item:hover {
+            border-color: var(--primary-orange);
+            background: rgba(255, 140, 0, 0.1);
+        }
+
+        .template-item.selected {
+            border-color: var(--primary-orange);
+            background: rgba(255, 140, 0, 0.15);
+        }
+
+        .template-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .template-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            width: fit-content;
+            color: #ffffff;
+        }
+
+        .tag-marcacion { background: rgba(34, 197, 94, 0.3); }
+        .tag-vias { background: rgba(59, 130, 246, 0.3); }
+        .tag-potencia { background: rgba(245, 158, 11, 0.3); }
+        .tag-tiempo { background: rgba(139, 92, 246, 0.3); }
+        .tag-estado { background: rgba(255, 140, 0, 0.3); }
+        .tag-cancelacion { background: rgba(34, 197, 94, 0.3); }
+        .tag-maximo { background: rgba(249, 115, 22, 0.3); }
+        .tag-validar { background: rgba(6, 182, 212, 0.3); }
+        .tag-estado-sn { background: rgba(236, 72, 153, 0.3); }
+
+        .template-text {
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .copy-btn:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+
+        .action-footer {
+            background: rgba(15, 15, 15, 0.3);
+            border-top: 1px solid var(--glass-border);
+            padding: 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--primary-orange);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--primary-orange-dark);
+            transform: translateY(-1px);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 10, 10, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-orange);
+            border-radius: 4px;
+            opacity: 0.8;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-orange-dark);
+        }
+
+        .switch-container {
+            background: rgba(26, 26, 26, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            backdrop-filter: blur(5px);
+        }
+
+        .switch-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary-orange);
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+
+        .switch-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .switch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: rgba(26, 26, 26, 0.2);
+            border-radius: 4px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
+        }
+
+        .switch-item:hover {
+            border-color: var(--primary-orange);
+            background: rgba(255, 140, 0, 0.1);
+        }
+
+        .switch-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .switch-label {
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(51, 51, 51, 0.6);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .toggle-switch.active {
+            background: var(--primary-orange);
+            border-color: var(--primary-orange);
+        }
+
+        .toggle-switch.disabled {
+            background: rgba(51, 51, 51, 0.3);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active::after {
+            left: 22px;
+        }
+
+        .disabled-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 6px;
+            backdrop-filter: blur(4px);
+        }
+
+        .disabled-message {
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--primary-orange);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .disabled-message-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .disabled-message-text {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .disabled-message-subtext {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .content-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .observation-box {
+            margin-top: 8px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .observation-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .observation-input {
+            width: 100%;
+            max-width: 100%;
+            background: rgba(26, 26, 26, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 3px;
+            padding: 6px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-family: 'Consolas', monospace;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .observation-input:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* BOTÓN TOGGLE - ICONO DE MENÚ EN EL HEADER */
+        .sidebar-toggle {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: var(--primary-orange);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s ease;
+            padding: 0;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--primary-orange-dark);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .sidebar-toggle:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .menu-icon {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 18px;
+            align-items: center;
+        }
+
+        .menu-icon span {
+            display: block;
+            width: 18px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+            width: 20px;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .sidebar-toggle.collapsed .menu-icon span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+            width: 20px;
+        }
+
+        /* ESTILOS PARA SELECT DE ESTADO SERVICE NOW */
+        .estado-select {
+            width: 100%;
+            background: rgba(26, 26, 26, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 6px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-family: 'Consolas', monospace;
+            margin-top: 6px;
+            cursor: pointer;
+        }
+
+        .estado-select:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.2);
+        }
+
+        .estado-select option {
+            background: #1a1a2e;
+            color: var(--text-primary);
+        }
+
+        /* ESTILOS PARA VALIDAR POTENCIAS */
+        .validar-potencias-container {
+            background: rgba(26, 26, 26, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .validar-potencias-title {
+            font-size: 0.8rem;
+            color: var(--primary-orange);
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 5px;
+        }
+
+        .potencia-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .potencia-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .potencia-input {
+            background: rgba(26, 26, 26, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 8px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: 'Consolas', monospace;
+            transition: all 0.2s;
+            text-align: center;
+            width: 150px;
+            /* Quitar flechas del input numérico */
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Quitar flechas en Chrome, Safari, Edge, Opera */
+        .potencia-input::-webkit-outer-spin-button,
+        .potencia-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .potencia-input:focus {
+            outline: none;
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 10px rgba(255, 140, 0, 0.2);
+        }
+
+        .potencia-resultado {
+            background: rgba(26, 26, 26, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 8px;
+        }
+
+        .potencia-resultado-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .validar-potencias-valor {
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            background: rgba(26, 26, 26, 0.3);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+        }
+
+        .validar-potencias-valor.aceptable {
+            color: var(--aceptable);
+            border-color: var(--aceptable);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .validar-potencias-valor.atenuacion {
+            color: var(--atenuacion);
+            border-color: var(--atenuacion);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .validar-potencias-valor.sin-potencia {
+            color: var(--sin-potencia);
+            border-color: var(--sin-potencia);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .rango-info {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding: 6px;
+            background: rgba(255, 140, 0, 0.05);
+            border-radius: 3px;
+            border-left: 2px solid var(--primary-orange);
+            display: none; /* OCULTADO SEGÚN SOLICITUD */
+        }
+
+        .formulario-mensaje {
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid;
+            transition: all 0.3s;
+        }
+
+        .formulario-mensaje.aprobar {
+            color: var(--aceptable);
+            border-color: var(--aceptable);
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .formulario-mensaje.rechazar {
+            color: var(--sin-potencia);
+            border-color: var(--sin-potencia);
+            background: rgba(239, 68, 68, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <!-- BOTÓN TOGGLE CON ICONO DE MENÚ -->
+            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Ocultar panel lateral">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </button>
+            
+            <h1>Gestión de Averías</h1>
+            <div class="subtitle">Centro de Validación y Procesamiento</div>
+        </div>
+
+        <div class="main-grid">
+            <div class="sidebar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Buscar plantillas..." id="searchInput">
+                </div>
+
+                <div class="switch-container">
+                    <div class="switch-title">Plataforma</div>
+                    <div class="switch-wrapper">
+                        <div class="switch-item" id="switch-item-servicenow">
+                            <span class="switch-label">SERVICE NOW</span>
+                            <div class="toggle-switch" id="switch-servicenow" onclick="togglePlatform('servicenow')"></div>
+                        </div>
+                        <div class="switch-item" id="switch-item-maximo">
+                            <span class="switch-label">MAXIMO</span>
+                            <div class="toggle-switch" id="switch-maximo" onclick="togglePlatform('maximo')"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-title">Categorías</div>
+                <div class="categories">
+                    <button class="category-btn active" onclick="filterCategory('marcacion')">
+                        <span>Marcación</span>
+                        <span class="category-count" id="count-marcacion">2</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('vias')">
+                        <span>Inconsistencia Vías</span>
+                        <span class="category-count" id="count-vias">2</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('potencia')">
+                        <span>Potencia Atenuada</span>
+                        <span class="category-count" id="count-potencia">1</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('tiempo')">
+                        <span>Tiempo Excedido 24 Hrs</span>
+                        <span class="category-count" id="count-tiempo">2</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('estado')">
+                        <span>Estado de Averías</span>
+                        <span class="category-count" id="count-estado">5</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('cancelacion')">
+                        <span>Cancelación</span>
+                        <span class="category-count" id="count-cancelacion">3</span>
+                    </button>
+                    <button class="category-btn hidden" id="cat-maximo" onclick="filterCategory('maximo')">
+                        <span>Estado MAXIMO</span>
+                        <span class="category-count" id="count-maximo-cat">1</span>
+                    </button>
+                    <button class="category-btn hidden" id="cat-estado-sn" onclick="filterCategory('estado-servicenow')">
+                        <span>Estado SERVICE NOW</span>
+                        <span class="category-count" id="count-estado-sn">1</span>
+                    </button>
+                    <button class="category-btn" onclick="filterCategory('validar-potencias')">
+                        <span>Validar Potencias</span>
+                        <span class="category-count" id="count-validar-potencias">1</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="section">
+                    <div class="section-header">
+                        <span id="platform-title">Plantillas de Gestión</span>
+                    </div>
+                    
+                    <div class="content-wrapper" id="contentWrapper">
+                        <div class="template-list" id="templateList">
+                        </div>
+                        
+                        <div class="disabled-overlay" id="disabledOverlay">
+                            <div class="disabled-message">
+                                <div class="disabled-message-icon">🔒</div>
+                                <div class="disabled-message-text">SELECCIONE UNA PLATAFORMA</div>
+                                <div class="disabled-message-subtext">Active SERVICE NOW o MAXIMO para ver las plantillas</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-footer">
+                        <button class="btn btn-secondary" onclick="clearAll()">Limpiar</button>
+                        <button class="btn btn-danger" onclick="closeWindow()">Cerrar Ventana</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Nota copiada al portapapeles</div>
+
+    <script>
+        const templates = [
+            {
+                id: 1,
+                category: 'marcacion',
+                tag: 'Marcación',
+                tagClass: 'tag-marcacion',
+                text: 'Las averías relacionadas ya se encuentran marcadas por GDM.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 13,
+                category: 'marcacion',
+                tag: 'Marcación',
+                tagClass: 'tag-marcacion',
+                text: 'Se realiza validación y se procede con la marcación de las averías relacionadas.',
+                agent: 'JHOAN GORDON',
+                platform: 'both',
+                hasObservation: true
+            },
+            {
+                id: 2,
+                category: 'vias',
+                tag: 'Inconsistencia Vías',
+                tagClass: 'tag-vias',
+                text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo MAXIMO.',
+                agent: 'JHOAN GORDON',
+                platform: 'maximo'
+            },
+            {
+                id: 3,
+                category: 'vias',
+                tag: 'Inconsistencia Vías',
+                tagClass: 'tag-vias',
+                text: 'No es posible realizar la gestión ya que las vías no coinciden con las del aplicativo SERVICE NOW.',
+                agent: 'JHOAN GORDON',
+                platform: 'servicenow'
+            },
+            {
+                id: 5,
+                category: 'potencia',
+                tag: 'Potencia Atenuada',
+                tagClass: 'tag-potencia',
+                text: 'No se realiza gestión ya que las averías se encuentran con potencias atenuadas.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 6,
+                category: 'tiempo',
+                tag: 'Tiempo Excedido',
+                tagClass: 'tag-tiempo',
+                text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en MAXIMO.',
+                agent: 'JHOAN GORDON',
+                platform: 'maximo'
+            },
+            {
+                id: 7,
+                category: 'tiempo',
+                tag: 'Tiempo Excedido',
+                tagClass: 'tag-tiempo',
+                text: 'Se realiza validación y no es posible hacer la gestión ya que se excede el tiempo de 24hrs establecido en SERVICE NOW.',
+                agent: 'JHOAN GORDON',
+                platform: 'servicenow'
+            },
+            {
+                id: 8,
+                category: 'estado',
+                tag: 'Estado de Averías',
+                tagClass: 'tag-estado',
+                text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado CANCELADA.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 9,
+                category: 'estado',
+                tag: 'Estado de Averías',
+                tagClass: 'tag-estado',
+                text: 'Se realiza validación y no se hace gestión ya que la avería se encuentra en estado COMPLETADO.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 10,
+                category: 'estado',
+                tag: 'Estado de Averías',
+                tagClass: 'tag-estado',
+                text: 'Se realiza validación y no se procede con la gestión ya que las averías se encuentran en estado OFFLINE.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 11,
+                category: 'estado',
+                tag: 'Estado de Averías',
+                tagClass: 'tag-estado',
+                text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado INICIADO.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 16,
+                category: 'estado',
+                tag: 'Estado de Averías',
+                tagClass: 'tag-estado',
+                text: 'Se realiza validación y no se realiza gestión ya que la avería se encuentra en estado EN RUTA.',
+                agent: 'JHOAN GORDON',
+                platform: 'both'
+            },
+            {
+                id: 12,
+                category: 'cancelacion',
+                tag: 'Cancelación',
+                tagClass: 'tag-cancelacion',
+                text: 'Se realiza validación y se procede con la cancelación de las averías relacionadas.',
+                agent: 'JHOAN GORDON',
+                platform: 'both',
+                hasObservation: true
+            },
+            {
+                id: 14,
+                category: 'cancelacion',
+                tag: 'Cancelación',
+                tagClass: 'tag-cancelacion',
+                text: 'Se realiza validación y se procede con la marcación y cancelación de las averías relacionadas.',
+                agent: 'JHOAN GORDON',
+                platform: 'both',
+                hasObservation: true
+            },
+            {
+                id: 15,
+                category: 'maximo',
+                tag: 'Estado MAXIMO',
+                tagClass: 'tag-maximo',
+                text: 'Se realiza validación, no es posible hacer la cancelación ya que el MAXIMO se encuentra en estado INPRG, tener presente que para la cancelación es necesario que el MAXIMO se encuentre en estado CLOSED.',
+                agent: 'JHOAN GORDON',
+                platform: 'maximo'
+            },
+            {
+                id: 17,
+                category: 'estado-servicenow',
+                tag: 'Estado SERVICE NOW',
+                tagClass: 'tag-estado-sn',
+                text: 'Se realiza validación, no es posible hacer la cancelación ya que el SERVICE NOW se encuentra en estado {ESTADO}, tener presente que para la cancelación es necesario que el SERVICE NOW se encuentre en estado CERRADO.',
+                agent: 'JHOAN GORDON',
+                platform: 'servicenow',
+                hasEstadoSelect: true
+            },
+            {
+                id: 18,
+                category: 'validar-potencias',
+                tag: 'Validar Potencias',
+                tagClass: 'tag-validar',
+                text: '',
+                agent: '',
+                platform: 'both',
+                isValidarPotencias: true
+            }
+        ];
+
+        let selectedTemplate = null;
+        let currentFilter = 'marcacion';
+        let activePlatform = null;
+
+        function updateCategoryCounts() {
+            const categories = ['marcacion', 'vias', 'potencia', 'tiempo', 'estado', 'cancelacion', 'maximo', 'estado-servicenow', 'validar-potencias'];
+
+            categories.forEach(cat => {
+                const count = templates.filter(t => {
+                    if (t.category !== cat) return false;
+                    if (!activePlatform) return false;
+                    return t.platform === 'both' || t.platform === activePlatform;
+                }).length;
+                
+                const element = document.getElementById(`count-${cat}`);
+                if (element) {
+                    element.textContent = count;
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCategoryCounts();
+            renderTemplates();
+            updateOverlay();
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTemplates(e.target.value);
+            });
+        });
+
+        function togglePlatform(platform) {
+            const switchEl = document.getElementById(`switch-${platform}`);
+            const otherPlatform = platform === 'servicenow' ? 'maximo' : 'servicenow';
+            const otherSwitchEl = document.getElementById(`switch-${otherPlatform}`);
+            const switchItem = document.getElementById(`switch-item-${platform}`);
+            const otherSwitchItem = document.getElementById(`switch-item-${otherPlatform}`);
+            
+            if (activePlatform === platform) {
+                activePlatform = null;
+                switchEl.classList.remove('active');
+                switchItem.classList.remove('disabled');
+                otherSwitchItem.classList.remove('disabled');
+                otherSwitchEl.classList.remove('disabled');
+            } else if (activePlatform === null) {
+                activePlatform = platform;
+                switchEl.classList.add('active');
+                switchItem.classList.remove('disabled');
+                otherSwitchItem.classList.add('disabled');
+                otherSwitchEl.classList.add('disabled');
+            }
+
+            updateOverlay();
+            updateCategoryCounts();
+            renderTemplates();
+            updatePlatformTitle();
+            updateCategoryVisibility();
+        }
+
+        function updateCategoryVisibility() {
+            const maximoCat = document.getElementById('cat-maximo');
+            const estadoSnCat = document.getElementById('cat-estado-sn');
+            
+            if (activePlatform === 'servicenow') {
+                maximoCat.classList.add('hidden');
+                estadoSnCat.classList.remove('hidden');
+                if (currentFilter === 'maximo') {
+                    currentFilter = 'marcacion';
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.querySelector('.category-btn').classList.add('active');
+                }
+            } else if (activePlatform === 'maximo') {
+                maximoCat.classList.remove('hidden');
+                estadoSnCat.classList.add('hidden');
+                if (currentFilter === 'estado-servicenow') {
+                    currentFilter = 'marcacion';
+                    document.querySelectorAll('.category-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.querySelector('.category-btn').classList.add('active');
+                }
+            } else {
+                maximoCat.classList.add('hidden');
+                estadoSnCat.classList.add('hidden');
+            }
+        }
+
+        function updateOverlay() {
+            const overlay = document.getElementById('disabledOverlay');
+            if (activePlatform) {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function updatePlatformTitle() {
+            const title = document.getElementById('platform-title');
+            if (activePlatform === 'servicenow') {
+                title.textContent = 'Plantillas SERVICE NOW';
+            } else if (activePlatform === 'maximo') {
+                title.textContent = 'Plantillas MAXIMO';
+            } else {
+                title.textContent = 'Plantillas de Gestión';
+            }
+        }
+
+        function renderTemplates() {
+            const list = document.getElementById('templateList');
+            list.innerHTML = '';
+
+            if (!activePlatform) {
+                return;
+            }
+
+            const filtered = templates.filter(t => {
+                if (currentFilter === 'all') return true;
+                return t.category === currentFilter && (t.platform === 'both' || t.platform === activePlatform);
+            });
+
+            filtered.forEach((template, index) => {
+                const item = createTemplateItem(template, index);
+                list.appendChild(item);
+            });
+        }
+
+        function createTemplateItem(template, index) {
+            const item = document.createElement('div');
+            item.className = 'template-item';
+            item.style.animationDelay = `${index * 0.05}s`;
+            item.dataset.id = template.id;
+
+            let customHtml = '';
+            
+            if (template.hasObservation) {
+                customHtml = `
+                    <div class="observation-box">
+                        <div class="observation-label">Observación</div>
+                        <textarea class="observation-input" placeholder="Ingrese observación..." oninput="updateTemplateText(${template.id}, this.value)"></textarea>
+                    </div>
+                `;
+            } else if (template.hasEstadoSelect) {
+                customHtml = `
+                    <div class="observation-box">
+                        <div class="observation-label">Seleccionar Estado</div>
+                        <select class="estado-select" onchange="updateEstadoText(${template.id}, this.value)">
+                            <option value="">Seleccionar</option>
+                            <option value="Abierto">Abierto</option>
+                            <option value="En Progreso">En Progreso</option>
+                            <option value="Nuevo">Nuevo</option>
+                        </select>
+                    </div>
+                `;
+            } else if (template.isValidarPotencias) {
+                customHtml = `
+                    <div class="validar-potencias-container">
+                        <div class="validar-potencias-title">Validar Potencias de Cancelación</div>
+                        <div class="potencia-input-group">
+                            <label class="potencia-label">Ingrese Potencia</label>
+                            <input type="number" step="0.01" class="potencia-input" id="inputPotencia-${template.id}" placeholder="Ej: -25.50" oninput="validarPotencias(${template.id})">
+                        </div>
+                        <div class="potencia-resultado">
+                            <div class="potencia-resultado-label">Estado de la Potencia</div>
+                            <div class="validar-potencias-valor" id="resultadoCliente-${template.id}">-</div>
+                        </div>
+                        <div class="rango-info" id="rangoInfo-${template.id}">
+                            Rangos ${activePlatform === 'servicenow' ? 'SERVICE NOW' : 'MAXIMO'}: 
+                            ${activePlatform === 'servicenow' 
+                                ? 'Aceptable: -25.00 a -8.00 | Atenuación: -32.00 a -25.01 | Sin Potencia: -70.00 a -32.01' 
+                                : 'Aceptable: -24.00 a -8.00 | Atenuación: -40.00 a -24.01 | Sin Potencia: -70.00 a -40.01'}
+                        </div>
+                        <div class="formulario-mensaje" id="formularioMensaje-${template.id}" style="display: none;"></div>
+                    </div>
+                `;
+            }
+
+            // Solo mostrar botón copiar si no es validar potencias
+            const copyButton = template.isValidarPotencias ? '' : `
+                <button class="copy-btn" onclick="copyTemplate(${template.id}, event)">Copiar</button>
+            `;
+
+            // Solo mostrar template-text si no es validar potencias
+            const templateText = template.isValidarPotencias ? '' : `
+                <div class="template-text" id="text-${template.id}">${template.text} ${template.agent}</div>
+            `;
+
+            item.innerHTML = `
+                ${copyButton}
+                <div class="template-info">
+                    <span class="template-tag ${template.tagClass}">${template.tag}</span>
+                    ${templateText}
+                    ${customHtml}
+                </div>
+            `;
+
+            item.onclick = (e) => {
+                if (!e.target.closest('.copy-btn') && !e.target.closest('.observation-box') && !e.target.closest('.validar-potencias-container') && !e.target.closest('.estado-select')) {
+                    selectTemplate(template, item);
+                }
+            };
+
+            return item;
+        }
+
+        function updateTemplateText(id, observation) {
+            const template = templates.find(t => t.id === id);
+            if (template && template.hasObservation) {
+                const textEl = document.getElementById(`text-${id}`);
+                const baseText = template.text;
+                if (observation.trim()) {
+                    textEl.textContent = `${baseText} ${observation.trim()}. ${template.agent}`;
+                } else {
+                    textEl.textContent = `${baseText} ${template.agent}`;
+                }
+            }
+        }
+
+        function updateEstadoText(id, estado) {
+            const template = templates.find(t => t.id === id);
+            if (template && template.hasEstadoSelect) {
+                const textEl = document.getElementById(`text-${id}`);
+                if (estado) {
+                    const newText = template.text.replace('{ESTADO}', estado);
+                    textEl.textContent = `${newText} ${template.agent}`;
+                } else {
+                    textEl.textContent = `${template.text} ${template.agent}`;
+                }
+            }
+        }
+
+        function validarPotencias(id) {
+            const inputEl = document.getElementById(`inputPotencia-${id}`);
+            const resultadoEl = document.getElementById(`resultadoCliente-${id}`);
+            const formularioMensajeEl = document.getElementById(`formularioMensaje-${id}`);
+            const valorRaw = parseFloat(inputEl.value);
+            
+            if (isNaN(valorRaw)) {
+                resultadoEl.textContent = "-";
+                resultadoEl.className = "validar-potencias-valor";
+                formularioMensajeEl.style.display = 'none';
+                return;
+            }
+
+            const valor = Math.round(valorRaw * 100);
+            let cliente = "FUERA DE RANGO";
+            let cliClass = "";
+            let formularioMensaje = "";
+            let formularioClass = "";
+
+            if (activePlatform === 'servicenow') {
+                if (valor >= -2500 && valor <= -800) {
+                    cliente = "ACEPTABLE";
+                    cliClass = "aceptable";
+                    formularioMensaje = "APROBAR FORMULARIO";
+                    formularioClass = "aprobar";
+                } else if (valor >= -3200 && valor < -2500) {
+                    cliente = "ATENUACION / DESEMPEÑO";
+                    cliClass = "atenuacion";
+                    formularioMensaje = "RECHAZAR FORMULARIO";
+                    formularioClass = "rechazar";
+                } else if (valor >= -7000 && valor < -3200) {
+                    cliente = "SIN POTENCIA / CORTE DE FIBRA";
+                    cliClass = "sin-potencia";
+                    formularioMensaje = "RECHAZAR FORMULARIO";
+                    formularioClass = "rechazar";
+                }
+            } else if (activePlatform === 'maximo') {
+                if (valor >= -2400 && valor <= -800) {
+                    cliente = "ACEPTABLE";
+                    cliClass = "aceptable";
+                    formularioMensaje = "APROBAR FORMULARIO";
+                    formularioClass = "aprobar";
+                } else if (valor >= -4000 && valor < -2400) {
+                    cliente = "ATENUACION / DESEMPEÑO";
+                    cliClass = "atenuacion";
+                    formularioMensaje = "RECHAZAR FORMULARIO";
+                    formularioClass = "rechazar";
+                } else if (valor >= -7000 && valor < -4000) {
+                    cliente = "SIN POTENCIA / CORTE DE FIBRA";
+                    cliClass = "sin-potencia";
+                    formularioMensaje = "RECHAZAR FORMULARIO";
+                    formularioClass = "rechazar";
+                }
+            }
+
+            resultadoEl.textContent = cliente;
+            resultadoEl.className = "validar-potencias-valor " + cliClass;
+            
+            if (formularioMensaje) {
+                formularioMensajeEl.textContent = formularioMensaje;
+                formularioMensajeEl.className = "formulario-mensaje " + formularioClass;
+                formularioMensajeEl.style.display = 'block';
+            } else {
+                formularioMensajeEl.style.display = 'none';
+            }
+        }
+
+        function copyTemplate(id, event) {
+            event.stopPropagation();
+            
+            if (!activePlatform) {
+                showToast('Seleccione una plataforma primero', 'error');
+                return;
+            }
+            
+            const template = templates.find(t => t.id === id);
+            if (!template) return;
+            
+            if (template.isValidarPotencias) return; // No copiar para validar potencias
+
+            let finalText = `${template.text} ${template.agent}`;
+            
+            if (template.hasObservation) {
+                const textEl = document.getElementById(`text-${id}`);
+                if (textEl) {
+                    finalText = textEl.textContent;
+                }
+            } else if (template.hasEstadoSelect) {
+                const textEl = document.getElementById(`text-${id}`);
+                if (textEl) {
+                    finalText = textEl.textContent;
+                }
+            }
+            
+            navigator.clipboard.writeText(finalText).then(() => {
+                showToast('Gestión copiada al portapapeles');
+            });
+        }
+
+        function selectTemplate(template, itemElement) {
+            if (!activePlatform) return;
+            
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            selectedTemplate = template;
+            itemElement.classList.add('selected');
+        }
+
+        function clearAll() {
+            document.getElementById('searchInput').value = '';
+            
+            selectedTemplate = null;
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            document.querySelectorAll('.observation-input').forEach(input => {
+                input.value = '';
+                input.dispatchEvent(new Event('input'));
+            });
+
+            document.querySelectorAll('.estado-select').forEach(select => {
+                select.value = '';
+                select.dispatchEvent(new Event('change'));
+            });
+
+            document.querySelectorAll('.potencia-input').forEach(input => {
+                input.value = '';
+                const id = input.id.split('-')[1];
+                validarPotencias(parseInt(id));
+            });
+            
+            showToast('Campos limpiados');
+        }
+
+        function closeWindow() {
+            if (confirm('¿Estás seguro de que deseas cerrar el módulo de gestión de averías?')) {
+                window.close();
+                setTimeout(() => {
+                    showToast('Intentando cerrar ventana...');
+                }, 100);
+            }
+        }
+
+        function filterCategory(category) {
+            if (!activePlatform) {
+                showToast('Seleccione una plataforma primero', 'error');
+                return;
+            }
+
+            currentFilter = category;
+
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            renderTemplates();
+        }
+
+        function searchTemplates(query) {
+            const list = document.getElementById('templateList');
+            list.innerHTML = '';
+
+            if (!activePlatform) return;
+
+            const filtered = templates.filter(t => {
+                const matchesSearch = t.text.toLowerCase().includes(query.toLowerCase()) ||
+                    t.tag.toLowerCase().includes(query.toLowerCase());
+                const matchesPlatform = t.platform === 'both' || t.platform === activePlatform;
+                return matchesSearch && matchesPlatform;
+            });
+
+            filtered.forEach((template, index) => {
+                const item = createTemplateItem(template, index);
+                list.appendChild(item);
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+
+            if (type === 'error') {
+                toast.style.background = 'var(--primary-orange)';
+            } else {
+                toast.style.background = 'var(--success)';
+            }
+
+            toast.style.display = 'block';
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        function toggleSidebar() {
+            const mainGrid = document.querySelector('.main-grid');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            
+            toggleBtn.classList.toggle('collapsed');
+            mainGrid.classList.toggle('sidebar-collapsed');
+            
+            if (toggleBtn.classList.contains('collapsed')) {
+                toggleBtn.title = 'Mostrar panel lateral';
+            } else {
+                toggleBtn.title = 'Ocultar panel lateral';
+            }
+        }
+    </script>
+</body>
+</html>
