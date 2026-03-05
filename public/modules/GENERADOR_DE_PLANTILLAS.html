@@ -2613,12 +2613,9 @@ input:checked + .slider:before {
         <button id="btnServiceNow" class="btn-plataforma btn-servicenow" onclick="abrirModulo('SERVICE_NOW.html')">SERVICE NOW</button>
     </div>
     
-    <div class="cargar-fondo" style="margin-top: 2rem;">
-        <label for="inputFondo" class="btn-fondo">
-            Cargar imagen de fondo
-        </label>
-        <button id="btnEliminarFondoBienvenida" class="btn-eliminar-fondo" onclick="eliminarFondo()" title="Eliminar fondo" style="display: none;">
-            🗑️
+    <div style="margin-top: 2rem;">
+        <button class="btn-fondo" onclick="volverALogin()" title="Cambiar agente y fondo">
+            ⚙️ Cambiar agente / fondo
         </button>
     </div>
 </div>
@@ -3963,6 +3960,14 @@ function confirmarAgente() {
     document.getElementById('pantallaLogin').style.display = 'none';
     document.getElementById('pantallaBienvenida').style.display = 'block';
     document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombre.toUpperCase()}`;
+}
+
+function volverALogin() {
+    localStorage.removeItem('nombreAgente');
+    nombreAgente = '';
+    document.getElementById('pantallaBienvenida').style.display = 'none';
+    document.getElementById('pantallaLogin').style.display = 'block';
+    document.getElementById('inputAgente').value = '';
 }
 
 function abrirModal() {
