@@ -11,7 +11,6 @@ const Index = () => {
         top: 0,
         left: 0,
       }}
-      allowTransparency
     />
   );
 };
