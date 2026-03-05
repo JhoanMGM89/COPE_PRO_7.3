@@ -73,10 +73,10 @@
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 2px solid var(--primary-orange);
+            border: none;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 140, 0, 0.1);
+            box-shadow: none;
         }
 
         .header {
@@ -880,14 +880,7 @@
             
             <h1>Gestión de Averías</h1>
             <div class="subtitle">Centro de Validación y Procesamiento</div>
-        </div>
-
-        <div class="main-grid">
-            <div class="sidebar">
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" class="search-input" placeholder="Buscar plantillas..." id="searchInput">
-                </div>
+            <button class="btn" style="position:absolute;right:15px;top:50%;transform:translateY(-50%);background:#6c757d;color:#fff;font-weight:bold;padding:6px 12px;font-size:0.7rem;" onclick="abrirPuttyDesdeModulo()">PUTTY</button>
 
                 <div class="switch-container">
                     <div class="switch-title">Plataforma</div>
@@ -964,7 +957,7 @@
                     </div>
 
                     <div class="action-footer">
-                        <button class="btn btn-secondary" onclick="clearAll()">Limpiar</button>
+                        <button class="btn btn-secondary" onclick="confirmarLimpiar()">Limpiar</button>
                         <button class="btn btn-danger" onclick="closeWindow()">Cerrar Ventana</button>
                     </div>
                 </div>
@@ -982,7 +975,7 @@
                 tag: 'Marcación',
                 tagClass: 'tag-marcacion',
                 text: 'Las averías relacionadas ya se encuentran marcadas por GDM.',
-                agent: 'JHOAN GORDON',
+                agent: localStorage.getItem('nombreAgente') || 'GESTOR',
                 platform: 'both'
             },
             {
@@ -1479,37 +1472,31 @@
 
         function clearAll() {
             document.getElementById('searchInput').value = '';
-            
             selectedTemplate = null;
-            document.querySelectorAll('.template-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            document.querySelectorAll('.observation-input').forEach(input => {
-                input.value = '';
-                input.dispatchEvent(new Event('input'));
-            });
-
-            document.querySelectorAll('.estado-select').forEach(select => {
-                select.value = '';
-                select.dispatchEvent(new Event('change'));
-            });
-
-            document.querySelectorAll('.potencia-input').forEach(input => {
-                input.value = '';
-                const id = input.id.split('-')[1];
-                validarPotencias(parseInt(id));
-            });
-            
+            document.querySelectorAll('.template-item').forEach(item => item.classList.remove('selected'));
+            document.querySelectorAll('.observation-input').forEach(input => { input.value = ''; input.dispatchEvent(new Event('input')); });
+            document.querySelectorAll('.estado-select').forEach(select => { select.value = ''; select.dispatchEvent(new Event('change')); });
+            document.querySelectorAll('.potencia-input').forEach(input => { input.value = ''; const id = input.id.split('-')[1]; validarPotencias(parseInt(id)); });
             showToast('Campos limpiados');
+        }
+
+        function confirmarLimpiar() {
+            if (confirm('¿Está seguro que desea limpiar todos los campos?')) {
+                clearAll();
+            }
         }
 
         function closeWindow() {
             if (confirm('¿Estás seguro de que deseas cerrar el módulo de gestión de averías?')) {
-                window.close();
-                setTimeout(() => {
-                    showToast('Intentando cerrar ventana...');
-                }, 100);
+                if (window.parent !== window) {
+                    window.parent.postMessage('cerrarModulo', '*');
+                }
+            }
+        }
+
+        function abrirPuttyDesdeModulo() {
+            if (window.parent !== window) {
+                window.parent.postMessage({type: 'openModule', module: 'PUTTY.html'}, '*');
             }
         }
 
