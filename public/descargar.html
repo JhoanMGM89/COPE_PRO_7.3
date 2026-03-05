@@ -146,11 +146,8 @@ async function empaquetar() {
 
     const embedCode = dataTag + scriptParts.join('');
 
-    // Replace LAST occurrence of </body> (not one inside JS strings)
-    const lastIdx = mainHTML.lastIndexOf('</body>');
-    if (lastIdx !== -1) {
-        mainHTML = mainHTML.substring(0, lastIdx) + embedCode + '\n</body>' + mainHTML.substring(lastIdx + 7);
-    }
+    // Append at the very end - browsers execute it regardless of position
+    mainHTML += '\n' + embedCode;
 
     const blob = new Blob([mainHTML], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
