@@ -2612,6 +2612,15 @@ input:checked + .slider:before {
         <button id="btnCreacion" class="btn-plataforma btn-creacion" onclick="abrirModal()">CREACION</button>
         <button id="btnServiceNow" class="btn-plataforma btn-servicenow" onclick="abrirModulo('SERVICE_NOW.html')">SERVICE NOW</button>
     </div>
+    
+    <div class="cargar-fondo" style="margin-top: 2rem;">
+        <label for="inputFondo" class="btn-fondo">
+            Cargar imagen de fondo
+        </label>
+        <button id="btnEliminarFondoBienvenida" class="btn-eliminar-fondo" onclick="eliminarFondo()" title="Eliminar fondo" style="display: none;">
+            🗑️
+        </button>
+    </div>
 </div>
 
 <!-- ============================================
@@ -3837,6 +3846,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.backgroundImage = `url('${fondoGuardado}')`;
         document.body.classList.add('fondo-personalizado');
         document.getElementById('btnEliminarFondo').style.display = 'flex';
+        var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
+        if (btnBienvenida) btnBienvenida.style.display = 'flex';
     }
     
     // Cargar contadores
@@ -3996,6 +4007,8 @@ function manejarCargaFondo(event) {
         try {
             localStorage.setItem('fondoPersonalizado', imagenBase64);
             document.getElementById('btnEliminarFondo').style.display = 'flex';
+            var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
+            if (btnBienvenida) btnBienvenida.style.display = 'flex';
             mostrarToast('Fondo cargado correctamente', 'exito');
         } catch (err) {
             mostrarToast('La imagen es muy grande para guardarla', 'alerta');
@@ -4009,6 +4022,8 @@ function eliminarFondo() {
     document.body.classList.remove('fondo-personalizado');
     localStorage.removeItem('fondoPersonalizado');
     document.getElementById('btnEliminarFondo').style.display = 'none';
+    var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
+    if (btnBienvenida) btnBienvenida.style.display = 'none';
     document.getElementById('inputFondo').value = '';
     mostrarToast('Fondo eliminado', 'exito');
 }
