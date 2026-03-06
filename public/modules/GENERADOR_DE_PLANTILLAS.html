@@ -4104,9 +4104,11 @@ function limpiarFormulario() {
     document.getElementById('selectEstado').value = '❌❌ NUEVO CASO ❌❌';
     document.getElementById('selectFalla').value = '';
     
-    // Limpiar IPs secundarias
+    // Limpiar IPs secundarias y ocultar contenedor
     document.getElementById('listaIPsSecundarias').innerHTML = '';
     contadorIPs = 0;
+    document.getElementById('containerIPsSecundarias').classList.remove('visible');
+    document.getElementById('switchMultipleIP').checked = false;
     
     // Resetear organizador
     procesadoOrganizador = 0;
