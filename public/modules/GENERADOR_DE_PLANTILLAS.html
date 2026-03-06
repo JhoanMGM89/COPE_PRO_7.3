@@ -5733,6 +5733,11 @@ function limpiarYDeshabilitarTrasRechazo() {
         if (el) el.checked = false;
     });
     
+    // Limpiar IPs secundarias y ocultar contenedor
+    document.getElementById('listaIPsSecundarias').innerHTML = '';
+    contadorIPs = 0;
+    document.getElementById('containerIPsSecundarias').classList.remove('visible');
+    
     // Ocultar campos condicionales
     document.getElementById('rowIncidenciaOT').style.display = 'none';
     document.getElementById('rowCS').style.display = 'none';
