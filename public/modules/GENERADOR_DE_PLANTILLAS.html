@@ -4087,7 +4087,7 @@ function habilitarInputs(habilitar) {
 
 function limpiarFormulario() {
     // Limpiar inputs (excepto switches SYTEX, GDM, CAZAMASIVOS)
-    const inputs = document.querySelectorAll('#modalOverlay input:not([type="hidden"]):not(#switchSYTEX):not(#switchGDM):not(#switchCazamasivos):not(#rechazosSearchInput), #modalOverlay textarea:not(#textareaResultado):not(#textareaOrganizador):not(#textareaHistorial)');
+    const inputs = document.querySelectorAll('#modalOverlay input:not([type="hidden"]):not(#switchSYTEX):not(#switchGDM):not(#switchCazamasivos):not(#rechazosSearchInput), #modalOverlay textarea:not(#textareaResultado):not(#textareaHistorial)');
     inputs.forEach(input => {
         if (input.type === 'checkbox' && input.id !== 'switchSYTEX' && input.id !== 'switchGDM' && input.id !== 'switchCazamasivos') {
             input.checked = false;
@@ -4302,9 +4302,14 @@ function manejarSwitchSYTEX() {
         // Habilitar inputs
         habilitarInputs(true);
         
-        // Restaurar campos
+        // Issue 7: Restaurar visibilidad de FO e ID GDM
         document.getElementById('groupFO').style.display = 'block';
+        document.getElementById('containerGDM').style.display = 'block';
         document.getElementById('inputCTO').closest('.form-row').style.display = 'flex';
+        
+        // Restaurar tarjeta y puerto
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
         
         // Restaurar todas las opciones de falla
         restaurarOpcionesFalla();
@@ -4338,6 +4343,13 @@ function manejarSwitchGDM() {
         document.getElementById('groupFO').style.display = 'none';
         // Limpiar valor de FO
         document.getElementById('inputFO').value = '';
+        
+        // Issue 7: Asegurar que ID GDM sea visible
+        document.getElementById('containerGDM').style.display = 'block';
+        
+        // Restaurar tarjeta y puerto
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
         
         // Filtrar tipos de falla para GDM
         filtrarFallasGDM_Cazamasivos();
@@ -4375,6 +4387,13 @@ function manejarSwitchCazamasivos() {
         document.getElementById('groupFO').style.display = 'none';
         // Limpiar valor de FO
         document.getElementById('inputFO').value = '';
+        
+        // Issue 7: Asegurar que ID GDM sea visible
+        document.getElementById('containerGDM').style.display = 'block';
+        
+        // Restaurar tarjeta y puerto
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
         
         // Filtrar tipos de falla para Cazamasivos
         filtrarFallasGDM_Cazamasivos();
@@ -4564,6 +4583,7 @@ function manejarCheckOrganizador() {
     const activo = document.getElementById('switchOrganizador').checked;
     document.getElementById('rowTextareaOrganizador').style.display = activo ? 'flex' : 'none';
     if (!activo) {
+        // Issue 5: Limpiar textarea al desactivar switch
         document.getElementById('textareaOrganizador').value = '';
         procesadoOrganizador = 0;
     }
@@ -6820,7 +6840,10 @@ function copiarResumen() {
     else if (totalClientes > 500) impacto = 'CRITICO';
     else impacto = 'ALTO';
     
-    const textoObs = esSYTEX ? 'SYTEX' : 'CREACION';
+    let textoObs = '';
+    if (esSYTEX) textoObs = 'SYTEX';
+    else if (esGDM) textoObs = 'GDM';
+    else if (esCazamasivos) textoObs = 'CAZAMASIVOS';
     
     // Construir notas de switches - SOLO para ONNET-SERVICE NOW en RESUMEN
     let notasSwitch = '';
@@ -7075,16 +7098,18 @@ function mostrarToast(mensaje, tipo = 'exito') {
 }
 
 function abrirPutty() {
-    // Pass IP, tarjeta, puerto from creacion form
+    // Pass IP, tarjeta, puerto and technology from creacion form
     const ip = document.getElementById('inputIP') ? document.getElementById('inputIP').value.trim() : '';
     const tarjeta = document.getElementById('inputTarjeta') ? document.getElementById('inputTarjeta').value.trim() : '';
     const puerto = document.getElementById('inputPuerto') ? document.getElementById('inputPuerto').value.trim() : '';
+    const tecno = document.getElementById('hiddenTecno') ? document.getElementById('hiddenTecno').value.trim() : '';
     
     const params = {
         type: 'puttyParams',
         ip: ip || '0.0.0.0',
         tarjeta: tarjeta || '0',
-        puerto: puerto || '0'
+        puerto: puerto || '0',
+        tecnologia: tecno || ''
     };
     
     abrirModulo('PUTTY.html', params);
