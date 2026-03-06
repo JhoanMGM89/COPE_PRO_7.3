@@ -1587,7 +1587,7 @@ input:checked + .slider:before {
     display: none;
     justify-content: center;
     align-items: flex-start;
-    padding: 20px;
+    padding: 10px;
     z-index: 2500;
     overflow-y: auto;
     backdrop-filter: blur(3px);
@@ -1611,6 +1611,8 @@ input:checked + .slider:before {
     flex-direction: column;
     margin: 10px 0;
     transition: all 0.3s ease;
+    /* Issue 3: Contener color dentro del body */
+    contain: paint;
 }
 
 /* Modo expandido (sidebar colapsado) */
@@ -1680,7 +1682,7 @@ input:checked + .slider:before {
 
 .rechazos-main-layout {
     display: flex;
-    min-height: 500px;
+    min-height: 600px;
 }
 
 .rechazos-sidebar {
@@ -1693,7 +1695,7 @@ input:checked + .slider:before {
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
-    max-height: 600px;
+    max-height: 750px;
     transition: all 0.3s ease;
 }
 
@@ -1703,7 +1705,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 600px;
+    max-height: 750px;
     transition: all 0.3s ease;
 }
 
@@ -4090,6 +4092,14 @@ function limpiarFormulario() {
         }
     });
     
+    // Issue 5: Limpiar explícitamente organizador y validar potencias
+    document.getElementById('textareaOrganizador').value = '';
+    document.getElementById('inputPotencia').value = '';
+    document.getElementById('resultadoCTO').textContent = '-';
+    document.getElementById('resultadoCliente').textContent = '-';
+    document.getElementById('resultadoCTO').className = 'validar-potencias-valor';
+    document.getElementById('resultadoCliente').className = 'validar-potencias-valor';
+    
     // Resetear selects específicos
     document.getElementById('selectEstado').value = '❌❌ NUEVO CASO ❌❌';
     document.getElementById('selectFalla').value = '';
@@ -4305,10 +4315,19 @@ function manejarSwitchSYTEX() {
         
         // Restaurar todas las opciones de falla
         restaurarOpcionesFalla();
+        
+        // Re-aplicar lógica de falla para visibilidad de GDM
+        const falla = document.getElementById('selectFalla').value;
+        if (falla) manejarCambioFalla();
     } else {
         switchActivo = null;
         itemGDM.classList.remove('disabled');
         itemCazamasivos.classList.remove('disabled');
+        // Restaurar FO y GDM al desactivar
+        document.getElementById('groupFO').style.display = 'block';
+        document.getElementById('containerGDM').style.display = 'block';
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
         habilitarInputs(false);
     }
     
@@ -4336,10 +4355,8 @@ function manejarSwitchGDM() {
         // Limpiar valor de FO
         document.getElementById('inputFO').value = '';
         
-        // Issue 7: Asegurar que ID GDM sea visible
+        // Issue 7: Asegurar que ID GDM sea visible y tarjeta/puerto restaurados
         document.getElementById('containerGDM').style.display = 'block';
-        
-        // Restaurar tarjeta y puerto
         document.getElementById('groupTarjeta').style.display = 'block';
         document.getElementById('groupPuerto').style.display = 'block';
         
@@ -4349,8 +4366,12 @@ function manejarSwitchGDM() {
         switchActivo = null;
         itemSYTEX.classList.remove('disabled');
         itemCazamasivos.classList.remove('disabled');
-        habilitarInputs(false);
+        // Restaurar FO, GDM, tarjeta, puerto
         document.getElementById('groupFO').style.display = 'block';
+        document.getElementById('containerGDM').style.display = 'block';
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
+        habilitarInputs(false);
         
         // Restaurar todas las opciones de falla
         restaurarOpcionesFalla();
@@ -4380,10 +4401,8 @@ function manejarSwitchCazamasivos() {
         // Limpiar valor de FO
         document.getElementById('inputFO').value = '';
         
-        // Issue 7: Asegurar que ID GDM sea visible
+        // Issue 7: Asegurar que ID GDM sea visible y tarjeta/puerto restaurados
         document.getElementById('containerGDM').style.display = 'block';
-        
-        // Restaurar tarjeta y puerto
         document.getElementById('groupTarjeta').style.display = 'block';
         document.getElementById('groupPuerto').style.display = 'block';
         
@@ -4393,8 +4412,12 @@ function manejarSwitchCazamasivos() {
         switchActivo = null;
         itemSYTEX.classList.remove('disabled');
         itemGDM.classList.remove('disabled');
-        habilitarInputs(false);
+        // Restaurar FO, GDM, tarjeta, puerto
         document.getElementById('groupFO').style.display = 'block';
+        document.getElementById('containerGDM').style.display = 'block';
+        document.getElementById('groupTarjeta').style.display = 'block';
+        document.getElementById('groupPuerto').style.display = 'block';
+        habilitarInputs(false);
         
         // Restaurar todas las opciones de falla
         restaurarOpcionesFalla();
@@ -6424,7 +6447,7 @@ function generarPlantilla() {
     }
     
     // Determinar texto de observación según switches
-    let textoObservacion = 'CREACION';
+    let textoObservacion = '';
     if (esSYTEX) textoObservacion = 'SYTEX';
     else if (esGDM) textoObservacion = 'GDM';
     else if (esCazamasivos) textoObservacion = 'CAZAMASIVOS';
@@ -6973,7 +6996,7 @@ function copiarDetalle() {
     }
     
     // CORRECCIÓN: Determinar texto de observación según plataforma activa
-    let textoObs = 'CREACION';
+    let textoObs = '';
     if (esSYTEX) textoObs = 'SYTEX';
     else if (esGDM) textoObs = 'GDM';
     else if (esCazamasivos) textoObs = 'CAZAMASIVOS';
