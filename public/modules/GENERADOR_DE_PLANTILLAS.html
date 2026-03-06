@@ -6354,6 +6354,16 @@ function escapeHtml(text) {
         .replace(/'/g, '&#039;');
 }
 
+function escapeXml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
 function guardarEnHistorial(caso) {
     // El caso ya viene con todos los datos necesarios
     historialDatos.unshift(caso);
