@@ -7133,14 +7133,10 @@ function obtenerDatosConsulta() {
 
 function filtrarConsulta() {
     const texto = document.getElementById('inputBusquedaConsulta').value.toLowerCase().trim();
-    const filtro = document.getElementById('consultaFiltro').value;
     let datos = obtenerDatosConsulta();
     if (texto) {
         datos = datos.filter(d => {
-            if (filtro === 'todos') {
-                return Object.values(d).some(v => v.toLowerCase().includes(texto));
-            }
-            return d[filtro] && d[filtro].toLowerCase().includes(texto);
+            return Object.values(d).some(v => v.toLowerCase().includes(texto));
         });
     }
     renderizarConsulta(datos);
