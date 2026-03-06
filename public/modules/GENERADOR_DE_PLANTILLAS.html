@@ -6273,66 +6273,75 @@ function limpiarHistorial() {
 }
 
 function exportarHistorial() {
-    if (historialDatos.length === 0) {
+    // Recopilar datos de todos los módulos
+    const historialAverias = JSON.parse(localStorage.getItem('historialAverias') || '[]');
+    const historialATP = JSON.parse(localStorage.getItem('historialATPATC') || '[]');
+    const historialSN = JSON.parse(localStorage.getItem('historialServiceNow') || '[]');
+    
+    const totalRegistros = historialDatos.length + historialAverias.length + historialATP.length + historialSN.length;
+    
+    if (totalRegistros === 0) {
         mostrarToast('No hay datos para exportar', 'alerta');
         return;
     }
     
-    // Crear contenido HTML para LibreOffice Calc
-    let html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-          xmlns:x="urn:schemas-microsoft-com:office:excel" 
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            table { border-collapse: collapse; }
-            th { background-color: #28a745; color: white; font-weight: bold; padding: 8px; border: 1px solid #000; }
-            td { padding: 6px; border: 1px solid #ccc; }
-            tr:nth-child(even) { background-color: #f2f2f2; }
-        </style>
-    </head>
-    <body>
-        <table>
-            <thead>
-                <tr>
-                    <th>FECHA</th>
-                    <th>TIPO</th>
-                    <th>ID</th>
-                    <th>TIPO DE FALLA</th>
-                    <th>OBSERVACIÓN</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
+    // Issue 9: Formato Office Open XML (.xlsx via HTML)
+    let html = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+<Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#28a745" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="headerOrange"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#ff8c00" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="headerYellow"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#ffc107" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+<Style ss:ID="headerBlue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+</Styles>`;
+
+    // Hoja 1: CREACIÓN
+    html += `<Worksheet ss:Name="CREACION"><Table>`;
+    html += `<Row><Cell ss:StyleID="header"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">ID</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO DE FALLA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">OBSERVACIÓN</Data></Cell></Row>`;
     historialDatos.forEach(caso => {
-        html += `
-                <tr>
-                    <td>${escapeHtml(caso.fecha)}</td>
-                    <td>${escapeHtml(caso.tipo)}</td>
-                    <td>${escapeHtml(caso.idMostrado || caso.id)}</td>
-                    <td>${escapeHtml(caso.falla)}</td>
-                    <td>${escapeHtml(caso.observacion)}</td>
-                </tr>
-        `;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(caso.fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.tipo)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.idMostrado || caso.id)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.falla)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.observacion)}</Data></Cell></Row>`;
     });
+    html += `</Table></Worksheet>`;
+
+    // Hoja 2: AVERÍAS
+    html += `<Worksheet ss:Name="AVERIAS"><Table>`;
+    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORÍA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLANTILLA</Data></Cell></Row>`;
+    historialAverias.forEach(h => {
+        const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell></Row>`;
+    });
+    html += `</Table></Worksheet>`;
+
+    // Hoja 3: ATP
+    html += `<Worksheet ss:Name="ATP"><Table>`;
+    html += `<Row><Cell ss:StyleID="headerYellow"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">JIRA/FO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">INCIDENCIA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">OT</Data></Cell></Row>`;
+    historialATP.forEach(h => {
+        const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.jira || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.inc || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.ot || '')}</Data></Cell></Row>`;
+    });
+    html += `</Table></Worksheet>`;
+
+    // Hoja 4: SERVICE NOW
+    html += `<Worksheet ss:Name="SERVICE NOW"><Table>`;
+    html += `<Row><Cell ss:StyleID="headerBlue"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">SERVICE NOW</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">PLANTILLA</Data></Cell></Row>`;
+    historialSN.forEach(h => {
+        const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.sn || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell></Row>`;
+    });
+    html += `</Table></Worksheet>`;
+
+    html += `</Workbook>`;
     
-    html += `
-            </tbody>
-        </table>
-    </body>
-    </html>`;
-    
-    // Crear blob y descargar
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const blob = new Blob([html], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8' });
     const link = document.createElement('a');
     const fechaArchivo = new Date().toISOString().slice(0,10);
     link.href = URL.createObjectURL(blob);
-    link.download = `Historial_Casos_${fechaArchivo}.xls`;
+    link.download = `Historial_Completo_${fechaArchivo}.xlsx`;
     link.click();
     
-    mostrarToast(`Exportados ${historialDatos.length} registros a Excel`, 'exito');
+    mostrarToast(`Exportados ${totalRegistros} registros (todos los módulos) a Excel`, 'exito');
 }
 
 function escapeHtml(text) {
