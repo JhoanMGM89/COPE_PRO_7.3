@@ -403,14 +403,15 @@ body.fondo-personalizado {
     gap: 4px;
 }
 
-/* Labels en blanco */
+/* Labels en blanco con mejor contraste sobre glass - Issue 8 */
 .form-label {
     font-size: 0.7rem;
     color: #fff;
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.5px;
     white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.5);
 }
 
 .form-control {
@@ -648,8 +649,9 @@ input:checked + .slider:before {
     font-size: 0.75rem;
     color: #fff;
     text-transform: uppercase;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.5);
 }
 
 /* ============================================
@@ -3127,17 +3129,7 @@ input:checked + .slider:before {
             <h3 class="historial-titulo">📋 CONSULTA BASE INTERNA</h3>
         </div>
         <div class="historial-busqueda" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <select id="consultaFiltro" style="padding:10px;border-radius:6px;border:1px solid #444;background:#1a1a1a;color:#fff;font-size:0.85rem;min-width:180px;">
-                <option value="todos">Todos los campos</option>
-                <option value="ip">IP</option>
-                <option value="olt">Nombre OLT</option>
-                <option value="localidad">Localidad</option>
-                <option value="coinv">Coinversor</option>
-                <option value="tecno">Tecnología</option>
-                <option value="grupoTrabajo">Grupo de Trabajo</option>
-                <option value="articulo">Artículo Config.</option>
-            </select>
-            <input type="text" id="inputBusquedaConsulta" class="historial-input-busqueda" style="flex:1;min-width:200px;" placeholder="Buscar en la base interna..." oninput="filtrarConsulta()">
+            <input type="text" id="inputBusquedaConsulta" class="historial-input-busqueda" style="flex:1;min-width:200px;" placeholder="Buscar por IP, OLT, localidad, coinversor, tecnología..." oninput="filtrarConsulta()">
             <span id="consultaContador" style="color:#aaa;font-size:0.8rem;white-space:nowrap;">0 resultados</span>
         </div>
         <div class="historial-body" style="max-height:500px;">
