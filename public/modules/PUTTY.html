@@ -12,8 +12,8 @@
         }
 
         :root {
-            --nokia-red: #e11d48;
-            --nokia-red-dark: #be123c;
+            --nokia-red: #dc143c;
+            --nokia-red-dark: #b01030;
             --huawei-blue: #0066cc;
             --huawei-blue-dark: #0052a3;
             --bg-dark: #0a0a0a;
@@ -1296,24 +1296,7 @@
                 esListaComas: false
             },
             {
-                id: 'optics-range',
-                titulo: 'Rango de ONTs [1-128]',
-                comando: (t, p, r1, r2) => `show equipment ont optics 1/1/${t}/${p}/[${r1}...${r2}]`,
-                esRango: true,
-                rangoDefault: ['', '']
-            },
-            {
                 id: 'optics-port',
-                titulo: 'Estado ONT (All Tarjeta y Puerto)',
-                comando: () => `show equipment ont optics`,
-                requiereOnt: false
-            },
-            {
-                id: 'status-pon',
-                titulo: 'Status Spliter (No Recomendado)',
-                comando: (t, p) => `show equipment ont status pon 1/1/${t}/${p}`,
-                requiereOnt: false
-            },
             {
                 id: 'status-filter',
                 titulo: 'Filtra Spliter (2+ Nivel)',
