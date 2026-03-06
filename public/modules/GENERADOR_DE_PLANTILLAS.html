@@ -6997,13 +6997,11 @@ function copiarDetalle() {
     const esOnnetMaximoDetalle = esIPonnetMaximo || (ip === "10.37.60.146" && !esIPespecialATP && coinv === 'ONNET');
     
     if (esOnnetMaximoDetalle) {
-        // Impacto ONNET
         if (totalClientes < 21) impacto = 'MEDIO';
         else if (totalClientes > 2000) impacto = 'EMERGENCIA';
         else if (totalClientes > 500) impacto = 'CRITICO';
         else impacto = 'ALTO';
     } else {
-        // Impacto ATP/ATC
         if (totalClientes < 9) impacto = 'BAJO';
         else if (totalClientes > 65) impacto = 'EMERGENCIA';
         else impacto = 'CRITICO';
@@ -7015,24 +7013,47 @@ function copiarDetalle() {
         coinvDetalle = 'ONNET';
     }
     
-    // CORRECCIÓN: Determinar texto de observación según plataforma activa
+    // Determinar texto de observación según plataforma activa
     let textoObs = '';
     if (esSYTEX) textoObs = 'SYTEX';
     else if (esGDM) textoObs = 'GDM';
     else if (esCazamasivos) textoObs = 'CAZAMASIVOS';
     
-    // Construir notas de switches - SOLO para ATP/ATC/ONNET-MAXIMO en DETALLE
+    // Construir notas de switches
     let notasSwitch = '';
     if (esAlta) notasSwitch += 'NOTA: CAI reportado en TOA ingresa por instalación.\n';
     if (esNoReg) notasSwitch += 'NOTA: Se relaciona CAI diferente ya que el reportado, no registra en service now.\n';
     
     let detalle = `LOCALIDAD: ${localidad}\n`;
     detalle += `OLT: ${ip} ${olt}\n`;
-    detalle += `PUERTO: ${puertoFormateado}\n`;
-    detalle += `${esMultiIP ? '' : 'CTO: '}${cto || 'N/A'}${todasCTO}\n`;
     
-    // ID: Solo mostrar FO si es SYTEX (no para GDM o CAZAMASIVOS)
-    if (!esGDM && !esCazamasivos) {
+    if (esMultiIP) {
+        // FALLAS MASIVAS - Listar puertos/CTOs de IP principal directamente
+        if (cto) {
+            const lineasCTO = cto.split('\n').map(l => l.trim()).filter(l => l);
+            lineasCTO.forEach(l => { detalle += `${l}\n`; });
+        }
+        // IPs secundarias con sus puertos/CTOs
+        const secundarias = document.querySelectorAll('#listaIPsSecundarias .bloque-ip-secundaria');
+        secundarias.forEach(bloque => {
+            const secIP = bloque.querySelector('[data-ip-secundaria]').value.trim();
+            const secCTO = bloque.querySelector('[data-cto-secundaria]').value.trim();
+            if (secIP) {
+                const datosSec = baseIP[secIP];
+                const secOLT = datosSec ? datosSec.olt : 'OLT NO ENCONTRADO';
+                detalle += `${secIP} ${secOLT}\n`;
+                if (secCTO) {
+                    secCTO.split('\n').map(l => l.trim()).filter(l => l).forEach(l => { detalle += `${l}\n`; });
+                }
+            }
+        });
+    } else {
+        detalle += `PUERTO: ${puertoFormateado}\n`;
+        detalle += `CTO: ${cto || 'N/A'}${todasCTO}\n`;
+    }
+    
+    // ID: Solo mostrar FO si es SYTEX (no para GDM o CAZAMASIVOS) y no es multi-IP
+    if (!esGDM && !esCazamasivos && !esMultiIP) {
         detalle += `ID: ${fo || 'N/A'}\n`;
     }
     
@@ -7042,7 +7063,6 @@ function copiarDetalle() {
     detalle += `IMPACTO: ${impacto}\n`;
     detalle += `OBSERVACION: ${textoObs}\n`;
     
-    // Agregar notas de switches SOLO para ATP/ATC/ONNET-MAXIMO en DETALLE
     if (notasSwitch) {
         detalle += notasSwitch;
     }
