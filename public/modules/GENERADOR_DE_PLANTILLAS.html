@@ -6537,7 +6537,7 @@ function generarPlantilla() {
     if (ip && (esIPespecialATP || esOnnetMaximoLocal || coinv === 'ATP' || coinv === 'ATC')) {
         lineaEspecial = `INCIDENCIA: ${incidencia || 'N/A'} OT: ${ot || 'N/A'}`;
     } else if (ip && coinv === 'ONNET') {
-        lineaEspecial = `CS: ${cs || 'N/A'}`;
+        lineaEspecial = `${cs || 'N/A'}`;
     }
     
     // Calcular impacto - Solo si hay IP
