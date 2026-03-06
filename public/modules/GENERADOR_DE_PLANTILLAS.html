@@ -5443,6 +5443,9 @@ function copiarPlantillaRechazo(id, event) {
             
             // Guardar en historial como rechazado
             guardarRechazoEnHistorial(template, finalText);
+            
+            // Issue 1 & 6: Limpiar inputs del rechazo y deshabilitar inputs del módulo creación
+            limpiarYDeshabilitarTrasRechazo();
         });
     }
 }
@@ -5861,7 +5864,29 @@ function copyGDMText() {
         // Guardar en historial
         guardarGDMEnHistorial(output.value);
         
+        // Issue 1: Limpiar GDM inputs y texto procesado, deshabilitar inputs creación
+        document.getElementById('gdmInputText').value = '';
+        document.getElementById('gdmOutputText').value = '';
+        document.getElementById('gdmInputCount').textContent = '0 caracteres';
+        document.getElementById('gdmOutputCount').textContent = '0 caracteres';
+        const inputSection = document.getElementById('gdmInputSection');
+        inputSection.style.display = 'flex';
+        inputSection.classList.remove('hidden');
+        document.getElementById('gdmOutputSection').style.display = 'none';
+        gdmSelectedOption = '';
+        document.querySelectorAll('.gdm-option-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('gdmDynamicSection').classList.remove('active');
+        gdmDynamicValues = { cs: '', inc: '', ot: '' };
+        document.getElementById('gdmInputCS').value = '';
+        document.getElementById('gdmInputINC').value = '';
+        document.getElementById('gdmInputOT').value = '';
+        document.getElementById('gdmRowCS').style.display = 'flex';
+        document.getElementById('gdmRowIncOt').style.display = 'flex';
+        
         cerrarGDM();
+        
+        // Deshabilitar inputs del módulo creación
+        limpiarYDeshabilitarTrasRechazo();
     }).catch(err => {
         output.select();
         document.execCommand('copy');
@@ -5869,6 +5894,7 @@ function copyGDMText() {
         mostrarVistaPreviaRechazo(output.value);
         guardarGDMEnHistorial(output.value);
         cerrarGDM();
+        limpiarYDeshabilitarTrasRechazo();
     });
 }
 
