@@ -467,7 +467,7 @@ textarea.form-control {
 
 .form-control[readonly] {
     background: #e9ecef;
-    color: #495057;
+    color: #000000;
 }
 
 /* Tamaños de columnas ajustados */
@@ -5755,15 +5755,8 @@ function limpiarYDeshabilitarTrasRechazo() {
     // Deshabilitar inputs - se rehabilitan al dar LIMPIAR
     habilitarInputs(false);
     
-    // Desactivar switches de plataforma también
-    document.getElementById('switchSYTEX').checked = false;
-    document.getElementById('switchGDM').checked = false;
-    document.getElementById('switchCazamasivos').checked = false;
-    document.getElementById('itemGDM').classList.remove('disabled');
-    document.getElementById('itemCazamasivos').classList.remove('disabled');
-    const itemSYTEX = document.getElementById('switchSYTEX').parentElement.parentElement;
-    if (itemSYTEX) itemSYTEX.classList.remove('disabled');
-    switchActivo = null;
+    // NO desactivar switches de plataforma - solo deshabilitar los demás inputs
+    // Los switches SYTEX, GDM y CAZAMASIVOS permanecen activos tras el rechazo
     
     // Restaurar opciones de falla
     restaurarOpcionesFalla();

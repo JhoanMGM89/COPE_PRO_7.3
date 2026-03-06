@@ -1248,7 +1248,7 @@
                 <button class="btn btn-danger" onclick="limpiarCampos()" style="padding: 5px 10px; font-size: 0.6rem;">
                     Limpiar Campos
                 </button>
-                <button class="btn btn-secondary" onclick="cerrarVentanaPutty()" style="padding: 5px 10px; font-size: 0.6rem;">
+                <button class="btn" onclick="cerrarVentanaPutty()" style="padding: 5px 10px; font-size: 0.6rem; background: #666 !important;">
                     Cerrar Ventana
                 </button>
             </div>
@@ -1968,6 +1968,8 @@
         }
 
         function mostrarToast(mensaje) {
+            // Solo mostrar toast para mensajes que NO sean de copiado
+            if (mensaje.toLowerCase().includes('copiad') || mensaje.toLowerCase().includes('comando')) return;
             const toast = document.getElementById('toast');
             toast.textContent = mensaje;
             toast.style.display = 'block';
