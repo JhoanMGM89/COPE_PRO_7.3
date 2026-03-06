@@ -5664,6 +5664,84 @@ function limpiarInputsRechazos() {
     mostrarToastRechazo('Todos los campos han sido limpiados');
 }
 
+// Issue 1 & 6: Limpiar formulario y deshabilitar tras copiar rechazo
+function limpiarYDeshabilitarTrasRechazo() {
+    // Limpiar todos los inputs del formulario principal (excepto switches de plataforma)
+    const inputs = document.querySelectorAll('#modalOverlay input:not([type="hidden"]):not(#switchSYTEX):not(#switchGDM):not(#switchCazamasivos):not(#rechazosSearchInput):not([type="checkbox"]), #modalOverlay textarea:not(#textareaResultado):not(#textareaOrganizador):not(#textareaHistorial)');
+    inputs.forEach(input => {
+        if (input.tagName === 'SELECT') {
+            input.selectedIndex = 0;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Limpiar selects
+    document.getElementById('selectEstado').value = '❌❌ NUEVO CASO ❌❌';
+    document.getElementById('selectFalla').value = '';
+    
+    // Limpiar textarea resultado
+    document.getElementById('textareaResultado').value = '';
+    
+    // Limpiar organizador y validar potencias
+    document.getElementById('textareaOrganizador').value = '';
+    document.getElementById('inputPotencia').value = '';
+    document.getElementById('resultadoCTO').textContent = '-';
+    document.getElementById('resultadoCliente').textContent = '-';
+    
+    // Desactivar switches secundarios
+    const switchesSecundarios = ['switchMultipleIP', 'switchAltaPrioridad', 'switchNoRegistra', 'switchValidarPotencias', 'switchOrganizador'];
+    switchesSecundarios.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+    });
+    
+    // Ocultar campos condicionales
+    document.getElementById('rowIncidenciaOT').style.display = 'none';
+    document.getElementById('rowCS').style.display = 'none';
+    document.getElementById('rowCamposSoloLectura').style.display = 'none';
+    document.getElementById('rowSwitchesInferiores').style.display = 'none';
+    document.getElementById('rowMultipleSpliter').style.display = 'none';
+    document.getElementById('rowTextareaOrganizador').style.display = 'none';
+    document.getElementById('containerValidarPotencias').classList.remove('visible');
+    
+    // Resetear flags
+    coinvActual = '';
+    esIPespecialATP = false;
+    esIPonnetMaximo = false;
+    actualizarTituloCoinv('');
+    
+    // Mostrar tarjeta y puerto
+    document.getElementById('groupTarjeta').style.display = 'block';
+    document.getElementById('groupPuerto').style.display = 'block';
+    document.getElementById('groupFO').style.display = 'block';
+    document.getElementById('containerGDM').style.display = 'block';
+    
+    // Deshabilitar inputs - se rehabilitan al dar LIMPIAR
+    habilitarInputs(false);
+    
+    // Desactivar switches de plataforma también
+    document.getElementById('switchSYTEX').checked = false;
+    document.getElementById('switchGDM').checked = false;
+    document.getElementById('switchCazamasivos').checked = false;
+    document.getElementById('itemGDM').classList.remove('disabled');
+    document.getElementById('itemCazamasivos').classList.remove('disabled');
+    const itemSYTEX = document.getElementById('switchSYTEX').parentElement.parentElement;
+    if (itemSYTEX) itemSYTEX.classList.remove('disabled');
+    switchActivo = null;
+    
+    // Restaurar opciones de falla
+    restaurarOpcionesFalla();
+    
+    // Ocultar botones especiales
+    document.getElementById('btnResumen').classList.add('oculto');
+    document.getElementById('btnDetalle').classList.add('oculto');
+    
+    // Cerrar overlay de rechazos si está abierto
+    const rechazosOverlay = document.getElementById('rechazosOverlay');
+    if (rechazosOverlay) rechazosOverlay.classList.remove('activo');
+}
+
 function mostrarToastRechazo(mensaje, tipo = 'success') {
     const toast = document.getElementById('rechazosToast');
     toast.textContent = mensaje;
