@@ -1484,6 +1484,12 @@
                 const formInput = document.getElementById('inputFormulario');
                 if (formInput) formInput.value = '';
                 formularioNum = '';
+                
+                // Reiniciar switch de plataformas
+                if (activePlatform) {
+                    const currentPlatform = activePlatform;
+                    togglePlatform(currentPlatform);
+                }
             });
         }
 
