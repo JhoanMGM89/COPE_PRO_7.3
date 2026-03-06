@@ -7115,7 +7115,6 @@ let consultaOrdenActual = { campo: 'ip', asc: true };
 function verConsulta() {
     document.getElementById('consultaOverlay').classList.add('activo');
     document.getElementById('inputBusquedaConsulta').value = '';
-    document.getElementById('consultaFiltro').value = 'todos';
     renderizarConsulta(obtenerDatosConsulta());
     document.getElementById('inputBusquedaConsulta').focus();
 }
