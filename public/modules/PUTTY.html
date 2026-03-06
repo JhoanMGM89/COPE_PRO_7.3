@@ -1383,12 +1383,20 @@
 
             cargarValoresGuardados();
 
-            // Listen for params from parent (creacion passes IP/tarjeta/puerto)
+            // Listen for params from parent (creacion passes IP/tarjeta/puerto/tecnologia)
             window.addEventListener('message', function(e) {
                 if (e.data && e.data.type === 'puttyParams') {
                     document.getElementById('oltIp').value = e.data.ip || '0.0.0.0';
                     document.getElementById('tarjeta').value = e.data.tarjeta || '0';
                     document.getElementById('puerto').value = e.data.puerto || '0';
+                    
+                    // Issue 2: Auto-detect technology and set switch
+                    if (e.data.tecnologia) {
+                        const isHuawei = e.data.tecnologia.toUpperCase() === 'HUAWEI';
+                        document.getElementById('brandSwitch').checked = isHuawei;
+                        toggleBrand(false);
+                    }
+                    
                     actualizarSSHCommands();
                     renderizarComandosNokia();
                     renderizarComandosHuawei();
