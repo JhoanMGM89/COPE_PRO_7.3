@@ -7188,6 +7188,42 @@ function mostrarToast(mensaje, tipo = 'exito') {
     }, 2000);
 }
 
+function mostrarAdvertenciaFlotante(mensaje) {
+    // Eliminar advertencia anterior si existe
+    const existente = document.getElementById('advertenciaFlotante');
+    if (existente) existente.remove();
+    
+    const div = document.createElement('div');
+    div.id = 'advertenciaFlotante';
+    div.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ff9800;
+        color: #000;
+        padding: 14px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 99999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        max-width: 90%;
+        text-align: center;
+        animation: fadeInDown 0.3s ease;
+        cursor: pointer;
+    `;
+    div.textContent = mensaje;
+    div.title = 'Clic para cerrar';
+    div.onclick = () => div.remove();
+    document.body.appendChild(div);
+    
+    // Auto-cerrar después de 8 segundos
+    setTimeout(() => {
+        if (div.parentNode) div.remove();
+    }, 8000);
+}
+
 function abrirPutty() {
     // Pass IP, tarjeta, puerto and technology from creacion form
     const ip = document.getElementById('inputIP') ? document.getElementById('inputIP').value.trim() : '';
