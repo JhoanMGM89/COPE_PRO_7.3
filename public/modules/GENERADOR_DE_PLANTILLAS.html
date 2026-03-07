@@ -6790,6 +6790,12 @@ function copiarTodo() {
     
     // Copiar al portapapeles siempre (hasta 5 veces permitido)
     navigator.clipboard.writeText(plantilla).then(() => {
+        // Advertencia flotante si la plantilla es muy larga para WhatsApp
+        const LIMITE_WHATSAPP = 65000;
+        if (plantilla.length > LIMITE_WHATSAPP) {
+            mostrarAdvertenciaFlotante(`⚠️ Plantilla muy larga (${plantilla.length.toLocaleString()} caracteres). Puede cortarse al pegar en WhatsApp. Edítala manualmente si es necesario.`);
+        }
+        
         // Solo guardar en historial si NO existe aún
         if (!yaExiste) {
             // Crear objeto del caso
