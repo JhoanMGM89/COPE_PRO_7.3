@@ -7155,7 +7155,7 @@ function validarFormularioCompleto() {
         if (!document.getElementById('inputFO').value.trim()) faltantes.push('FO / ID');
     }
     
-    const fallasSinGDM = ['ALTA POTENCIA ATENUADA', 'ALTA SIN POTENCIA', 'PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA'];
+    const fallasSinGDM = ['ALTA POTENCIA ATENUADA', 'ALTA SIN POTENCIA', 'CORRESPONDENCIA', 'PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA'];
     if (!fallasSinGDM.includes(falla) && !esGDM && !esCazamasivos) {
         if (!document.getElementById('inputGDM').value.trim()) faltantes.push('ID GDM');
     }
