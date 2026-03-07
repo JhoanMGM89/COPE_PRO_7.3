@@ -6790,6 +6790,12 @@ function copiarTodo() {
     
     // Copiar al portapapeles siempre (hasta 5 veces permitido)
     navigator.clipboard.writeText(plantilla).then(() => {
+        // Advertencia flotante si la plantilla es muy larga para WhatsApp
+        const LIMITE_WHATSAPP = 65000;
+        if (plantilla.length > LIMITE_WHATSAPP) {
+            mostrarAdvertenciaFlotante(`⚠️ Plantilla muy larga (${plantilla.length.toLocaleString()} caracteres). Puede cortarse al pegar en WhatsApp. Edítala manualmente si es necesario.`);
+        }
+        
         // Solo guardar en historial si NO existe aún
         if (!yaExiste) {
             // Crear objeto del caso
@@ -7180,6 +7186,42 @@ function mostrarToast(mensaje, tipo = 'exito') {
     setTimeout(() => {
         toast.style.display = 'none';
     }, 2000);
+}
+
+function mostrarAdvertenciaFlotante(mensaje) {
+    // Eliminar advertencia anterior si existe
+    const existente = document.getElementById('advertenciaFlotante');
+    if (existente) existente.remove();
+    
+    const div = document.createElement('div');
+    div.id = 'advertenciaFlotante';
+    div.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ff9800;
+        color: #000;
+        padding: 14px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 99999;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        max-width: 90%;
+        text-align: center;
+        animation: fadeInDown 0.3s ease;
+        cursor: pointer;
+    `;
+    div.textContent = mensaje;
+    div.title = 'Clic para cerrar';
+    div.onclick = () => div.remove();
+    document.body.appendChild(div);
+    
+    // Auto-cerrar después de 8 segundos
+    setTimeout(() => {
+        if (div.parentNode) div.remove();
+    }, 8000);
 }
 
 function abrirPutty() {
