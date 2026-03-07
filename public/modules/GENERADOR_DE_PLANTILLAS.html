@@ -7012,12 +7012,14 @@ function copiarDetalle() {
     const esCorteODesempeno = falla === 'CORTE DE FIBRA' || falla === 'DESEMPEÑO';
     const todasCTO = (esCorteODesempeno && cto.toUpperCase().startsWith('SP')) ? ' TODAS LAS CTO' : '';
     
-    // Calcular impacto - ONNET-MAXIMO usa cálculo ONNET
+    // Calcular impacto - PRIMERA ALTA siempre es BAJO
     let impacto = 'BAJO';
     const totalClientes = parseInt(clientes) || 0;
     const esOnnetMaximoDetalle = esIPonnetMaximo || (ip === "10.37.60.146" && !esIPespecialATP && coinv === 'ONNET');
     
-    if (esOnnetMaximoDetalle) {
+    if (falla.includes('PRIMERA ALTA')) {
+        impacto = 'BAJO';
+    } else if (esOnnetMaximoDetalle) {
         if (totalClientes < 21) impacto = 'MEDIO';
         else if (totalClientes > 2000) impacto = 'EMERGENCIA';
         else if (totalClientes > 500) impacto = 'CRITICO';
