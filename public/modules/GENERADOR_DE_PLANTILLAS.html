@@ -5775,6 +5775,10 @@ function limpiarYDeshabilitarTrasRechazo() {
     // Cerrar overlay de rechazos si está abierto
     const rechazosOverlay = document.getElementById('rechazosOverlay');
     if (rechazosOverlay) rechazosOverlay.classList.remove('activo');
+    
+    // Limpiar valores de inputs de plantillas de rechazo para el próximo caso
+    rechazosTemplateValues = {};
+    renderizarPlantillasRechazos();
 }
 
 function mostrarToastRechazo(mensaje, tipo = 'success') {
