@@ -4630,7 +4630,88 @@ function manejarCambioMultipleIP() {
     // Mostrar/ocultar IPs secundarias
     document.getElementById('containerIPsSecundarias').classList.toggle('visible', activo);
     
+    // Mostrar/ocultar herramienta de suma
+    document.getElementById('rowHerramientaSuma').style.display = activo ? 'flex' : 'none';
+    if (!activo) {
+        // Desactivar y ocultar herramienta de suma al desactivar múltiples spliter
+        document.getElementById('switchHerramientaSuma').checked = false;
+        document.getElementById('rowSumaInputs').style.display = 'none';
+        limpiarHerramientaSuma();
+    }
+    
     generarPlantilla();
+}
+
+// ============================================
+// HERRAMIENTA DE SUMA DE CLIENTES
+// ============================================
+let contadorSumaInputs = 0;
+
+function manejarHerramientaSuma() {
+    const activo = document.getElementById('switchHerramientaSuma').checked;
+    document.getElementById('rowSumaInputs').style.display = activo ? 'flex' : 'none';
+    if (!activo) {
+        limpiarHerramientaSuma();
+    }
+}
+
+function calcularSumaClientes() {
+    const valores = document.querySelectorAll('.suma-valor');
+    let total = 0;
+    valores.forEach(input => {
+        const val = parseInt(input.value) || 0;
+        total += val;
+    });
+    document.getElementById('inputSumaTotal').value = total > 0 ? total : '';
+    
+    // Inyectar el total en el input de Clientes Afectados (Nuevo Caso)
+    if (total > 0) {
+        document.getElementById('inputClientesNC').value = total;
+        generarPlantilla();
+    }
+}
+
+function agregarCampoSuma() {
+    contadorSumaInputs++;
+    const container = document.getElementById('sumaInputsDinamicos');
+    const nuevoGrupo = document.createElement('div');
+    nuevoGrupo.className = 'anexo-grupo';
+    nuevoGrupo.innerHTML = `
+        <span class="anexo-symbol">+</span>
+        <input type="number" class="form-control anexo-input suma-valor" placeholder="Sp${container.querySelectorAll('.suma-valor').length + 1}" oninput="calcularSumaClientes()">
+    `;
+    container.appendChild(nuevoGrupo);
+    document.getElementById('btnEliminarSuma').style.display = 'flex';
+}
+
+function eliminarCampoSuma() {
+    const container = document.getElementById('sumaInputsDinamicos');
+    const grupos = container.querySelectorAll('.anexo-grupo');
+    if (grupos.length > 2) {
+        container.removeChild(grupos[grupos.length - 1]);
+    }
+    if (grupos.length <= 3) {
+        document.getElementById('btnEliminarSuma').style.display = 'none';
+    }
+    contadorSumaInputs = Math.max(0, contadorSumaInputs - 1);
+    calcularSumaClientes();
+}
+
+function limpiarHerramientaSuma() {
+    const container = document.getElementById('sumaInputsDinamicos');
+    // Resetear a solo 2 inputs
+    container.innerHTML = `
+        <div class="anexo-grupo">
+            <input type="number" class="form-control anexo-input suma-valor" placeholder="Sp1" oninput="calcularSumaClientes()">
+        </div>
+        <span class="anexo-symbol">+</span>
+        <div class="anexo-grupo">
+            <input type="number" class="form-control anexo-input suma-valor" placeholder="Sp2" oninput="calcularSumaClientes()">
+        </div>
+    `;
+    document.getElementById('inputSumaTotal').value = '';
+    document.getElementById('btnEliminarSuma').style.display = 'none';
+    contadorSumaInputs = 0;
 }
 
 function manejarCheckOrganizador() {
