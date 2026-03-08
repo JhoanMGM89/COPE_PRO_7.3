@@ -1876,7 +1876,13 @@ function copiar() {
     
     const textoFormateado = resultado.value;
     
+    // Advertencia WhatsApp
+    const LIMITE_WHATSAPP = 65000;
+    
     navigator.clipboard.writeText(textoFormateado).then(() => {
+        if (textoFormateado.length > LIMITE_WHATSAPP) {
+            alert('⚠️ Plantilla muy larga (' + textoFormateado.length.toLocaleString() + ' caracteres). Puede cortarse al pegar en WhatsApp.');
+        }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
     }).catch(() => {

@@ -1127,7 +1127,7 @@
             { id: 15, category: 'maximo', tag: 'Estado MAXIMO', tagClass: 'tag-maximo', text: 'Se realiza validación, no es posible hacer la cancelación ya que el MAXIMO se encuentra en estado INPRG, tener presente que para la cancelación es necesario que el MAXIMO se encuentre en estado CLOSED.', agent: nombreAgente, platform: 'maximo' },
             { id: 17, category: 'estado-servicenow', tag: 'Estado SERVICE NOW', tagClass: 'tag-estado-sn', text: 'Se realiza validación, no es posible hacer la cancelación ya que en SERVICE NOW se encuentra en estado {ESTADO}, tener presente que para la cancelación es necesario que el CS / TC, se encuentre en estado CERRADO.', agent: nombreAgente, platform: 'servicenow', hasEstadoSelect: true },
             { id: 18, category: 'validar-potencias', tag: 'Validar Potencias', tagClass: 'tag-validar', text: '', agent: '', platform: 'both', isValidarPotencias: true },
-            { id: 19, category: 'noprocedente', tag: 'No Procedente', tagClass: 'tag-noprocedente', text: 'No es posible realizar la gestión ya que la AVERIA no esta relacionada a este MAXIMO.', agent: nombreAgente, platform: 'both' }
+            { id: 19, category: 'noprocedente', tag: 'No Procedente', tagClass: 'tag-noprocedente', text: 'No es posible realizar la gestión ya que la AVERIA no esta relacionada a este caso (CS / TC).', agent: nombreAgente, platform: 'both' }
         ];
 
         let selectedTemplate = null;
