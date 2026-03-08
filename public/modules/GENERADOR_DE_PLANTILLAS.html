@@ -4183,6 +4183,12 @@ function limpiarFormulario() {
     // Resetear campos de anexo
     resetearCamposAnexo();
     
+    // Resetear herramienta de suma
+    document.getElementById('switchHerramientaSuma').checked = false;
+    document.getElementById('rowHerramientaSuma').style.display = 'none';
+    document.getElementById('rowSumaInputs').style.display = 'none';
+    limpiarHerramientaSuma();
+    
     // Resetear título - por defecto transparente
     actualizarTituloCoinv('');
     coinvActual = '';
