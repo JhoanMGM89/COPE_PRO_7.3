@@ -2828,6 +2828,43 @@ input:checked + .slider:before {
                 </div>
             </div>
             
+            <!-- Fila 9b: Herramienta de Suma (solo visible con Múltiples Spliter activo) -->
+            <div class="form-row align-center" id="rowHerramientaSuma" style="display: none;">
+                <div class="switch-container">
+                    <label class="switch-item">
+                        <div class="switch">
+                            <input type="checkbox" id="switchHerramientaSuma" onchange="manejarHerramientaSuma()">
+                            <span class="slider"></span>
+                        </div>
+                        <span class="switch-label">HERRAMIENTA DE SUMA</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-row" id="rowSumaInputs" style="display: none;">
+                <div class="form-group col-flex">
+                    <label class="form-label">SUMAR CLIENTES</label>
+                    <div class="anexo-wrapper">
+                        <div class="anexo-filas-container">
+                            <div class="anexo-inputs-dinamicos" id="sumaInputsDinamicos">
+                                <div class="anexo-grupo">
+                                    <input type="number" class="form-control anexo-input suma-valor" placeholder="Sp1" oninput="calcularSumaClientes()">
+                                </div>
+                                <span class="anexo-symbol">+</span>
+                                <div class="anexo-grupo">
+                                    <input type="number" class="form-control anexo-input suma-valor" placeholder="Sp2" oninput="calcularSumaClientes()">
+                                </div>
+                            </div>
+                            <div class="anexo-total-section">
+                                <span class="anexo-symbol">=</span>
+                                <input type="text" id="inputSumaTotal" class="form-control anexo-input anexo-total-input" readonly placeholder="Total">
+                                <button type="button" class="btn-agregar-anexo" onclick="agregarCampoSuma()" title="Agregar más campos">+</button>
+                                <button type="button" class="btn-eliminar-anexo" id="btnEliminarSuma" onclick="eliminarCampoSuma()" title="Eliminar campo" style="display: none;">−</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Fila 10: Fecha (solo visible en Nuevo Caso) -->
             <div class="form-row" id="rowFecha">
                 <div class="form-group col-flex" id="groupFecha">
