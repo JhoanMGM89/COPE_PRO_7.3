@@ -1894,8 +1894,8 @@ function generar() {
             break;
     }
     
-    // Auto-espaciar después de ":" si el texto va pegado (punto 3)
-    resultado = resultado.replace(/:(\S)/g, ': $1');
+    // Auto-espaciar después de ":" si el texto va pegado (excepto dígitos para no afectar horas)
+    resultado = resultado.replace(/:([^\s\d/])/g, ': $1');
     
     document.getElementById('resultado').value = resultado;
     return resultado;
