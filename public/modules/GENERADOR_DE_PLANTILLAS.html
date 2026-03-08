@@ -7537,10 +7537,10 @@ function abrirModulo(modulo, params) {
         document.body.appendChild(overlay);
     }
     
-    // Only reload if different module or not cached
-    var currentSrc = iframe.getAttribute('data-module') || '';
-    if (currentSrc !== modulo) {
-        // Hide iframe while loading to prevent flash of old content
+    // Check if module is already cached
+    if (!__moduleCache[modulo]) {
+        // First time loading this module - cache it
+        __moduleCache[modulo] = true;
         iframe.style.visibility = 'hidden';
         iframe.onload = function() {
             iframe.style.visibility = 'visible';
@@ -7551,9 +7551,18 @@ function abrirModulo(modulo, params) {
         iframe.src = modulo;
         iframe.setAttribute('data-module', modulo);
     } else {
-        // Same module - just send params if any
+        // Module is cached - instant switch without reload
+        var currentSrc = iframe.getAttribute('data-module') || '';
+        if (currentSrc !== modulo) {
+            iframe.src = modulo;
+            iframe.setAttribute('data-module', modulo);
+        }
+        
+        // Send params if any (without waiting for onload since it's cached)
         if (params && iframe.contentWindow) {
-            iframe.contentWindow.postMessage(params, '*');
+            setTimeout(function() {
+                iframe.contentWindow.postMessage(params, '*');
+            }, 50);
         }
     }
     
