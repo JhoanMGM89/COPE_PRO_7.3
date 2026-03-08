@@ -7479,16 +7479,16 @@ document.getElementById('consultaOverlay').addEventListener('click', function(e)
 // MÓDULOS IFRAME OVERLAY
 // ============================================
 let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
+var __moduleCache = {}; // Cache iframes to avoid reloading
 
 function abrirModulo(modulo, params) {
     // Hide welcome screen buttons when opening a module
     const bienvenida = document.getElementById('pantallaBienvenida');
     if (bienvenida) bienvenida.style.display = 'none';
     
-    // Check if a module is already open - if so, stack it
+    // Check if a module is already open - if so, stack it (nested like PUTTY)
     const existingOverlay = document.getElementById('moduleOverlay');
     if (existingOverlay && existingOverlay.classList.contains('activo')) {
-        // Open PUTTY (or other) as a nested overlay
         let nestedOverlay = document.getElementById('nestedModuleOverlay');
         let nestedIframe = document.getElementById('nestedModuleIframe');
         
@@ -7537,16 +7537,25 @@ function abrirModulo(modulo, params) {
         document.body.appendChild(overlay);
     }
     
-    // Store params to send after iframe loads
-    if (params) {
-        iframe.onload = function() {
-            iframe.contentWindow.postMessage(params, '*');
-        };
+    // Only reload if different module or not cached
+    var currentSrc = iframe.getAttribute('data-module') || '';
+    if (currentSrc !== modulo) {
+        if (params) {
+            iframe.onload = function() {
+                iframe.contentWindow.postMessage(params, '*');
+            };
+        } else {
+            iframe.onload = null;
+        }
+        iframe.src = modulo;
+        iframe.setAttribute('data-module', modulo);
     } else {
-        iframe.onload = null;
+        // Same module - just send params if any
+        if (params && iframe.contentWindow) {
+            iframe.contentWindow.postMessage(params, '*');
+        }
     }
     
-    iframe.src = modulo;
     overlay.classList.add('activo');
 }
 
