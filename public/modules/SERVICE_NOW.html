@@ -40,8 +40,6 @@ body {
     width: 100%;
     max-width: 650px;
     position: relative;
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
 }
 
 /* Header con selector de color */
@@ -1743,8 +1741,14 @@ function generar() {
             break;
     }
     
-    // Auto-espaciar después de ":" si el texto va pegado (excepto dígitos para no afectar horas)
-    resultado = resultado.replace(/:([^\s\d/])/g, ': $1');
+    // Auto-espaciar después de ":" si el texto va pegado (protege horas HH:MM:SS y ://)
+    resultado = resultado.replace(/:(\S)/g, function(match, p1, offset, str) {
+        // Proteger formato hora (dígito:dígito) y :// en URLs
+        if (p1 === '/') return match;
+        var antes = str.charAt(offset - 1);
+        if (/\d/.test(antes) && /\d/.test(p1)) return match;
+        return ': ' + p1;
+    });
     
     document.getElementById('resultado').value = resultado;
     return resultado;

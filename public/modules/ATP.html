@@ -40,8 +40,6 @@ body {
     width: 100%;
     max-width: 650px;
     position: relative;
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
 }
 
 /* Header con selector de color */
@@ -1894,8 +1892,14 @@ function generar() {
             break;
     }
     
-    // Auto-espaciar después de ":" si el texto va pegado (excepto dígitos para no afectar horas)
-    resultado = resultado.replace(/:([^\s\d/])/g, ': $1');
+    // Auto-espaciar después de ":" si el texto va pegado (protege horas HH:MM:SS y ://)
+    resultado = resultado.replace(/:(\S)/g, function(match, p1, offset, str) {
+        // Proteger formato hora (dígito:dígito) y :// en URLs
+        if (p1 === '/') return match;
+        var antes = str.charAt(offset - 1);
+        if (/\d/.test(antes) && /\d/.test(p1)) return match;
+        return ': ' + p1;
+    });
     
     document.getElementById('resultado').value = resultado;
     return resultado;
@@ -2073,14 +2077,17 @@ function registrarCaso(contenido) {
     const ahora = new Date().getTime();
     const UNA_HORA = 60 * 60 * 1000;
     
-    // Verificar duplicado reciente
-    const duplicadoReciente = historial.some(h => 
-        h.jira === jira && 
-        h.inc === inc && 
-        h.ot === ot &&
-        h.tipo === plantilla && 
-        (ahora - h.timestamp) < UNA_HORA
-    );
+    // Verificar duplicado reciente: usa INC+OT como clave principal del caso
+    const incActual = document.getElementById('incidencia')?.value?.trim() || '';
+    const otActual = document.getElementById('ot')?.value?.trim() || '';
+    const claveActual = (incActual + '|' + otActual).toUpperCase();
+    
+    const duplicadoReciente = historial.some(h => {
+        const claveHist = ((h.inc || '') + '|' + (h.ot || '')).toUpperCase();
+        return claveHist === claveActual && 
+               h.tipo === plantilla && 
+               (ahora - h.timestamp) < UNA_HORA;
+    });
     
     if (!duplicadoReciente) {
         const caso = {
