@@ -2077,14 +2077,17 @@ function registrarCaso(contenido) {
     const ahora = new Date().getTime();
     const UNA_HORA = 60 * 60 * 1000;
     
-    // Verificar duplicado reciente
-    const duplicadoReciente = historial.some(h => 
-        h.jira === jira && 
-        h.inc === inc && 
-        h.ot === ot &&
-        h.tipo === plantilla && 
-        (ahora - h.timestamp) < UNA_HORA
-    );
+    // Verificar duplicado reciente: usa INC+OT como clave principal del caso
+    const incActual = document.getElementById('incidencia')?.value?.trim() || '';
+    const otActual = document.getElementById('ot')?.value?.trim() || '';
+    const claveActual = (incActual + '|' + otActual).toUpperCase();
+    
+    const duplicadoReciente = historial.some(h => {
+        const claveHist = ((h.inc || '') + '|' + (h.ot || '')).toUpperCase();
+        return claveHist === claveActual && 
+               h.tipo === plantilla && 
+               (ahora - h.timestamp) < UNA_HORA;
+    });
     
     if (!duplicadoReciente) {
         const caso = {
