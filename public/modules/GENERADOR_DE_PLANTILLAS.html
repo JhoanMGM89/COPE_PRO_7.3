@@ -7564,7 +7564,8 @@ function cerrarModulo() {
     const iframe = document.getElementById('moduleIframe');
     
     if (overlay) overlay.classList.remove('activo');
-    if (iframe) iframe.src = '';
+    // Keep iframe cached - don't clear src
+    if (iframe) iframe.setAttribute('data-module', iframe.getAttribute('data-module') || '');
     
     // Also close any nested overlay
     cerrarModuloAnidado();
