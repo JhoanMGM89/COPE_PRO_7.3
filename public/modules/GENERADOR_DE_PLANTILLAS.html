@@ -7540,13 +7540,14 @@ function abrirModulo(modulo, params) {
     // Only reload if different module or not cached
     var currentSrc = iframe.getAttribute('data-module') || '';
     if (currentSrc !== modulo) {
-        if (params) {
-            iframe.onload = function() {
+        // Hide iframe while loading to prevent flash of old content
+        iframe.style.visibility = 'hidden';
+        iframe.onload = function() {
+            iframe.style.visibility = 'visible';
+            if (params) {
                 iframe.contentWindow.postMessage(params, '*');
-            };
-        } else {
-            iframe.onload = null;
-        }
+            }
+        };
         iframe.src = modulo;
         iframe.setAttribute('data-module', modulo);
     } else {
