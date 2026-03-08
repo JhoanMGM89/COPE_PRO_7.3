@@ -298,7 +298,8 @@ textarea.form-control {
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 0.85rem;
     line-height: 1.5;
-    resize: vertical;
+    resize: both;
+    overflow: auto;
 }
 
 /* Acciones alineadas a la derecha */
@@ -1841,7 +1842,7 @@ function generar() {
     
     switch(plantilla) {
         case 'CIERRE':
-            resultado = `✅CIERRE DE CASO✅\n${etiquetaPrincipal}: ${val('jira_flex')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nOPERATIVO: ${val('fechaGral')}\nVALIDADO EN:${val('cai_validar')}\n${val('infoCaso')}\nCAUSA: ${val('causa')}\nSOLUCIÓN: ${val('solucion')}\nOBSERVACION: ${val('observacion')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            resultado = `✅CIERRE DE CASO✅\n${etiquetaPrincipal}: ${val('jira_flex')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nOPERATIVO: ${val('fechaGral')}\nVALIDADO EN: ${val('cai_validar')}\n${val('infoCaso')}\nCAUSA: ${val('causa')}\nSOLUCIÓN: ${val('solucion')}\nOBSERVACION: ${val('observacion')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
             
         case 'VALIDACION':
@@ -1892,6 +1893,9 @@ function generar() {
             resultado = `❌❌SOLICITUD DE CANCELACIÓN❌❌\nMOTIVO: ${val('motivo_cancel')}\n${etiquetaPrincipal}: ${val('jira_solo')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nELEMENTO AFECTADO: ${val('elemento_afectado')}\n\nCancelar\n${etiquetaPrincipal}: ${val('jira_cancelar')}\nINCIDENCIA: ${val('inc_cancelar')} OT: ${val('ot_cancelar')}\nELEMENTO AFECTADO: ${val('elemento_cancelar')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
     }
+    
+    // Auto-espaciar después de ":" si el texto va pegado (excepto dígitos para no afectar horas)
+    resultado = resultado.replace(/:([^\s\d/])/g, ': $1');
     
     document.getElementById('resultado').value = resultado;
     return resultado;
@@ -2007,7 +2011,13 @@ function copiar() {
     
     const textoFormateado = resultado.value;
     
+    // Advertencia WhatsApp
+    const LIMITE_WHATSAPP = 65000;
+    
     navigator.clipboard.writeText(textoFormateado).then(() => {
+        if (textoFormateado.length > LIMITE_WHATSAPP) {
+            alert('⚠️ Plantilla muy larga (' + textoFormateado.length.toLocaleString() + ' caracteres). Puede cortarse al pegar en WhatsApp.');
+        }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
     }).catch(() => {

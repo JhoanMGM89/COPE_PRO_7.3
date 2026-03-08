@@ -326,7 +326,8 @@ textarea.form-control {
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 0.85rem;
     line-height: 1.5;
-    resize: vertical;
+    resize: both;
+    overflow: auto;
 }
 
 /* Acciones alineadas a la derecha */
@@ -1742,6 +1743,9 @@ function generar() {
             break;
     }
     
+    // Auto-espaciar después de ":" si el texto va pegado (excepto dígitos para no afectar horas)
+    resultado = resultado.replace(/:([^\s\d/])/g, ': $1');
+    
     document.getElementById('resultado').value = resultado;
     return resultado;
 }
@@ -1875,7 +1879,13 @@ function copiar() {
     
     const textoFormateado = resultado.value;
     
+    // Advertencia WhatsApp
+    const LIMITE_WHATSAPP = 65000;
+    
     navigator.clipboard.writeText(textoFormateado).then(() => {
+        if (textoFormateado.length > LIMITE_WHATSAPP) {
+            alert('⚠️ Plantilla muy larga (' + textoFormateado.length.toLocaleString() + ' caracteres). Puede cortarse al pegar en WhatsApp.');
+        }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
     }).catch(() => {
