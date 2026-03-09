@@ -7558,10 +7558,13 @@ function abrirModulo(modulo, params) {
             iframe.setAttribute('data-module', modulo);
         }
         
-        // Send params if any (without waiting for onload since it's cached)
-        if (params && iframe.contentWindow) {
+        // Always clear form data for new case, but preserve templates
+        if (iframe.contentWindow) {
             setTimeout(function() {
-                iframe.contentWindow.postMessage(params, '*');
+                iframe.contentWindow.postMessage({type: 'LIMPIAR_FORMULARIO_NUEVO_CASO'}, '*');
+                if (params) {
+                    iframe.contentWindow.postMessage(params, '*');
+                }
             }, 50);
         }
     }
