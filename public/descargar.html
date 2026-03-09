@@ -81,7 +81,13 @@ async function empaquetar() {
     const moduleData = {};
     for (const mod of modulos) {
         if (mod !== 'GENERADOR_DE_PLANTILLAS.html') {
-            moduleData[mod] = btoa(unescape(encodeURIComponent(contenidos[mod])));
+            try {
+                // Codificación más robusta
+                moduleData[mod] = btoa(encodeURIComponent(contenidos[mod]).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16))));
+            } catch(e) {
+                console.error('Error encoding module:', mod, e);
+                moduleData[mod] = btoa(contenidos[mod]); // fallback
+            }
         }
     }
 
