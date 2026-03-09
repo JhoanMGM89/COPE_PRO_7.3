@@ -1678,10 +1678,29 @@
             renderHistorialAverias(document.getElementById('searchHistorialAverias').value);
         }
 
+        let previewActual = '';
+
         function verPlantillaAverias(index) {
             const h = historialAverias[index];
             if (h) {
-                alert('📋 Vista Previa de Plantilla:\n\n' + h.contenido);
+                previewActual = h.contenido;
+                document.getElementById('previewText').textContent = previewActual;
+                document.getElementById('modalPreview').classList.add('active');
+            }
+        }
+
+        function cerrarPreview() {
+            document.getElementById('modalPreview').classList.remove('active');
+            previewActual = '';
+        }
+
+        function copiarDesdePreview() {
+            if (previewActual) {
+                navigator.clipboard.writeText(previewActual).then(() => {
+                    cerrarPreview();
+                    showToast('Plantilla copiada del historial');
+                    showToastPreview(previewActual);
+                });
             }
         }
 
