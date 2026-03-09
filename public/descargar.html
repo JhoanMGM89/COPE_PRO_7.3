@@ -101,17 +101,16 @@ async function empaquetar() {
             IFRAME_VAR.src = modulo;
         }`;
 
-    // Reemplazar nestedIframe.src = modulo;
-    mainHTML = mainHTML.replace(
+    // Reemplazar TODAS las ocurrencias de nestedIframe.src = modulo;
+    mainHTML = mainHTML.replaceAll(
         'nestedIframe.src = modulo;',
         loadLogic.replace(/IFRAME_VAR/g, 'nestedIframe')
     );
 
-    // Reemplazar iframe.src = modulo; (solo la que está en abrirModulo, no otras)
-    // Usamos un patrón más específico para encontrar la correcta
-    mainHTML = mainHTML.replace(
-        /iframe\.src = modulo;\s*\n\s*overlay\.classList\.add\('activo'\);/,
-        loadLogic.replace(/IFRAME_VAR/g, 'iframe') + '\n        overlay.classList.add(\'activo\');'
+    // Reemplazar TODAS las ocurrencias de iframe.src = modulo;
+    mainHTML = mainHTML.replaceAll(
+        'iframe.src = modulo;',
+        loadLogic.replace(/IFRAME_VAR/g, 'iframe')
     );
 
     // =============================================
