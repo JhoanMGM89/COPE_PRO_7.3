@@ -95,8 +95,13 @@ async function empaquetar() {
     const loadLogic = `// --- MÓDULOS EMBEBIDOS (integrado nativamente) ---
         var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
         if (__mod) {
-            var __html = decodeURIComponent(escape(atob(__mod)));
-            IFRAME_VAR.srcdoc = __html;
+            try {
+                var __html = decodeURIComponent(escape(atob(__mod)));
+                IFRAME_VAR.srcdoc = __html;
+            } catch(e) {
+                console.error('Error loading embedded module:', modulo, e);
+                IFRAME_VAR.src = modulo;
+            }
         } else {
             IFRAME_VAR.src = modulo;
         }`;
