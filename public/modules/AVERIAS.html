@@ -576,6 +576,25 @@
             transform: translateY(-1px);
         }
 
+        .btn-history-small {
+            background: transparent;
+            border: 1px solid var(--primary-orange);
+            color: var(--primary-orange);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .btn-history-small:hover {
+            background: var(--primary-orange);
+            color: #000;
+        }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -1054,7 +1073,7 @@
         <!-- Contadores + Historial + PUTTY (estilo Creación) -->
         <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(20,20,20,0.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:8px 15px;border-left:1px solid var(--glass-border);border-right:1px solid var(--glass-border);">
             <div style="display:flex;align-items:center;gap:8px;">
-                <button style="background:transparent;border:1px solid var(--primary-orange);color:var(--primary-orange);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;text-transform:uppercase;border-radius:4px;transition:all 0.2s;" onclick="abrirHistorialAverias()" onmouseover="this.style.background='var(--primary-orange)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--primary-orange)'">Historial</button>
+                <button class="btn-history-small" onclick="abrirHistorialAverias()">Historial</button>
                 <button style="background:transparent;border:1px solid var(--primary-orange);color:var(--primary-orange);padding:4px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;text-transform:uppercase;border-radius:4px;transition:all 0.2s;" onclick="abrirPuttyDesdeModulo()" onmouseover="this.style.background='var(--primary-orange)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--primary-orange)'">PUTTY</button>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
