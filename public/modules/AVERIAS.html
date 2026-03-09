@@ -472,8 +472,13 @@
         .modal-hist-header h3 { margin: 0; font-size: 0.9rem; color: white; }
         .modal-hist-body { padding: 12px; }
         .toast-preview-container {
-            position: fixed; bottom: 20px; left: 20px; z-index: 4000;
-            display: none; max-width: 400px; width: 100%;
+            position: fixed; 
+            bottom: 20px; 
+            left: 20px; 
+            z-index: 10000;
+            display: none; 
+            max-width: 400px; 
+            width: 100%;
         }
         .toast-preview-container.show {
             display: block; animation: slideInLeftToast 0.3s ease-out;
@@ -483,8 +488,13 @@
             to { transform: translateX(0); opacity: 1; }
         }
         .toast-preview-content {
-            background: rgba(30,30,30,0.95); border: 2px solid var(--success);
-            border-radius: 8px; overflow: hidden;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .template-text {
