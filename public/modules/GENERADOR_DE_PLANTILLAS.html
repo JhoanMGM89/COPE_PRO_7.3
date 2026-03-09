@@ -3003,9 +3003,12 @@ input:checked + .slider:before {
             <button class="btn-toggle-sidebar" onclick="toggleSidebarRechazos()" title="sidebar">
                 <span id="iconoToggle">◀</span> <span id="textoToggle"></span>
             </button>
-            <div style="flex: 1; text-align: center;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
                 <h1>Rechazo de Casos</h1>
                 <div class="subtitle">Centro de Gestión de Cancelaciones</div>
+                <div class="rechazos-header-buttons" style="margin-top: 8px;">
+                    <button class="btn-header-historial" onclick="verHistorialRechazos()">HISTORIAL</button>
+                </div>
             </div>
             <div style="width: 80px;"></div> <!-- Spacer para centrar -->
         </div>
