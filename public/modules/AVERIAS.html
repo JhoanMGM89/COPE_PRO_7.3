@@ -1883,20 +1883,11 @@
             const container = document.getElementById('toastPreviewContainer');
             const preview = document.getElementById('toastPreviewText');
             const time = document.getElementById('toastPreviewTime');
-            
-            console.log('showToastPreview llamada con contenido:', contenido); // Debug
-            
-            if (container && preview && contenido) {
+            if (container && preview) {
                 preview.textContent = contenido;
                 if (time) time.textContent = new Date().toLocaleTimeString('es-ES');
                 container.classList.add('show');
                 setTimeout(() => closeToastPreview(), 8000);
-            } else {
-                console.error('Error en showToastPreview:', {
-                    container: !!container,
-                    preview: !!preview, 
-                    contenido: !!contenido
-                });
             }
         }
 
