@@ -2013,6 +2013,13 @@ document.getElementById('modalPreview').addEventListener('click', (e) => {
 document.getElementById('modalConfirm').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) cerrarConfirmacion();
 });
+
+// Listen for form clear messages from parent window
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
+        limpiarFormularioCompleto();
+    }
+});
 </script>
 
 </body>

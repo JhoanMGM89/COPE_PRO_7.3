@@ -1721,6 +1721,13 @@
             const container = document.getElementById('toastPreviewContainer');
             if (container) container.classList.remove('show');
         }
+
+        // Listen for form clear messages from parent window
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
+                clearAll();
+            }
+        });
     </script>
 </body>
 </html>
