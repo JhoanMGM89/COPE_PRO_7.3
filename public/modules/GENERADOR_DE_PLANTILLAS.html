@@ -3003,9 +3003,12 @@ input:checked + .slider:before {
             <button class="btn-toggle-sidebar" onclick="toggleSidebarRechazos()" title="sidebar">
                 <span id="iconoToggle">◀</span> <span id="textoToggle"></span>
             </button>
-            <div style="flex: 1; text-align: center;">
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
                 <h1>Rechazo de Casos</h1>
                 <div class="subtitle">Centro de Gestión de Cancelaciones</div>
+                <div class="rechazos-header-buttons" style="margin-top: 8px;">
+                    <button class="btn-header-historial" onclick="verHistorialRechazos()">HISTORIAL</button>
+                </div>
             </div>
             <div style="width: 80px;"></div> <!-- Spacer para centrar -->
         </div>
@@ -6243,6 +6246,53 @@ function verHistorial() {
                             &#128065;
                         </button>
                         <button class="btn-icono-historial btn-copiar-plantilla" onclick="copiarDesdeHistorial(${index})" title="Copiar plantilla">
+                            &#128203;
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(fila);
+        });
+    }
+    
+    overlay.classList.add('activo');
+}
+
+function verHistorialRechazos() {
+    const overlay = document.getElementById('historialOverlay');
+    const tbody = document.getElementById('historialTbody');
+    const sinDatos = document.getElementById('historialSinDatos');
+    
+    // Filtrar solo casos rechazados
+    const casosRechazados = historialDatos.filter(caso => caso.tipo === 'RECHAZADO');
+    
+    // Limpiar tabla
+    tbody.innerHTML = '';
+    
+    if (casosRechazados.length === 0) {
+        sinDatos.style.display = 'block';
+        sinDatos.textContent = 'No hay casos rechazados en el historial.';
+        document.getElementById('historialTabla').style.display = 'none';
+    } else {
+        sinDatos.style.display = 'none';
+        document.getElementById('historialTabla').style.display = 'table';
+        
+        // Generar filas de la tabla
+        casosRechazados.forEach((caso, index) => {
+            // Encontrar el índice original en historialDatos
+            const indexOriginal = historialDatos.indexOf(caso);
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${caso.fecha}</td>
+                <td style="font-weight: bold; color: #dc3545">${caso.tipo}</td>
+                <td>${caso.idMostrado || caso.id}</td>
+                <td>${caso.falla}</td>
+                <td class="col-acciones">
+                    <div class="historial-acciones">
+                        <button class="btn-icono-historial btn-ver-plantilla" onclick="verPlantillaDesdeHistorial(${indexOriginal})" title="Ver plantilla">
+                            &#128065;
+                        </button>
+                        <button class="btn-icono-historial btn-copiar-plantilla" onclick="copiarDesdeHistorial(${indexOriginal})" title="Copiar plantilla">
                             &#128203;
                         </button>
                     </div>
