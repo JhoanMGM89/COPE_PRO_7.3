@@ -488,8 +488,13 @@
             to { transform: translateX(0); opacity: 1; }
         }
         .toast-preview-content {
-            background: rgba(30,30,30,0.95); border: 2px solid var(--success);
-            border-radius: 8px; overflow: hidden;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .template-text {
