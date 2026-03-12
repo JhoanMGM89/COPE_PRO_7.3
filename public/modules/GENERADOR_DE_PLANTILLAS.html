@@ -7032,6 +7032,9 @@ function copiarTodo() {
             localStorage.setItem('contadorCreaciones', contadorCreaciones);
             document.getElementById('contadorCreaciones').textContent = contadorCreaciones;
             
+            // Incrementar contador total global
+            incrementarContadorTotal();
+            
             mostrarToast('✓ Copiado y guardado en historial', 'exito');
         } else {
             // No mostrar toast amarillo - la vista previa es suficiente
