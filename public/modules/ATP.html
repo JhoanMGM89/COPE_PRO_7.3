@@ -551,6 +551,64 @@ input:checked + .slider:before {
 .history-type.CREACION_OT { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
 .history-type.CANCELACION { background: rgba(108, 117, 125, 0.2); color: var(--gray); }
 .history-type.SOLICITUD_CANCEL { background: rgba(220, 53, 69, 0.2); color: #ff6b6b; }
+.history-type.ACEPTACION_FALLAS { background: rgba(25, 135, 84, 0.2); color: var(--success); }
+.history-type.RECHAZO_FALLAS { background: rgba(220, 53, 69, 0.2); color: var(--danger); }
+
+/* Modal Culminar desde Cierre */
+.modal-culminar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+.modal-culminar-overlay.active {
+    display: flex;
+}
+.modal-culminar-content {
+    background: #1a1a1a;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+}
+.modal-culminar-header {
+    background: var(--primary-blue);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-culminar-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+}
+.modal-culminar-body {
+    padding: 1.25rem;
+}
+.modal-culminar-body .form-label {
+    color: var(--primary-blue);
+    font-weight: bold;
+}
+.modal-culminar-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background: #2a2a2a;
+    border-top: 1px solid #444;
+}
 
 /* Acciones en tabla */
 .actions-cell {
@@ -974,6 +1032,7 @@ input:checked + .slider:before {
     <div class="stats-row">
         <div class="stats-left">
             <button class="btn-history-small" onclick="abrirHistorial()">Historial</button>
+            <button class="btn-history-small" id="btnCulminar" style="display:none;border-color:var(--info);color:var(--info);" onclick="abrirModalCulminar()">Culminar</button>
         </div>
         <div class="stats-right">
             <div class="stat-item">
@@ -1004,10 +1063,12 @@ input:checked + .slider:before {
                 <label class="form-label" style="text-align: center;">Seleccione Plantilla</label>
                 <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
                     <option value="" disabled selected>SELECCIONE PLANTILLA</option>
+                    <option value="ACEPTACION_FALLAS">ACEPTACION FALLAS AISLADAS</option>
                     <option value="CANCELACION">CANCELACIÓN</option>
                     <option value="CIERRE">CIERRE DE CASO</option>
                     <option value="CREACION_OT">CREACION OT GESTOT</option>
                     <option value="CULMINACION">CULMINACIÓN PDR</option>
+                    <option value="RECHAZO_FALLAS">RECHAZO FALLAS AISLADAS</option>
                     <option value="ACEPTA_PDR">SE ACEPTA PDR</option>
                     <option value="RECHAZA_PDR">SE RECHAZA PDR</option>
                     <option value="SOLICITUD_CANCEL">SOLICITUD DE CANCELACIÓN</option>
@@ -1197,6 +1258,28 @@ input:checked + .slider:before {
             <textarea id="observacion" class="form-control" rows="3" placeholder="Ingrese observaciones..." oninput="generar()"></textarea>
         </div>
 
+        <!-- Campos Fallas Aisladas - Info del Caso -->
+        <div id="cont-info-fallas" class="form-group conditional-field">
+            <label class="form-label">Información del Caso</label>
+            <textarea id="info_caso_fallas" class="form-control" rows="4" placeholder="Ingrese la información completa del caso:
+- OLT: 
+- Puerto: 
+- CTO: 
+- Clientes Afectados: " oninput="generar()"></textarea>
+        </div>
+
+        <!-- Campos Fallas Aisladas - Incidencia/OT Asociada -->
+        <div id="cont-inc-ot-asociada" class="inline-row conditional-field">
+            <div class="form-group">
+                <label class="form-label">Incidencia Asociada</label>
+                <input type="text" id="incidencia_asociada" class="form-control" placeholder="INC..." oninput="generar()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">OT Asociada</label>
+                <input type="text" id="ot_asociada" class="form-control" placeholder="OT..." oninput="generar()">
+            </div>
+        </div>
+
         <!-- Resultado -->
         <div class="resultado-container">
             <textarea id="resultado" class="resultado" readonly placeholder="La plantilla generada aparecerá aquí..."></textarea>
@@ -1294,6 +1377,40 @@ input:checked + .slider:before {
         <div class="confirm-footer">
             <button class="btn btn-secondary" onclick="cerrarConfirmacion()">Cancelar</button>
             <button class="btn btn-danger" id="confirmBtn" onclick="ejecutarConfirmacion()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Culminar desde Cierre -->
+<div id="modalCulminar" class="modal-culminar-overlay">
+    <div class="modal-culminar-content">
+        <div class="modal-culminar-header">
+            <h3>⏱️ CULMINAR PDR</h3>
+            <button class="btn-close-modal" onclick="cerrarModalCulminar()">×</button>
+        </div>
+        <div class="modal-culminar-body">
+            <div class="inline-row">
+                <div class="form-group">
+                    <label class="form-label">Fecha y Hora Inicio</label>
+                    <input type="text" id="culminarFechaInicio" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fecha y Hora Fin</label>
+                    <input type="text" id="culminarFechaFin" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Tiempo de Restricción</label>
+                <input type="text" id="culminarTiempoRest" class="form-control" readonly style="background: #2a2a2a; color: var(--primary-blue); font-weight: bold;">
+            </div>
+            <div class="resultado-container">
+                <textarea id="culminarResultado" class="resultado" readonly style="min-height:120px;" placeholder="La plantilla de culminación aparecerá aquí..."></textarea>
+            </div>
+        </div>
+        <div class="modal-culminar-footer">
+            <button class="btn btn-success" onclick="copiarCulminarDesdeCierre()">Copiar</button>
+            <button class="btn btn-danger" onclick="limpiarCulminar()">Limpiar</button>
+            <button class="btn btn-secondary" onclick="cerrarModalCulminar()">Cerrar</button>
         </div>
     </div>
 </div>
@@ -1451,7 +1568,9 @@ function renderizarTablaHistorial(filtro = '') {
         'CULMINACION': 'Culminación PDR',
         'CREACION_OT': 'Creación OT',
         'CANCELACION': 'Cancelación',
-        'SOLICITUD_CANCEL': 'Solicitud Cancel'
+        'SOLICITUD_CANCEL': 'Solicitud Cancel',
+        'ACEPTACION_FALLAS': 'Aceptación Fallas',
+        'RECHAZO_FALLAS': 'Rechazo Fallas'
     };
     
     let datos = historial;
@@ -1556,7 +1675,9 @@ function exportarExcel() {
         'CULMINACION': 'Culminación PDR',
         'CREACION_OT': 'Creación OT Gestot',
         'CANCELACION': 'Cancelación',
-        'SOLICITUD_CANCEL': 'Solicitud de Cancelación'
+        'SOLICITUD_CANCEL': 'Solicitud de Cancelación',
+        'ACEPTACION_FALLAS': 'Aceptación Fallas Aisladas',
+        'RECHAZO_FALLAS': 'Rechazo Fallas Aisladas'
     };
     
     // Agrupar por JIRA/Incidencia + Tipo, quedarnos con el más reciente
@@ -1624,6 +1745,9 @@ function actualizarCampos() {
     document.querySelectorAll('.conditional-field').forEach(el => {
         el.classList.remove('active');
     });
+    
+    // Mostrar/ocultar botón Culminar
+    document.getElementById('btnCulminar').style.display = (plantilla === 'CIERRE') ? 'inline-block' : 'none';
     
     // Si no hay plantilla seleccionada
     if (!plantilla) {
@@ -1714,6 +1838,17 @@ function actualizarCampos() {
             mostrar('cont-elemento-afectado');
             mostrar('cont-motivo-cancel');
             mostrar('cont-solicitud-extra');
+            break;
+            
+        case 'ACEPTACION_FALLAS':
+            mostrar('cont-inc-ot');
+            mostrar('cont-info-fallas');
+            mostrar('cont-inc-ot-asociada');
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            mostrar('cont-inc-ot');
+            mostrar('cont-info-fallas');
             break;
     }
     
@@ -1890,6 +2025,14 @@ function generar() {
         case 'SOLICITUD_CANCEL':
             resultado = `❌❌SOLICITUD DE CANCELACIÓN❌❌\nMOTIVO: ${val('motivo_cancel')}\n${etiquetaPrincipal}: ${val('jira_solo')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nELEMENTO AFECTADO: ${val('elemento_afectado')}\n\nCancelar\n${etiquetaPrincipal}: ${val('jira_cancelar')}\nINCIDENCIA: ${val('inc_cancelar')} OT: ${val('ot_cancelar')}\nELEMENTO AFECTADO: ${val('elemento_cancelar')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
+            
+        case 'ACEPTACION_FALLAS':
+            resultado = `📐ACEPTACION_FALLAS AISLADAS📐\nSeñores ATP.\nConfirmamos la separación de las fallas, de acuerdo con la evidencia proporcionada y la validación realizada bajo el diagrama de topología de red (plano).\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nVías a separar:\n${val('info_caso_fallas')}\nEl reporte quedará asociado bajo:\nINCIDENCIA: ${val('incidencia_asociada')} OT: ${val('ot_asociada')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            resultado = `📐RECHAZO_FALLAS AISLADAS📐\nSeñores ATP.\nInformamos que no se aceptará la separación de las fallas por falta de evidencia adecuada y confirmación según el diagrama de topología de red. La inclusión de anexos, no tiene un límite de tiempo definido, por lo tanto no es un motivo válido para esta separación. Se recuerda que, mientras el caso esté abierto, se pueden generar anexos adicionales.\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nVías de separación solicitadas:\n${val('info_caso_fallas')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
     }
     
     // Auto-espaciar después de ":" si el texto va pegado (protege horas HH:MM:SS y ://)
@@ -1994,6 +2137,18 @@ function validar() {
             check('ot_cancelar', 'OT a Cancelar');
             check('elemento_cancelar', 'Elemento Afectado a Cancelar');
             break;
+        case 'ACEPTACION_FALLAS':
+            check('incidencia', 'Incidencia');
+            check('ot', 'OT');
+            check('info_caso_fallas', 'Información del Caso');
+            check('incidencia_asociada', 'Incidencia Asociada');
+            check('ot_asociada', 'OT Asociada');
+            break;
+        case 'RECHAZO_FALLAS':
+            check('incidencia', 'Incidencia');
+            check('ot', 'OT');
+            check('info_caso_fallas', 'Información del Caso');
+            break;
     }
     
     if (faltantes.length > 0) {
@@ -2024,12 +2179,19 @@ function copiar() {
         }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        // Notificar al padre para contador total
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
     }).catch(() => {
         // Fallback
         resultado.select();
         document.execCommand('copy');
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
     });
 }
 
@@ -2162,6 +2324,92 @@ function abrirPuttyDesdeModulo() {
     }
 }
 
+// ============================================
+// FUNCIONES MODAL CULMINAR DESDE CIERRE
+// ============================================
+function abrirModalCulminar() {
+    // Pre-llenar JIRA e INC/OT desde el formulario de cierre si existen
+    document.getElementById('modalCulminar').classList.add('active');
+    generarCulminarDesdeCierre();
+}
+
+function cerrarModalCulminar() {
+    document.getElementById('modalCulminar').classList.remove('active');
+}
+
+function limpiarCulminar() {
+    document.getElementById('culminarFechaInicio').value = '';
+    document.getElementById('culminarFechaFin').value = '';
+    document.getElementById('culminarTiempoRest').value = '';
+    document.getElementById('culminarResultado').value = '';
+}
+
+function generarCulminarDesdeCierre() {
+    const isATC = document.getElementById('check_atc').checked;
+    const etiqueta = isATC ? 'FO' : 'JIRA';
+    
+    const val = (id) => {
+        const el = document.getElementById(id);
+        return (el && el.value.trim()) ? el.value.trim() : "N/A";
+    };
+    
+    const inicio = val('culminarFechaInicio');
+    const fin = val('culminarFechaFin');
+    const tiempo = calcularRestriccion(inicio, fin);
+    document.getElementById('culminarTiempoRest').value = tiempo;
+    
+    // Usar JIRA e INC/OT del formulario principal de cierre
+    const jiraVal = val('jira_flex');
+    const incVal = val('incidencia');
+    const otVal = val('ot');
+    
+    const resultado = `⏱️CULMINACIÓN PDR⏱️\n${etiqueta}: ${jiraVal}\nINCIDENCIA: ${incVal} OT: ${otVal}\nFecha y Hora Inicio: ${inicio}\nFecha y Hora Fin: ${fin}\nTiempo de Restricción: ${tiempo}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+    
+    document.getElementById('culminarResultado').value = resultado;
+}
+
+function copiarCulminarDesdeCierre() {
+    const resultado = document.getElementById('culminarResultado').value;
+    if (!resultado.trim()) {
+        alert('Complete los campos de fecha primero');
+        return;
+    }
+    
+    navigator.clipboard.writeText(resultado).then(() => {
+        // Registrar en historial como CULMINACION
+        const isATC = document.getElementById('check_atc').checked;
+        const jira = document.getElementById('jira_flex')?.value?.trim() || '';
+        const inc = document.getElementById('incidencia')?.value?.trim() || '';
+        const ot = document.getElementById('ot')?.value?.trim() || '';
+        
+        const caso = {
+            id: Date.now(),
+            jira: jira || 'N/A',
+            inc: inc || 'N/A',
+            ot: ot || 'N/A',
+            tipo: 'CULMINACION',
+            timestamp: new Date().getTime(),
+            contenido: resultado,
+            atc: isATC
+        };
+        
+        historial.unshift(caso);
+        contadores.PDR++;
+        guardarDatos();
+        actualizarEstadisticas();
+        
+        mostrarToast(resultado);
+        cerrarModalCulminar();
+        
+        // Notificar al padre para contador total
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
 // Event listeners para cerrar modales al hacer clic fuera
 document.getElementById('modalHistorial').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) cerrarHistorial();
@@ -2173,6 +2421,10 @@ document.getElementById('modalPreview').addEventListener('click', (e) => {
 
 document.getElementById('modalConfirm').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) cerrarConfirmacion();
+});
+
+document.getElementById('modalCulminar').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarModalCulminar();
 });
 
 // Listen for form clear messages from parent window

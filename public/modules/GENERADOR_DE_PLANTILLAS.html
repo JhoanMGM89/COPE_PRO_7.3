@@ -2652,6 +2652,12 @@ input:checked + .slider:before {
                     </div>
                     <button class="btn-reset-contadores" onclick="resetearContadores()" title="Resetear contadores">🗑️</button>
                 </div>
+                <div class="contador-section" style="margin-left:0.5rem;">
+                    <div class="contador-box">
+                        <span>Total: <span id="contadorTotalGlobal">0</span></span>
+                    </div>
+                    <button class="btn-reset-contadores" onclick="resetearContadorTotal()" title="Resetear contador total">🗑️</button>
+                </div>
             </div>
         </div>
         
@@ -3853,6 +3859,7 @@ let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
 let contadorRechazados = 0;
+let contadorTotalGlobal = 0;
 let coinvActual = "";
 let switchActivo = null; // 'SYTEX', 'GDM', 'CAZAMASIVOS' o null
 let historialDatos = []; // Almacena objetos con datos de cada caso
@@ -3898,6 +3905,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rechazados) {
         contadorRechazados = parseInt(rechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
+    }
+    
+    // Cargar contador total global
+    const totalGlobal = localStorage.getItem('contadorTotalGlobal');
+    if (totalGlobal) {
+        contadorTotalGlobal = parseInt(totalGlobal);
+        document.getElementById('contadorTotalGlobal').textContent = contadorTotalGlobal;
     }
     
     // Cargar historial
@@ -4284,6 +4298,21 @@ function resetearContadores() {
         document.getElementById('contadorRechazados').textContent = '0';
         mostrarToast('Contadores reseteados', 'exito');
     }
+}
+
+function resetearContadorTotal() {
+    if (confirm('¿Está seguro que desea resetear el contador Total?')) {
+        contadorTotalGlobal = 0;
+        localStorage.setItem('contadorTotalGlobal', '0');
+        document.getElementById('contadorTotalGlobal').textContent = '0';
+        mostrarToast('Contador Total reseteado', 'exito');
+    }
+}
+
+function incrementarContadorTotal() {
+    contadorTotalGlobal++;
+    localStorage.setItem('contadorTotalGlobal', contadorTotalGlobal);
+    document.getElementById('contadorTotalGlobal').textContent = contadorTotalGlobal;
 }
 
 // ============================================
@@ -7003,6 +7032,9 @@ function copiarTodo() {
             localStorage.setItem('contadorCreaciones', contadorCreaciones);
             document.getElementById('contadorCreaciones').textContent = contadorCreaciones;
             
+            // Incrementar contador total global
+            incrementarContadorTotal();
+            
             mostrarToast('✓ Copiado y guardado en historial', 'exito');
         } else {
             // No mostrar toast amarillo - la vista previa es suficiente
@@ -7663,6 +7695,9 @@ window.addEventListener('message', function(e) {
     }
     if (e.data && e.data.type === 'openModule') {
         abrirModulo(e.data.module, e.data.params);
+    }
+    if (e.data && e.data.type === 'INCREMENTAR_TOTAL') {
+        incrementarContadorTotal();
     }
 });
 </script>
