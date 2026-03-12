@@ -1835,6 +1835,17 @@ function actualizarCampos() {
             mostrar('cont-motivo-cancel');
             mostrar('cont-solicitud-extra');
             break;
+            
+        case 'ACEPTACION_FALLAS':
+            mostrar('cont-inc-ot');
+            mostrar('cont-info-fallas');
+            mostrar('cont-inc-ot-asociada');
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            mostrar('cont-inc-ot');
+            mostrar('cont-info-fallas');
+            break;
     }
     
     // Mostrar u ocultar el switch ATC según corresponda
