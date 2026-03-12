@@ -2021,6 +2021,14 @@ function generar() {
         case 'SOLICITUD_CANCEL':
             resultado = `❌❌SOLICITUD DE CANCELACIÓN❌❌\nMOTIVO: ${val('motivo_cancel')}\n${etiquetaPrincipal}: ${val('jira_solo')}\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nELEMENTO AFECTADO: ${val('elemento_afectado')}\n\nCancelar\n${etiquetaPrincipal}: ${val('jira_cancelar')}\nINCIDENCIA: ${val('inc_cancelar')} OT: ${val('ot_cancelar')}\nELEMENTO AFECTADO: ${val('elemento_cancelar')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
             break;
+            
+        case 'ACEPTACION_FALLAS':
+            resultado = `📐ACEPTACION_FALLAS AISLADAS📐\nSeñores ATP.\nConfirmamos la separación de las fallas, de acuerdo con la evidencia proporcionada y la validación realizada bajo el diagrama de topología de red (plano).\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nVías a separar:\n${val('info_caso_fallas')}\nEl reporte quedará asociado bajo:\nINCIDENCIA: ${val('incidencia_asociada')} OT: ${val('ot_asociada')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            resultado = `📐RECHAZO_FALLAS AISLADAS📐\nSeñores ATP.\nInformamos que no se aceptará la separación de las fallas por falta de evidencia adecuada y confirmación según el diagrama de topología de red. La inclusión de anexos, no tiene un límite de tiempo definido, por lo tanto no es un motivo válido para esta separación. Se recuerda que, mientras el caso esté abierto, se pueden generar anexos adicionales.\nINCIDENCIA: ${val('incidencia')} OT: ${val('ot')}\nVías de separación solicitadas:\n${val('info_caso_fallas')}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
     }
     
     // Auto-espaciar después de ":" si el texto va pegado (protege horas HH:MM:SS y ://)
