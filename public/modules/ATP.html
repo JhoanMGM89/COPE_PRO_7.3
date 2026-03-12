@@ -2137,6 +2137,18 @@ function validar() {
             check('ot_cancelar', 'OT a Cancelar');
             check('elemento_cancelar', 'Elemento Afectado a Cancelar');
             break;
+        case 'ACEPTACION_FALLAS':
+            check('incidencia', 'Incidencia');
+            check('ot', 'OT');
+            check('info_caso_fallas', 'Información del Caso');
+            check('incidencia_asociada', 'Incidencia Asociada');
+            check('ot_asociada', 'OT Asociada');
+            break;
+        case 'RECHAZO_FALLAS':
+            check('incidencia', 'Incidencia');
+            check('ot', 'OT');
+            check('info_caso_fallas', 'Información del Caso');
+            break;
     }
     
     if (faltantes.length > 0) {
