@@ -1258,6 +1258,28 @@ input:checked + .slider:before {
             <textarea id="observacion" class="form-control" rows="3" placeholder="Ingrese observaciones..." oninput="generar()"></textarea>
         </div>
 
+        <!-- Campos Fallas Aisladas - Info del Caso -->
+        <div id="cont-info-fallas" class="form-group conditional-field">
+            <label class="form-label">Información del Caso</label>
+            <textarea id="info_caso_fallas" class="form-control" rows="4" placeholder="Ingrese la información completa del caso:
+- OLT: 
+- Puerto: 
+- CTO: 
+- Clientes Afectados: " oninput="generar()"></textarea>
+        </div>
+
+        <!-- Campos Fallas Aisladas - Incidencia/OT Asociada -->
+        <div id="cont-inc-ot-asociada" class="inline-row conditional-field">
+            <div class="form-group">
+                <label class="form-label">Incidencia Asociada</label>
+                <input type="text" id="incidencia_asociada" class="form-control" placeholder="INC..." oninput="generar()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">OT Asociada</label>
+                <input type="text" id="ot_asociada" class="form-control" placeholder="OT..." oninput="generar()">
+            </div>
+        </div>
+
         <!-- Resultado -->
         <div class="resultado-container">
             <textarea id="resultado" class="resultado" readonly placeholder="La plantilla generada aparecerá aquí..."></textarea>
