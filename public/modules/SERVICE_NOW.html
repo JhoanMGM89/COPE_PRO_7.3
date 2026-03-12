@@ -1892,6 +1892,10 @@ function copiar() {
         }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        // Notificar al padre para contador total
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
     }).catch(() => {
         alert('Error al copiar');
     });

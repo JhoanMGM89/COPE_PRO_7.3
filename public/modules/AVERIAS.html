@@ -1654,6 +1654,11 @@
                     incrementarRechazados();
                 }
                 
+                // Notificar al padre para contador total
+                if (window.parent !== window) {
+                    window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+                }
+                
                 // Limpiar input de formulario
                 const formInput = document.getElementById('inputFormulario');
                 if (formInput) formInput.value = '';
