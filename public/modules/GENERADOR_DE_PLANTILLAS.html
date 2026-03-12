@@ -3907,6 +3907,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
     }
     
+    // Cargar contador total global
+    const totalGlobal = localStorage.getItem('contadorTotalGlobal');
+    if (totalGlobal) {
+        contadorTotalGlobal = parseInt(totalGlobal);
+        document.getElementById('contadorTotalGlobal').textContent = contadorTotalGlobal;
+    }
+    
     // Cargar historial
     const historialGuardado = localStorage.getItem('historialDatos');
     if (historialGuardado) {
