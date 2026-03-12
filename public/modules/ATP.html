@@ -2324,6 +2324,92 @@ function abrirPuttyDesdeModulo() {
     }
 }
 
+// ============================================
+// FUNCIONES MODAL CULMINAR DESDE CIERRE
+// ============================================
+function abrirModalCulminar() {
+    // Pre-llenar JIRA e INC/OT desde el formulario de cierre si existen
+    document.getElementById('modalCulminar').classList.add('active');
+    generarCulminarDesdeCierre();
+}
+
+function cerrarModalCulminar() {
+    document.getElementById('modalCulminar').classList.remove('active');
+}
+
+function limpiarCulminar() {
+    document.getElementById('culminarFechaInicio').value = '';
+    document.getElementById('culminarFechaFin').value = '';
+    document.getElementById('culminarTiempoRest').value = '';
+    document.getElementById('culminarResultado').value = '';
+}
+
+function generarCulminarDesdeCierre() {
+    const isATC = document.getElementById('check_atc').checked;
+    const etiqueta = isATC ? 'FO' : 'JIRA';
+    
+    const val = (id) => {
+        const el = document.getElementById(id);
+        return (el && el.value.trim()) ? el.value.trim() : "N/A";
+    };
+    
+    const inicio = val('culminarFechaInicio');
+    const fin = val('culminarFechaFin');
+    const tiempo = calcularRestriccion(inicio, fin);
+    document.getElementById('culminarTiempoRest').value = tiempo;
+    
+    // Usar JIRA e INC/OT del formulario principal de cierre
+    const jiraVal = val('jira_flex');
+    const incVal = val('incidencia');
+    const otVal = val('ot');
+    
+    const resultado = `⏱️CULMINACIÓN PDR⏱️\n${etiqueta}: ${jiraVal}\nINCIDENCIA: ${incVal} OT: ${otVal}\nFecha y Hora Inicio: ${inicio}\nFecha y Hora Fin: ${fin}\nTiempo de Restricción: ${tiempo}\nGESTOR: ${nombreAgente.toUpperCase()}`;
+    
+    document.getElementById('culminarResultado').value = resultado;
+}
+
+function copiarCulminarDesdeCierre() {
+    const resultado = document.getElementById('culminarResultado').value;
+    if (!resultado.trim()) {
+        alert('Complete los campos de fecha primero');
+        return;
+    }
+    
+    navigator.clipboard.writeText(resultado).then(() => {
+        // Registrar en historial como CULMINACION
+        const isATC = document.getElementById('check_atc').checked;
+        const jira = document.getElementById('jira_flex')?.value?.trim() || '';
+        const inc = document.getElementById('incidencia')?.value?.trim() || '';
+        const ot = document.getElementById('ot')?.value?.trim() || '';
+        
+        const caso = {
+            id: Date.now(),
+            jira: jira || 'N/A',
+            inc: inc || 'N/A',
+            ot: ot || 'N/A',
+            tipo: 'CULMINACION',
+            timestamp: new Date().getTime(),
+            contenido: resultado,
+            atc: isATC
+        };
+        
+        historial.unshift(caso);
+        contadores.PDR++;
+        guardarDatos();
+        actualizarEstadisticas();
+        
+        mostrarToast(resultado);
+        cerrarModalCulminar();
+        
+        // Notificar al padre para contador total
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
 // Event listeners para cerrar modales al hacer clic fuera
 document.getElementById('modalHistorial').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) cerrarHistorial();
@@ -2335,6 +2421,10 @@ document.getElementById('modalPreview').addEventListener('click', (e) => {
 
 document.getElementById('modalConfirm').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) cerrarConfirmacion();
+});
+
+document.getElementById('modalCulminar').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarModalCulminar();
 });
 
 // Listen for form clear messages from parent window
