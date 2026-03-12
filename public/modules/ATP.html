@@ -2179,12 +2179,19 @@ function copiar() {
         }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        // Notificar al padre para contador total
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
     }).catch(() => {
         // Fallback
         resultado.select();
         document.execCommand('copy');
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        if (window.parent !== window) {
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+        }
     });
 }
 
