@@ -1742,6 +1742,9 @@ function actualizarCampos() {
         el.classList.remove('active');
     });
     
+    // Mostrar/ocultar botón Culminar
+    document.getElementById('btnCulminar').style.display = (plantilla === 'CIERRE') ? 'inline-block' : 'none';
+    
     // Si no hay plantilla seleccionada
     if (!plantilla) {
         document.getElementById('resultado').value = '';
