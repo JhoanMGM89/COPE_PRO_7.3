@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATP / ATC - Generador de Plantillas Pro</title>
+<style>
+:root {
+    --primary-blue: #FFB400;
+    --primary-hover: #e6a200;
+    --bg-card: rgba(26, 26, 26, 0.95);
+    --bg-input: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --border-color: #333;
+    --danger: #dc3545;
+    --success: #198754;
+    --gray: #6c757d;
+    --warning: #ffc107;
+    --info: #17a2b8;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background: #000;
+    color: var(--text-primary);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 650px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Header con selector de color */
+.header {
+    background: var(--primary-blue);
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    border-bottom: 1px solid #e6a200;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Selector de color dinámico */
+.color-picker-container {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.color-picker-wrapper {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.color-picker-wrapper:hover {
+    transform: scale(1.1);
+}
+
+.color-picker-arrow {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 12px solid white;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    pointer-events: none;
+}
+
+#colorPicker {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    cursor: pointer;
+    opacity: 0;
+}
+
+.color-preview {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-blue);
+    transition: background 0.3s;
+}
+
+/* Contadores compactos con historial pequeño a la izquierda */
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 0.5rem 0.75rem;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    overflow-x: auto;
+}
+
+.stats-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.btn-history-small {
+    background: transparent;
+    border: 1px solid var(--primary-blue);
+    color: var(--primary-blue);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-history-small:hover {
+    background: var(--primary-blue);
+    color: #000;
+}
+
+.stats-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.stats-right::-webkit-scrollbar {
+    display: none;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.stat-value {
+    color: var(--text-primary);
+    font-weight: bold;
+    min-width: 18px;
+}
+
+.btn-reset-all {
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 0.2rem;
+    flex-shrink: 0;
+}
+
+.btn-reset-all:hover {
+    opacity: 1;
+}
+
+/* Formularios */
+.form-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0 0 8px 8px;
+    padding: 1.25rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 0.375rem;
+    text-transform: uppercase;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.625rem;
+    background: var(--bg-input);
+    color: #000;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: Arial, sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 0;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(255, 180, 0, 0.15);
+}
+
+select.form-control {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23000' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    text-align: center;
+    text-align-last: center;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Layout inline - Campos en misma fila SIEMPRE */
+.inline-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+}
+
+.inline-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+    min-width: 0;
+    width: 50% !important;
+}
+
+/* Campos condicionales */
+.conditional-field {
+    display: none;
+}
+
+.conditional-field.active {
+    display: block;
+}
+
+.inline-row.conditional-field.active {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+}
+
+/* Resultado */
+.resultado-container {
+    margin-top: 1rem;
+}
+
+.resultado {
+    width: 100%;
+    min-height: 200px;
+    background: #000;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 0.875rem;
+    color: #fff;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+/* Acciones alineadas a la derecha */
+.actions-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: normal;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--gray);
+    color: white;
+}
+
+/* Modal de Historial */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-history {
+    background: #1e1e1e;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    background: var(--success);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-header h2 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin: 0;
+    text-transform: uppercase;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-close-modal {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Tabla de historial */
+.history-search {
+    width: 100%;
+    padding: 0.75rem;
+    background: white;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: #000;
+    font-size: 0.9rem;
+}
+
+.history-table-container {
+    background: #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.history-table th {
+    background: #333;
+    color: white;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.history-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #444;
+    color: #fff;
+    vertical-align: middle;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-table tr:hover {
+    background: #3a3a3a;
+}
+
+.history-sn {
+    color: var(--primary-blue);
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.history-type {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.history-type.ACEPTACION_FALLAS { background: rgba(25, 135, 84, 0.2); color: var(--success); }
+.history-type.RECHAZO_FALLAS { background: rgba(220, 53, 69, 0.2); color: var(--danger); }
+
+/* Acciones en tabla */
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.btn-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: transform 0.2s, opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-action:hover {
+    transform: scale(1.1);
+    opacity: 0.9;
+}
+
+.btn-view {
+    background: var(--info);
+    color: white;
+}
+
+.btn-copy {
+    background: var(--success);
+    color: white;
+}
+
+.modal-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    border-top: 1px solid #444;
+    gap: 1rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.btn-export {
+    background: var(--success);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Modal de vista previa */
+.preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 3500;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.preview-modal.active {
+    display: flex;
+}
+
+.preview-content {
+    background: #1e1e1e;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header {
+    background: var(--primary-blue);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.preview-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.preview-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.preview-text {
+    background: #000;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 1rem;
+    color: #fff;
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.preview-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background: #2a2a2a;
+    border-top: 1px solid #444;
+    flex-shrink: 0;
+}
+
+/* Toast - Desde la izquierda con vista previa */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 4000;
+    display: none;
+    max-width: 500px;
+    width: 100%;
+    right: 20px;
+}
+
+.toast-container.show {
+    display: block;
+    animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-content {
+    background: var(--bg-card);
+    border: 2px solid var(--success);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.toast-header {
+    background: var(--success);
+    color: white;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.toast-body {
+    padding: 1rem;
+    background: #000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.toast-preview {
+    color: #fff;
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.toast-footer {
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.toast-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Modal de Confirmación */
+.confirm-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 5000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.confirm-modal.active {
+    display: flex;
+}
+
+.confirm-content {
+    background: var(--bg-card);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.confirm-header {
+    background: var(--warning);
+    color: #000;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.confirm-body {
+    padding: 1.5rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.confirm-footer {
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background: #2a2a2a;
+    border-top: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+/* Responsive - Mantiene Incidencia y OT en la misma fila SIEMPRE */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        align-items: flex-start;
+    }
+    
+    .container {
+        max-width: 100%;
+        margin: 0;
+    }
+    
+    .header {
+        padding: 0.75rem;
+    }
+    
+    .header h1 {
+        font-size: 1.1rem;
+        padding-right: 50px;
+    }
+    
+    .color-picker-container {
+        right: 0.5rem;
+    }
+    
+    .color-picker-wrapper {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .stats-row {
+        padding: 0.5rem;
+        gap: 0.35rem;
+    }
+    
+    .stats-left {
+        gap: 0.5rem;
+    }
+    
+    .stats-right {
+        gap: 0.75rem;
+    }
+    
+    .stat-item {
+        font-size: 0.7rem;
+    }
+    
+    .stat-label {
+        font-size: 0.6rem;
+    }
+    
+    .stat-value {
+        min-width: 15px;
+    }
+    
+    .btn-history-small {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    /* Mantiene Incidencia y OT en fila horizontal SIEMPRE */
+    .inline-row {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem;
+    }
+    
+    .inline-row .form-group {
+        width: 50% !important;
+        flex: 1 !important;
+    }
+    
+    .form-container {
+        padding: 1rem;
+    }
+    
+    .form-control {
+        font-size: 16px; /* Previene zoom en iOS */
+        padding: 0.75rem;
+    }
+    
+    /* Reduce padding en inputs de incidencia/OT para móviles pequeños */
+    #incidencia, #ot, #incidencia_nueva, #ot_nueva {
+        padding: 0.625rem 0.5rem;
+    }
+    
+    textarea.form-control {
+        min-height: 150px;
+    }
+    
+    .resultado {
+        min-height: 250px;
+        font-size: 0.8rem;
+    }
+    
+    .actions-footer {
+        justify-content: stretch;
+    }
+    
+    .actions-footer .btn {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .modal-history {
+        max-width: 100%;
+        margin: 10px;
+        max-height: 95vh;
+    }
+    
+    .history-table {
+        font-size: 0.75rem;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 0.5rem;
+    }
+    
+    .history-table td {
+        max-width: 150px;
+    }
+    
+    .actions-cell {
+        gap: 0.35rem;
+    }
+    
+    .btn-action {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .toast-container {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+        bottom: 10px;
+    }
+    
+    .preview-content {
+        max-width: 100%;
+        margin: 10px;
+        max-height: 90vh;
+    }
+    
+    .confirm-content {
+        max-width: 100%;
+        margin: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 1rem;
+    }
+    
+    .stats-right {
+        gap: 0.5rem;
+    }
+    
+    .stat-item {
+        font-size: 0.65rem;
+    }
+    
+    .btn-reset-all {
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        font-size: 0.75rem;
+        padding: 0.6rem 0.75rem;
+    }
+    
+    /* Fuerza mantener Incidencia y OT en fila incluso en pantallas muy pequeñas */
+    .inline-row {
+        gap: 0.5rem !important;
+    }
+    
+    .inline-row .form-control {
+        font-size: 14px;
+        padding: 0.5rem;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Extra small devices - mantener layout horizontal */
+@media (max-width: 360px) {
+    .inline-row {
+        gap: 0.35rem !important;
+    }
+    
+    .inline-row .form-control {
+        font-size: 13px;
+        padding: 0.4rem;
+    }
+    
+    .form-label {
+        font-size: 0.7rem;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <!-- Header con selector de color -->
+    <div class="header" id="mainHeader">
+        <h1>ATP / ATC - FALLAS AISLADAS</h1>
+        <div class="color-picker-container">
+            <div class="color-picker-wrapper">
+                <div class="color-preview" id="colorPreview"></div>
+                <div class="color-picker-arrow"></div>
+                <input type="color" id="colorPicker" value="#FFB400" onchange="cambiarColor(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Contadores con historial pequeño a la izquierda -->
+    <div class="stats-row">
+        <div class="stats-left">
+            <button class="btn-history-small" onclick="abrirHistorial()">Historial</button>
+        </div>
+        <div class="stats-right">
+            <div class="stat-item">
+                <span class="stat-label">Aceptaciones:</span>
+                <span class="stat-value" id="statAceptacion">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Rechazos:</span>
+                <span class="stat-value" id="statRechazo">0</span>
+            </div>
+            <button class="btn-reset-all" onclick="resetTodosContadores()" title="Reiniciar todos los contadores">🗑️</button>
+        </div>
+    </div>
+
+    <!-- Formulario Principal -->
+    <div class="form-container">
+        <!-- Selector de Plantilla -->
+        <div class="form-group">
+            <label class="form-label" style="text-align: center;">Seleccione Plantilla</label>
+            <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
+                <option value="" disabled selected>SELECCIONE PLANTILLA</option>
+                <option value="ACEPTACION_FALLAS">ACEPTACION_FALLAS AISLADAS</option>
+                <option value="RECHAZO_FALLAS">RECHAZO_FALLAS AISLADAS</option>
+            </select>
+        </div>
+
+        <!-- Campos comunes para ambas plantillas -->
+        <div id="campos-fallas" class="conditional-field">
+            <!-- Incidencia y OT - SIEMPRE EN LA MISMA FILA -->
+            <div class="inline-row">
+                <div class="form-group">
+                    <label class="form-label">Incidencia</label>
+                    <input type="text" id="incidencia" class="form-control" placeholder="INC..." oninput="generar()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">OT</label>
+                    <input type="text" id="ot" class="form-control" placeholder="OT..." oninput="generar()">
+                </div>
+            </div>
+
+            <!-- Información del Caso (Textarea único) -->
+            <div class="form-group">
+                <label class="form-label">Información del Caso</label>
+                <textarea id="info_caso" class="form-control" rows="6" placeholder="Ingrese la información completa del caso:
+- OLT: 
+- Puerto: 
+- CTO: 
+- Clientes Afectados: 
+- Otros detalles..." oninput="generar()"></textarea>
+            </div>
+        </div>
+
+        <!-- Campos exclusivos Aceptación - TAMBIÉN EN FILA -->
+        <div id="campos-aceptacion" class="conditional-field">
+            <!-- Incidencia Asociada y OT Asociada - SIEMPRE EN LA MISMA FILA -->
+            <div class="inline-row">
+                <div class="form-group">
+                    <label class="form-label">Incidencia Asociada</label>
+                    <input type="text" id="incidencia_nueva" class="form-control" placeholder="INC..." oninput="generar()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">OT Asociada</label>
+                    <input type="text" id="ot_nueva" class="form-control" placeholder="OT..." oninput="generar()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="resultado-container">
+            <textarea id="resultado" class="resultado" readonly placeholder="La plantilla generada aparecerá aquí..."></textarea>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions-footer">
+            <button class="btn btn-success" onclick="copiar()">Copiar</button>
+            <button class="btn btn-danger" onclick="confirmarLimpiar()">Limpiar</button>
+            <button class="btn btn-secondary" onclick="confirmarCerrar()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Historial -->
+<div id="modalHistorial" class="modal-overlay">
+    <div class="modal-history">
+        <div class="modal-header">
+            <h2>HISTORIAL DE FALLAS AISLADAS</h2>
+            <button class="btn-close-modal" onclick="cerrarHistorial()">×</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" class="history-search" id="searchHistorial" placeholder="Buscar por Incidencia, OT..." oninput="filtrarHistorial()">
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Incidencia</th>
+                            <th>OT</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorial">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="cerrarHistorial()">Cerrar</button>
+            <button class="btn btn-danger" onclick="limpiarHistorialModal()">Limpiar Historial</button>
+            <button class="btn btn-export" onclick="exportarExcel()">
+                Exportar a Excel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Vista Previa -->
+<div id="modalPreview" class="preview-modal">
+    <div class="preview-content">
+        <div class="preview-header">
+            <h3>VISTA DE PLANTILLA</h3>
+            <button class="btn-close-modal" onclick="cerrarPreview()">×</button>
+        </div>
+        <div class="preview-body">
+            <div class="preview-text" id="previewText"></div>
+        </div>
+        <div class="preview-footer">
+            <button class="btn btn-secondary" onclick="cerrarPreview()">Cerrar</button>
+            <button class="btn btn-success" onclick="copiarDesdePreview()">Copiar Plantilla</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toastContainer" class="toast-container">
+    <div class="toast-content">
+        <div class="toast-header">
+            <span>✓</span>
+            <span>¡Plantilla Copiada!</span>
+        </div>
+        <div class="toast-body">
+            <pre class="toast-preview" id="toastPreview"></pre>
+        </div>
+        <div class="toast-footer">
+            <span class="toast-time" id="toastTime"></span>
+            <button class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" onclick="cerrarToast()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div id="modalConfirm" class="confirm-modal">
+    <div class="confirm-content">
+        <div class="confirm-header">
+            <span>⚠️</span>
+            <span id="confirmTitle">Confirmar Acción</span>
+        </div>
+        <div class="confirm-body" id="confirmMessage">
+            ¿Está seguro de realizar esta acción?
+        </div>
+        <div class="confirm-footer">
+            <button class="btn btn-secondary" onclick="cerrarConfirmacion()">Cancelar</button>
+            <button class="btn btn-danger" id="confirmBtn" onclick="ejecutarConfirmacion()">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// El nombre del agente se obtendrá de localStorage (establecido por otro archivo)
+// o usará un valor por defecto
+let nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
+let historial = JSON.parse(localStorage.getItem('historialFallasAisladas')) || [];
+let contadores = JSON.parse(localStorage.getItem('contadoresFallasAisladas')) || {
+    ACEPTACION: 0,
+    RECHAZO: 0
+};
+let previewActual = '';
+let accionPendiente = null;
+let colorActual = localStorage.getItem('colorFallasAisladas') || '#FFB400';
+
+document.addEventListener('DOMContentLoaded', () => {
+    actualizarEstadisticas();
+    aplicarColor(colorActual);
+});
+
+function cambiarColor(color) {
+    colorActual = color;
+    aplicarColor(color);
+    localStorage.setItem('colorFallasAisladas', color);
+}
+
+function aplicarColor(color) {
+    document.documentElement.style.setProperty('--primary-blue', color);
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const hoverColor = `rgb(${Math.floor(r * 0.85)}, ${Math.floor(g * 0.85)}, ${Math.floor(b * 0.85)})`;
+    document.documentElement.style.setProperty('--primary-hover', hoverColor);
+    document.getElementById('colorPreview').style.background = color;
+    document.getElementById('mainHeader').style.background = color;
+    
+    // Ajustar color del texto del header según el brillo del color
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    const textColor = brightness > 128 ? '#000' : '#fff';
+    document.querySelector('.header h1').style.color = textColor;
+}
+
+function actualizarEstadisticas() {
+    document.getElementById('statAceptacion').textContent = contadores.ACEPTACION;
+    document.getElementById('statRechazo').textContent = contadores.RECHAZO;
+}
+
+function resetTodosContadores() {
+    mostrarConfirmacion(
+        'Reiniciar Contadores',
+        '¿Está seguro que desea reiniciar todos los contadores a cero? Esta acción no se puede deshacer.',
+        () => {
+            contadores = { ACEPTACION: 0, RECHAZO: 0 };
+            guardarDatos();
+            actualizarEstadisticas();
+        }
+    );
+}
+
+function mostrarConfirmacion(titulo, mensaje, callback) {
+    document.getElementById('confirmTitle').textContent = titulo;
+    document.getElementById('confirmMessage').textContent = mensaje;
+    accionPendiente = callback;
+    document.getElementById('modalConfirm').classList.add('active');
+}
+
+function cerrarConfirmacion() {
+    document.getElementById('modalConfirm').classList.remove('active');
+    accionPendiente = null;
+}
+
+function ejecutarConfirmacion() {
+    if (accionPendiente) {
+        accionPendiente();
+        cerrarConfirmacion();
+    }
+}
+
+function confirmarLimpiar() {
+    mostrarConfirmacion(
+        'Confirmar Limpieza',
+        '¿Está seguro que desea limpiar todos los campos del formulario? Se perderán los datos ingresados.',
+        limpiarFormularioCompleto
+    );
+}
+
+function confirmarCerrar() {
+    mostrarConfirmacion(
+        'Confirmar Cierre',
+        '¿Está seguro que desea cerrar la aplicación?',
+        () => {
+            window.close();
+            setTimeout(() => {
+                if (window.parent !== window) {
+                    window.parent.postMessage('cerrarFallasAisladas', '*');
+                }
+            }, 100);
+        }
+    );
+}
+
+function limpiarFormularioCompleto() {
+    const plantillaActual = document.getElementById('tipoPlantilla').value;
+    
+    // Limpiar todos los inputs excepto resultado
+    const todosLosInputs = document.querySelectorAll('input[type="text"], textarea');
+    todosLosInputs.forEach(el => {
+        if (el.id !== 'resultado') {
+            el.value = '';
+        }
+    });
+    
+    // Mantener plantilla seleccionada
+    document.getElementById('tipoPlantilla').value = plantillaActual;
+    
+    // Limpiar resultado
+    document.getElementById('resultado').value = '';
+    
+    // Forzar actualización de campos
+    actualizarCampos();
+}
+
+function abrirHistorial() {
+    renderizarTablaHistorial();
+    document.getElementById('modalHistorial').classList.add('active');
+}
+
+function cerrarHistorial() {
+    document.getElementById('modalHistorial').classList.remove('active');
+}
+
+function renderizarTablaHistorial(filtro = '') {
+    const tbody = document.getElementById('tablaHistorial');
+    const nombresPlantilla = {
+        'ACEPTACION_FALLAS': 'Aceptación',
+        'RECHAZO_FALLAS': 'Rechazo'
+    };
+    
+    let datos = historial;
+    if (filtro) {
+        const f = filtro.toLowerCase();
+        datos = historial.filter(h => 
+            (h.inc && h.inc.toLowerCase().includes(f)) || 
+            (h.ot && h.ot.toLowerCase().includes(f)) ||
+            nombresPlantilla[h.tipo].toLowerCase().includes(f)
+        );
+    }
+    
+    if (datos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888; padding: 2rem;">No hay casos registrados</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = datos.map((h, index) => {
+        const fecha = new Date(h.timestamp);
+        const fechaStr = fecha.toLocaleDateString('es-ES') + ' ' + fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        
+        return `
+            <tr>
+                <td>${fechaStr}</td>
+                <td><span class="history-type ${h.tipo}">${nombresPlantilla[h.tipo]}</span></td>
+                <td class="history-sn">${h.inc || 'N/A'}</td>
+                <td>${h.ot || 'N/A'}</td>
+                <td>
+                    <div class="actions-cell">
+                        <button class="btn-action btn-view" onclick="verPlantilla(${index})" title="Ver plantilla">👁️</button>
+                        <button class="btn-action btn-copy" onclick="copiarPlantillaHistorial(${index})" title="Copiar plantilla">📋</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filtrarHistorial() {
+    const filtro = document.getElementById('searchHistorial').value;
+    renderizarTablaHistorial(filtro);
+}
+
+function limpiarHistorialModal() {
+    mostrarConfirmacion(
+        'Limpiar Historial',
+        '¿Está seguro que desea eliminar todo el historial de casos? Esta acción no se puede deshacer.',
+        () => {
+            historial = [];
+            guardarDatos();
+            renderizarTablaHistorial();
+        }
+    );
+}
+
+function verPlantilla(index) {
+    previewActual = historial[index].contenido;
+    document.getElementById('previewText').textContent = previewActual;
+    document.getElementById('modalPreview').classList.add('active');
+}
+
+function cerrarPreview() {
+    document.getElementById('modalPreview').classList.remove('active');
+    previewActual = '';
+}
+
+function copiarDesdePreview() {
+    if (!previewActual) return;
+    
+    navigator.clipboard.writeText(previewActual).then(() => {
+        mostrarToast(previewActual);
+        cerrarPreview();
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
+function copiarPlantillaHistorial(index) {
+    const contenido = historial[index].contenido;
+    navigator.clipboard.writeText(contenido).then(() => {
+        mostrarToast(contenido);
+    }).catch(() => {
+        alert('Error al copiar');
+    });
+}
+
+function exportarExcel() {
+    if (historial.length === 0) {
+        alert('No hay datos para exportar');
+        return;
+    }
+    
+    const nombresPlantilla = {
+        'ACEPTACION_FALLAS': 'Aceptación Fallas Aisladas',
+        'RECHAZO_FALLAS': 'Rechazo Fallas Aisladas'
+    };
+    
+    // Agrupar por Incidencia + Tipo, quedarnos con el más reciente
+    const unicos = {};
+    
+    historial.forEach(h => {
+        const clave = `${h.inc || 'N/A'}_${h.tipo}`;
+        if (!unicos[clave] || h.timestamp > unicos[clave].timestamp) {
+            unicos[clave] = h;
+        }
+    });
+    
+    const datos = Object.values(unicos).sort((a, b) => b.timestamp - a.timestamp);
+    
+    // CSV
+    let csv = 'Fecha,Tipo,Incidencia,OT,Información del Caso\n';
+    
+    datos.forEach(h => {
+        const fecha = new Date(h.timestamp).toLocaleString('es-ES');
+        const tipo = nombresPlantilla[h.tipo] || h.tipo;
+        const inc = (h.inc || 'N/A').replace(/"/g, '""');
+        const ot = (h.ot || 'N/A').replace(/"/g, '""');
+        const info = (h.info_caso || 'N/A').replace(/"/g, '""').replace(/\n/g, ' ');
+        
+        csv += `"${fecha}","${tipo}","${inc}","${ot}","${info}"\n`;
+    });
+    
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Historial_Fallas_Aisladas_${new Date().toISOString().slice(0,10)}.csv`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+function actualizarCampos() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    
+    // Ocultar todos los campos condicionales
+    document.querySelectorAll('.conditional-field').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Si no hay plantilla seleccionada
+    if (!plantilla) {
+        document.getElementById('resultado').value = '';
+        return;
+    }
+    
+    // Mostrar campos según plantilla
+    const mostrar = (id) => document.getElementById(id).classList.add('active');
+    
+    // Siempre mostrar campos básicos de fallas
+    mostrar('campos-fallas');
+    
+    switch(plantilla) {
+        case 'ACEPTACION_FALLAS':
+            mostrar('campos-aceptacion');
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            // Solo campos básicos
+            break;
+    }
+    
+    generar();
+}
+
+function generar() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    if (!plantilla) {
+        document.getElementById('resultado').value = '';
+        return '';
+    }
+    
+    const val = (id) => {
+        const el = document.getElementById(id);
+        return (el && el.value.trim()) ? el.value.trim() : "N/A";
+    };
+    
+    // Obtener información del caso
+    const infoCaso = val('info_caso');
+    
+    let resultado = '';
+    
+    switch(plantilla) {
+        case 'ACEPTACION_FALLAS':
+            resultado = `📐ACEPTACION_FALLAS AISLADAS📐
+Señores ATP.
+Confirmamos la separación de las fallas, de acuerdo con la evidencia proporcionada y la validación realizada bajo el diagrama de topología de red (plano).
+INCIDENCIA: ${val('incidencia')} OT: ${val('ot')}
+Vías a separar:
+${infoCaso}
+El reporte quedará asociado bajo:
+INCIDENCIA: ${val('incidencia_nueva')} OT: ${val('ot_nueva')}
+GESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
+            
+        case 'RECHAZO_FALLAS':
+            resultado = `📐RECHAZO_FALLAS AISLADAS📐
+Señores ATP.
+Informamos que no se aceptará la separación de las fallas por falta de evidencia adecuada y confirmación según el diagrama de topología de red. La inclusión de anexos, no tiene un límite de tiempo definido, por lo tanto no es un motivo válido para esta separación. Se recuerda que, mientras el caso esté abierto, se pueden generar anexos adicionales.
+INCIDENCIA: ${val('incidencia')} OT: ${val('ot')}
+Vías de separación solicitadas:
+${infoCaso}
+GESTOR: ${nombreAgente.toUpperCase()}`;
+            break;
+    }
+    
+    document.getElementById('resultado').value = resultado;
+    return resultado;
+}
+
+function validar() {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    if (!plantilla) {
+        alert('Seleccione una plantilla');
+        return false;
+    }
+    
+    const faltantes = [];
+    const check = (id, nombre) => {
+        const el = document.getElementById(id);
+        if (el && el.closest('.conditional-field.active')) {
+            if (!el.value.trim()) faltantes.push(nombre);
+        }
+    };
+    
+    // Validar campos comunes
+    check('incidencia', 'Incidencia');
+    check('ot', 'OT');
+    check('info_caso', 'Información del Caso');
+    
+    // Validar campos específicos
+    if (plantilla === 'ACEPTACION_FALLAS') {
+        check('incidencia_nueva', 'Incidencia Asociada');
+        check('ot_nueva', 'OT Asociada');
+    }
+    
+    if (faltantes.length > 0) {
+        alert('⚠️ Campos requeridos para esta plantilla:\n\n• ' + faltantes.join('\n• ') + '\n\nPor favor complete todos los campos antes de copiar.');
+        return false;
+    }
+    
+    return true;
+}
+
+function copiar() {
+    if (!validar()) return;
+    
+    const resultado = document.getElementById('resultado');
+    if (!resultado.value.trim()) {
+        alert('Genere una plantilla primero');
+        return;
+    }
+    
+    const textoFormateado = resultado.value;
+    
+    navigator.clipboard.writeText(textoFormateado).then(() => {
+        registrarCaso(textoFormateado);
+        mostrarToast(textoFormateado);
+    }).catch(() => {
+        // Fallback
+        resultado.select();
+        document.execCommand('copy');
+        registrarCaso(textoFormateado);
+        mostrarToast(textoFormateado);
+    });
+}
+
+function mostrarToast(contenido) {
+    const container = document.getElementById('toastContainer');
+    const preview = document.getElementById('toastPreview');
+    const time = document.getElementById('toastTime');
+    
+    preview.textContent = contenido;
+    time.textContent = new Date().toLocaleTimeString('es-ES');
+    
+    container.classList.add('show');
+    
+    setTimeout(() => {
+        cerrarToast();
+    }, 8000);
+}
+
+function cerrarToast() {
+    document.getElementById('toastContainer').classList.remove('show');
+}
+
+function registrarCaso(contenido) {
+    const plantilla = document.getElementById('tipoPlantilla').value;
+    
+    // Obtener valores
+    const inc = document.getElementById('incidencia')?.value?.trim() || '';
+    const ot = document.getElementById('ot')?.value?.trim() || '';
+    const info_caso = document.getElementById('info_caso')?.value?.trim() || '';
+    
+    const ahora = new Date().getTime();
+    const UNA_HORA = 60 * 60 * 1000;
+    
+    // Verificar duplicado reciente
+    const duplicadoReciente = historial.some(h => 
+        h.inc === inc && 
+        h.ot === ot && 
+        h.tipo === plantilla && 
+        (ahora - h.timestamp) < UNA_HORA
+    );
+    
+    if (!duplicadoReciente) {
+        const caso = {
+            id: Date.now(),
+            inc: inc || 'N/A',
+            ot: ot || 'N/A',
+            info_caso: info_caso || 'N/A',
+            tipo: plantilla,
+            timestamp: ahora,
+            contenido: contenido
+        };
+        
+        historial.unshift(caso);
+        if (historial.length > 50) historial = historial.slice(0, 50);
+        
+        // Actualizar contadores
+        if (plantilla === 'ACEPTACION_FALLAS') {
+            contadores.ACEPTACION++;
+        } else if (plantilla === 'RECHAZO_FALLAS') {
+            contadores.RECHAZO++;
+        }
+        
+        guardarDatos();
+        actualizarEstadisticas();
+    }
+}
+
+function guardarDatos() {
+    localStorage.setItem('historialFallasAisladas', JSON.stringify(historial));
+    localStorage.setItem('contadoresFallasAisladas', JSON.stringify(contadores));
+}
+
+// Event listeners para cerrar modales al hacer clic fuera
+document.getElementById('modalHistorial').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarHistorial();
+});
+
+document.getElementById('modalPreview').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarPreview();
+});
+
+document.getElementById('modalConfirm').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) cerrarConfirmacion();
+});
+</script>
+
+</body>
+</html>
