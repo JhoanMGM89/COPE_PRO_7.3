@@ -4331,7 +4331,44 @@ function incrementarContadorTotal(contentKey) {
 }
 
 // ============================================
-// ACTUALIZAR TÍTULO SEGÚN COINVERSOR
+// GOOGLE SHEETS INTEGRATION
+// ============================================
+function enviarAGoogleSheets(hoja, datos) {
+    var url = localStorage.getItem('googleSheetsURL');
+    if (!url) return;
+    var agente = localStorage.getItem('nombreAgente') || 'N/A';
+    datos.AGENTE = agente.toUpperCase();
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({sheet: hoja, data: datos})
+    }).catch(function(e) { console.error('Error Google Sheets:', e); });
+}
+
+function abrirConfigSheets() {
+    var url = localStorage.getItem('googleSheetsURL') || '';
+    document.getElementById('inputGoogleSheetsURL').value = url;
+    document.getElementById('modalConfigSheets').classList.add('activo');
+}
+
+function cerrarConfigSheets() {
+    document.getElementById('modalConfigSheets').classList.remove('activo');
+}
+
+function guardarConfigSheets() {
+    var url = document.getElementById('inputGoogleSheetsURL').value.trim();
+    if (url) {
+        localStorage.setItem('googleSheetsURL', url);
+        mostrarToast('URL de Google Sheets guardada correctamente', 'exito');
+    } else {
+        localStorage.removeItem('googleSheetsURL');
+        mostrarToast('URL de Google Sheets eliminada', 'alerta');
+    }
+    cerrarConfigSheets();
+}
+
+
 // ============================================
 function actualizarTituloCoinv(coinv) {
     const titulo = document.getElementById('modalTitulo');
