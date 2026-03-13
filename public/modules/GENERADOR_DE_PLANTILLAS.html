@@ -6609,38 +6609,40 @@ function exportarHistorial() {
 <Style ss:ID="headerBlue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 </Styles>`;
 
+    const agente = localStorage.getItem('nombreAgente') || 'N/A';
+    const agenteUpper = agente.toUpperCase();
+
     // Hoja 1: CREACIÓN
     html += `<Worksheet ss:Name="CREACION"><Table>`;
-    html += `<Row><Cell ss:StyleID="header"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">ID</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO DE FALLA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">OBSERVACIÓN</Data></Cell></Row>`;
+    html += `<Row><Cell ss:StyleID="header"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">ID</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">TIPO DE FALLA</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialDatos.forEach(caso => {
-        html += `<Row><Cell><Data ss:Type="String">${escapeXml(caso.fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.tipo)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.idMostrado || caso.id)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.falla)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.observacion)}</Data></Cell></Row>`;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(caso.fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.tipo)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.idMostrado || caso.id)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.falla)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(caso.plantilla || caso.observacion)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
     html += `</Table></Worksheet>`;
 
     // Hoja 2: AVERÍAS
-    html += `<Worksheet ss:Name="AVERIAS"><Table>`;
-    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORÍA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLANTILLA</Data></Cell></Row>`;
+    html += `<Worksheet ss:Name="AVERIA"><Table>`;
+    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AVERIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialAverias.forEach(h => {
-        const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
-        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell></Row>`;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(h.name || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
     html += `</Table></Worksheet>`;
 
     // Hoja 3: ATP
     html += `<Worksheet ss:Name="ATP"><Table>`;
-    html += `<Row><Cell ss:StyleID="headerYellow"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">JIRA/FO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">INCIDENCIA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">OT</Data></Cell></Row>`;
+    html += `<Row><Cell ss:StyleID="headerYellow"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">JIRA/FO</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">INCIDENCIA</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">OT</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerYellow"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialATP.forEach(h => {
         const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
-        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.jira || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.inc || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.ot || '')}</Data></Cell></Row>`;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.jira || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.inc || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.ot || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
     html += `</Table></Worksheet>`;
 
     // Hoja 4: SERVICE NOW
     html += `<Worksheet ss:Name="SERVICE NOW"><Table>`;
-    html += `<Row><Cell ss:StyleID="headerBlue"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">SERVICE NOW</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">PLANTILLA</Data></Cell></Row>`;
+    html += `<Row><Cell ss:StyleID="headerBlue"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">SERVICE NOW</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerBlue"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialSN.forEach(h => {
         const fecha = h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '';
-        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.sn || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell></Row>`;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(fecha)}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.tipo || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.sn || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
     html += `</Table></Worksheet>`;
 
