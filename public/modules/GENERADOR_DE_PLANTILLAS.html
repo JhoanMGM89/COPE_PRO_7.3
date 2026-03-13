@@ -7712,7 +7712,7 @@ window.addEventListener('message', function(e) {
         abrirModulo(e.data.module, e.data.params);
     }
     if (e.data && e.data.type === 'INCREMENTAR_TOTAL') {
-        incrementarContadorTotal();
+        incrementarContadorTotal(e.data.contentKey || null);
     }
 });
 </script>
