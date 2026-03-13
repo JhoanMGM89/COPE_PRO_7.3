@@ -551,8 +551,8 @@ input:checked + .slider:before {
 .history-type.CREACION_OT { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
 .history-type.CANCELACION { background: rgba(108, 117, 125, 0.2); color: var(--gray); }
 .history-type.SOLICITUD_CANCEL { background: rgba(220, 53, 69, 0.2); color: #ff6b6b; }
-.history-type.ACEPTACION_FALLAS { background: rgba(25, 135, 84, 0.2); color: var(--success); }
-.history-type.RECHAZO_FALLAS { background: rgba(220, 53, 69, 0.2); color: var(--danger); }
+.history-type.ACEPTACION_FALLAS { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+.history-type.RECHAZO_FALLAS { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
 
 /* Modal Culminar desde Cierre */
 .modal-culminar-overlay {
@@ -1032,7 +1032,7 @@ input:checked + .slider:before {
     <div class="stats-row">
         <div class="stats-left">
             <button class="btn-history-small" onclick="abrirHistorial()">Historial</button>
-            <button class="btn-history-small" id="btnCulminar" style="display:none;border-color:var(--info);color:var(--info);" onclick="abrirModalCulminar()">Culminar</button>
+            <button class="btn-history-small" id="btnCulminar" style="display:none;border-color:var(--info);color:var(--info);" onclick="abrirModalCulminar()">CULMINAR</button>
         </div>
         <div class="stats-right">
             <div class="stat-item">
@@ -1385,30 +1385,26 @@ input:checked + .slider:before {
 <div id="modalCulminar" class="modal-culminar-overlay">
     <div class="modal-culminar-content">
         <div class="modal-culminar-header">
-            <h3>⏱️ CULMINAR PDR</h3>
+            <h3>⏱️ CULMINAR</h3>
             <button class="btn-close-modal" onclick="cerrarModalCulminar()">×</button>
         </div>
         <div class="modal-culminar-body">
             <div class="inline-row">
                 <div class="form-group">
                     <label class="form-label">Fecha y Hora Inicio</label>
-                    <input type="text" id="culminarFechaInicio" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                    <input type="text" id="culminarFechaInicio" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="calcularCulminar()">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Fecha y Hora Fin</label>
-                    <input type="text" id="culminarFechaFin" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                    <input type="text" id="culminarFechaFin" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="calcularCulminar()">
                 </div>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Tiempo de Restricción</label>
                 <input type="text" id="culminarTiempoRest" class="form-control" readonly style="background: #2a2a2a; color: var(--primary-blue); font-weight: bold;">
             </div>
-            <div class="resultado-container">
-                <textarea id="culminarResultado" class="resultado" readonly style="min-height:120px;" placeholder="La plantilla de culminación aparecerá aquí..."></textarea>
-            </div>
         </div>
         <div class="modal-culminar-footer">
-            <button class="btn btn-success" onclick="copiarCulminarDesdeCierre()">Copiar</button>
             <button class="btn btn-danger" onclick="limpiarCulminar()">Limpiar</button>
             <button class="btn btn-secondary" onclick="cerrarModalCulminar()">Cerrar</button>
         </div>
@@ -1416,6 +1412,20 @@ input:checked + .slider:before {
 </div>
 
 <script>
+// Función para enviar datos a Google Sheets
+function enviarAGoogleSheets(hoja, datos) {
+    var url = localStorage.getItem('googleSheetsURL');
+    if (!url) return;
+    var agente = localStorage.getItem('nombreAgente') || 'N/A';
+    datos.AGENTE = agente.toUpperCase();
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({sheet: hoja, data: datos})
+    }).catch(function(e) { console.error('Error Google Sheets:', e); });
+}
+
 // El nombre del agente se obtendrá de localStorage (establecido por otro archivo)
 // o usará un valor por defecto
 let nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
@@ -2179,18 +2189,31 @@ function copiar() {
         }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
-        // Notificar al padre para contador total
+        // Notificar al padre para contador total (con clave para dedup)
+        var plantillaActual = document.getElementById('tipoPlantilla').value;
+        var contentKey = 'ATP_' + plantillaActual + '_' + (document.getElementById('incidencia')?.value?.trim() || '') + '_' + (document.getElementById('ot')?.value?.trim() || '');
         if (window.parent !== window) {
-            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
         }
+        // Enviar a Google Sheets
+        enviarAGoogleSheets('ATP', {
+            FECHA: new Date().toLocaleString('es-CO'),
+            TIPO: plantillaActual,
+            'JIRA/FO': document.getElementById('jira_flex')?.value?.trim() || document.getElementById('jira_solo')?.value?.trim() || 'N/A',
+            INCIDENCIA: document.getElementById('incidencia')?.value?.trim() || 'N/A',
+            OT: document.getElementById('ot')?.value?.trim() || 'N/A',
+            OBSERVACION: textoFormateado
+        });
     }).catch(() => {
         // Fallback
         resultado.select();
         document.execCommand('copy');
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        var plantillaActual2 = document.getElementById('tipoPlantilla').value;
+        var contentKey2 = 'ATP_' + plantillaActual2 + '_' + (document.getElementById('incidencia')?.value?.trim() || '') + '_' + (document.getElementById('ot')?.value?.trim() || '');
         if (window.parent !== window) {
-            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey2}, '*');
         }
     });
 }
@@ -2328,9 +2351,7 @@ function abrirPuttyDesdeModulo() {
 // FUNCIONES MODAL CULMINAR DESDE CIERRE
 // ============================================
 function abrirModalCulminar() {
-    // Pre-llenar JIRA e INC/OT desde el formulario de cierre si existen
     document.getElementById('modalCulminar').classList.add('active');
-    generarCulminarDesdeCierre();
 }
 
 function cerrarModalCulminar() {
@@ -2341,73 +2362,12 @@ function limpiarCulminar() {
     document.getElementById('culminarFechaInicio').value = '';
     document.getElementById('culminarFechaFin').value = '';
     document.getElementById('culminarTiempoRest').value = '';
-    document.getElementById('culminarResultado').value = '';
 }
 
-function generarCulminarDesdeCierre() {
-    const isATC = document.getElementById('check_atc').checked;
-    const etiqueta = isATC ? 'FO' : 'JIRA';
-    
-    const val = (id) => {
-        const el = document.getElementById(id);
-        return (el && el.value.trim()) ? el.value.trim() : "N/A";
-    };
-    
-    const inicio = val('culminarFechaInicio');
-    const fin = val('culminarFechaFin');
-    const tiempo = calcularRestriccion(inicio, fin);
-    document.getElementById('culminarTiempoRest').value = tiempo;
-    
-    // Usar JIRA e INC/OT del formulario principal de cierre
-    const jiraVal = val('jira_flex');
-    const incVal = val('incidencia');
-    const otVal = val('ot');
-    
-    const resultado = `⏱️CULMINACIÓN PDR⏱️\n${etiqueta}: ${jiraVal}\nINCIDENCIA: ${incVal} OT: ${otVal}\nFecha y Hora Inicio: ${inicio}\nFecha y Hora Fin: ${fin}\nTiempo de Restricción: ${tiempo}\nGESTOR: ${nombreAgente.toUpperCase()}`;
-    
-    document.getElementById('culminarResultado').value = resultado;
-}
-
-function copiarCulminarDesdeCierre() {
-    const resultado = document.getElementById('culminarResultado').value;
-    if (!resultado.trim()) {
-        alert('Complete los campos de fecha primero');
-        return;
-    }
-    
-    navigator.clipboard.writeText(resultado).then(() => {
-        // Registrar en historial como CULMINACION
-        const isATC = document.getElementById('check_atc').checked;
-        const jira = document.getElementById('jira_flex')?.value?.trim() || '';
-        const inc = document.getElementById('incidencia')?.value?.trim() || '';
-        const ot = document.getElementById('ot')?.value?.trim() || '';
-        
-        const caso = {
-            id: Date.now(),
-            jira: jira || 'N/A',
-            inc: inc || 'N/A',
-            ot: ot || 'N/A',
-            tipo: 'CULMINACION',
-            timestamp: new Date().getTime(),
-            contenido: resultado,
-            atc: isATC
-        };
-        
-        historial.unshift(caso);
-        contadores.PDR++;
-        guardarDatos();
-        actualizarEstadisticas();
-        
-        mostrarToast(resultado);
-        cerrarModalCulminar();
-        
-        // Notificar al padre para contador total
-        if (window.parent !== window) {
-            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
-        }
-    }).catch(() => {
-        alert('Error al copiar');
-    });
+function calcularCulminar() {
+    const inicio = document.getElementById('culminarFechaInicio').value.trim();
+    const fin = document.getElementById('culminarFechaFin').value.trim();
+    document.getElementById('culminarTiempoRest').value = calcularRestriccion(inicio, fin);
 }
 
 // Event listeners para cerrar modales al hacer clic fuera

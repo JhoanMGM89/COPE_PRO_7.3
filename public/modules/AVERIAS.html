@@ -1254,6 +1254,20 @@
     </div>
 
     <script>
+        // Función para enviar datos a Google Sheets
+        function enviarAGoogleSheets(hoja, datos) {
+            var url = localStorage.getItem('googleSheetsURL');
+            if (!url) return;
+            var agente = localStorage.getItem('nombreAgente') || 'N/A';
+            datos.AGENTE = agente.toUpperCase();
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {'Content-Type': 'text/plain'},
+                body: JSON.stringify({sheet: hoja, data: datos})
+            }).catch(function(e) { console.error('Error Google Sheets:', e); });
+        }
+
         const nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
         let historialAverias = JSON.parse(localStorage.getItem('historialAverias')) || [];
         let formularioNum = '';
@@ -1654,10 +1668,20 @@
                     incrementarRechazados();
                 }
                 
-                // Notificar al padre para contador total
+                // Notificar al padre para contador total (con clave para dedup)
+                var contentKey = 'AVERIAS_' + (template.name || '') + '_' + (activePlatform || '') + '_' + (template.category || '');
                 if (window.parent !== window) {
-                    window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+                    window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
                 }
+                // Enviar a Google Sheets
+                enviarAGoogleSheets('AVERIA', {
+                    FECHA: new Date().toLocaleString('es-CO'),
+                    AVERIA: template.name || 'N/A',
+                    PLATAFORMA: activePlatform || 'N/A',
+                    CATEGORIA: template.category || 'N/A',
+                    FORMULARIO: formularioNum || 'N/A',
+                    OBSERVACION: finalText
+                });
                 
                 // Limpiar input de formulario
                 const formInput = document.getElementById('inputFormulario');
