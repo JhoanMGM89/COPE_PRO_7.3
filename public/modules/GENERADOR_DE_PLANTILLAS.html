@@ -4309,7 +4309,22 @@ function resetearContadorTotal() {
     }
 }
 
-function incrementarContadorTotal() {
+function incrementarContadorTotal(contentKey) {
+    if (contentKey) {
+        var ahora = Date.now();
+        var UNA_HORA = 60 * 60 * 1000;
+        var registros = JSON.parse(localStorage.getItem('totalGlobalRegistros') || '[]');
+        // Limpiar registros más viejos de 1 hora
+        registros = registros.filter(function(r) { return (ahora - r.ts) < UNA_HORA; });
+        // Verificar duplicado
+        var duplicado = registros.some(function(r) { return r.key === contentKey; });
+        if (duplicado) {
+            localStorage.setItem('totalGlobalRegistros', JSON.stringify(registros));
+            return; // No incrementar
+        }
+        registros.push({key: contentKey, ts: ahora});
+        localStorage.setItem('totalGlobalRegistros', JSON.stringify(registros));
+    }
     contadorTotalGlobal++;
     localStorage.setItem('contadorTotalGlobal', contadorTotalGlobal);
     document.getElementById('contadorTotalGlobal').textContent = contadorTotalGlobal;
