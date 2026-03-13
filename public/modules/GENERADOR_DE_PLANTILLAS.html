@@ -7047,8 +7047,17 @@ function copiarTodo() {
             localStorage.setItem('contadorCreaciones', contadorCreaciones);
             document.getElementById('contadorCreaciones').textContent = contadorCreaciones;
             
-            // Incrementar contador total global
-            incrementarContadorTotal();
+            // Incrementar contador total global (con dedup)
+            incrementarContadorTotal('CREACION_' + claveUnica);
+            
+            // Enviar a Google Sheets
+            enviarAGoogleSheets('CREACION', {
+                FECHA: caso.fecha,
+                TIPO: caso.tipo,
+                ID: caso.idMostrado || caso.id,
+                'TIPO DE FALLA': caso.falla,
+                OBSERVACION: plantilla
+            });
             
             mostrarToast('✓ Copiado y guardado en historial', 'exito');
         } else {
