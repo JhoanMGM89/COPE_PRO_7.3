@@ -2175,18 +2175,31 @@ function copiar() {
         }
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
-        // Notificar al padre para contador total
+        // Notificar al padre para contador total (con clave para dedup)
+        var plantillaActual = document.getElementById('tipoPlantilla').value;
+        var contentKey = 'ATP_' + plantillaActual + '_' + (document.getElementById('incidencia')?.value?.trim() || '') + '_' + (document.getElementById('ot')?.value?.trim() || '');
         if (window.parent !== window) {
-            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
         }
+        // Enviar a Google Sheets
+        enviarAGoogleSheets('ATP', {
+            FECHA: new Date().toLocaleString('es-CO'),
+            TIPO: plantillaActual,
+            'JIRA/FO': document.getElementById('jira_flex')?.value?.trim() || document.getElementById('jira_solo')?.value?.trim() || 'N/A',
+            INCIDENCIA: document.getElementById('incidencia')?.value?.trim() || 'N/A',
+            OT: document.getElementById('ot')?.value?.trim() || 'N/A',
+            OBSERVACION: textoFormateado
+        });
     }).catch(() => {
         // Fallback
         resultado.select();
         document.execCommand('copy');
         registrarCaso(textoFormateado);
         mostrarToast(textoFormateado);
+        var plantillaActual2 = document.getElementById('tipoPlantilla').value;
+        var contentKey2 = 'ATP_' + plantillaActual2 + '_' + (document.getElementById('incidencia')?.value?.trim() || '') + '_' + (document.getElementById('ot')?.value?.trim() || '');
         if (window.parent !== window) {
-            window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+            window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey2}, '*');
         }
     });
 }

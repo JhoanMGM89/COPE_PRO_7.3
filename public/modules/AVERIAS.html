@@ -1654,10 +1654,20 @@
                     incrementarRechazados();
                 }
                 
-                // Notificar al padre para contador total
+                // Notificar al padre para contador total (con clave para dedup)
+                var contentKey = 'AVERIAS_' + (template.name || '') + '_' + (activePlatform || '') + '_' + (template.category || '');
                 if (window.parent !== window) {
-                    window.parent.postMessage({type: 'INCREMENTAR_TOTAL'}, '*');
+                    window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
                 }
+                // Enviar a Google Sheets
+                enviarAGoogleSheets('AVERIA', {
+                    FECHA: new Date().toLocaleString('es-CO'),
+                    AVERIA: template.name || 'N/A',
+                    PLATAFORMA: activePlatform || 'N/A',
+                    CATEGORIA: template.category || 'N/A',
+                    FORMULARIO: formularioNum || 'N/A',
+                    OBSERVACION: finalText
+                });
                 
                 // Limpiar input de formulario
                 const formInput = document.getElementById('inputFormulario');
