@@ -4327,6 +4327,7 @@ function resetearContadorTotal() {
     if (confirm('¿Está seguro que desea resetear el contador Total?')) {
         contadorTotalGlobal = 0;
         localStorage.setItem('contadorTotalGlobal', '0');
+        localStorage.removeItem('totalGlobalRegistros');
         document.getElementById('contadorTotalGlobal').textContent = '0';
         mostrarToast('Contador Total reseteado', 'exito');
     }
