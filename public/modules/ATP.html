@@ -1385,30 +1385,26 @@ input:checked + .slider:before {
 <div id="modalCulminar" class="modal-culminar-overlay">
     <div class="modal-culminar-content">
         <div class="modal-culminar-header">
-            <h3>⏱️ CULMINAR PDR</h3>
+            <h3>⏱️ CULMINAR</h3>
             <button class="btn-close-modal" onclick="cerrarModalCulminar()">×</button>
         </div>
         <div class="modal-culminar-body">
             <div class="inline-row">
                 <div class="form-group">
                     <label class="form-label">Fecha y Hora Inicio</label>
-                    <input type="text" id="culminarFechaInicio" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                    <input type="text" id="culminarFechaInicio" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="calcularCulminar()">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Fecha y Hora Fin</label>
-                    <input type="text" id="culminarFechaFin" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="generarCulminarDesdeCierre()">
+                    <input type="text" id="culminarFechaFin" class="form-control" placeholder="DD/MM/AAAA HH:MM:SS AM/PM" oninput="calcularCulminar()">
                 </div>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Tiempo de Restricción</label>
                 <input type="text" id="culminarTiempoRest" class="form-control" readonly style="background: #2a2a2a; color: var(--primary-blue); font-weight: bold;">
             </div>
-            <div class="resultado-container">
-                <textarea id="culminarResultado" class="resultado" readonly style="min-height:120px;" placeholder="La plantilla de culminación aparecerá aquí..."></textarea>
-            </div>
         </div>
         <div class="modal-culminar-footer">
-            <button class="btn btn-success" onclick="copiarCulminarDesdeCierre()">Copiar</button>
             <button class="btn btn-danger" onclick="limpiarCulminar()">Limpiar</button>
             <button class="btn btn-secondary" onclick="cerrarModalCulminar()">Cerrar</button>
         </div>
