@@ -4357,8 +4357,9 @@ function incrementarContadorTotal(contentKey) {
 // ============================================
 // GOOGLE SHEETS INTEGRATION
 // ============================================
+var GOOGLE_SHEETS_URL = ''; // SE REEMPLAZA CON LA URL DESPLEGADA DEL APPS SCRIPT
 function enviarAGoogleSheets(hoja, datos) {
-    var url = localStorage.getItem('googleSheetsURL');
+    var url = GOOGLE_SHEETS_URL;
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
