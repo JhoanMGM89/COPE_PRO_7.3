@@ -2628,34 +2628,11 @@ input:checked + .slider:before {
         <button class="btn-fondo" onclick="volverALogin()" title="Cambiar agente y fondo">
             ⚙️ Cambiar agente / fondo
         </button>
-        <button class="btn-fondo" onclick="abrirConfigSheets()" title="Configurar Google Sheets">
-            📊 Google Sheets
-        </button>
     </div>
 </div>
 
-<!-- Modal Config Google Sheets -->
-<div id="modalConfigSheets" class="modal-overlay" style="z-index:9000;">
-    <div style="background:#1a1a1a;border-radius:8px;width:100%;max-width:500px;border:1px solid #444;overflow:hidden;">
-        <div style="background:#28a745;padding:1rem;display:flex;justify-content:space-between;align-items:center;">
-            <h3 style="margin:0;font-size:1rem;color:white;">📊 CONFIGURAR GOOGLE SHEETS</h3>
-            <button style="background:rgba(255,255,255,0.2);border:none;color:white;width:30px;height:30px;border-radius:4px;cursor:pointer;font-size:1.2rem;" onclick="cerrarConfigSheets()">×</button>
-        </div>
-        <div style="padding:1.25rem;">
-            <p style="color:#aaa;font-size:0.85rem;margin-bottom:1rem;">Pegue la URL del Web App de Google Apps Script para registrar automáticamente las plantillas copiadas.</p>
-            <label style="display:block;font-size:0.8rem;color:#fff;font-weight:bold;margin-bottom:0.5rem;text-transform:uppercase;">URL del Web App</label>
-            <input type="text" id="inputGoogleSheetsURL" style="width:100%;padding:0.625rem;background:white;color:#000;border:1px solid #ccc;border-radius:6px;font-size:0.9rem;margin-bottom:1rem;" placeholder="https://script.google.com/macros/s/...">
-            <p style="color:#888;font-size:0.75rem;margin-bottom:1rem;">Las hojas necesarias son: CREACION, AVERIA, ATP, SERVICE NOW</p>
-        </div>
-        <div style="padding:1rem;display:flex;justify-content:flex-end;gap:0.5rem;background:#2a2a2a;border-top:1px solid #444;">
-            <button style="padding:0.5rem 1rem;border:none;border-radius:4px;background:#6c757d;color:white;cursor:pointer;" onclick="cerrarConfigSheets()">Cancelar</button>
-            <button style="padding:0.5rem 1rem;border:none;border-radius:4px;background:#28a745;color:white;cursor:pointer;font-weight:bold;" onclick="guardarConfigSheets()">Guardar</button>
-        </div>
-    </div>
-</div>
-
-
-     MODAL PRINCIPAL - CREACION
+<!-- ============================================
+     BY JHOAN GORDON
      ============================================ -->
 <div id="modalOverlay" class="modal-overlay">
     <div class="modal-contenido">
@@ -4357,8 +4334,9 @@ function incrementarContadorTotal(contentKey) {
 // ============================================
 // GOOGLE SHEETS INTEGRATION
 // ============================================
+var GOOGLE_SHEETS_URL = ''; // SE REEMPLAZA CON LA URL DESPLEGADA DEL APPS SCRIPT
 function enviarAGoogleSheets(hoja, datos) {
-    var url = localStorage.getItem('googleSheetsURL');
+    var url = GOOGLE_SHEETS_URL;
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
@@ -4370,27 +4348,7 @@ function enviarAGoogleSheets(hoja, datos) {
     }).catch(function(e) { console.error('Error Google Sheets:', e); });
 }
 
-function abrirConfigSheets() {
-    var url = localStorage.getItem('googleSheetsURL') || '';
-    document.getElementById('inputGoogleSheetsURL').value = url;
-    document.getElementById('modalConfigSheets').classList.add('activo');
-}
-
-function cerrarConfigSheets() {
-    document.getElementById('modalConfigSheets').classList.remove('activo');
-}
-
-function guardarConfigSheets() {
-    var url = document.getElementById('inputGoogleSheetsURL').value.trim();
-    if (url) {
-        localStorage.setItem('googleSheetsURL', url);
-        mostrarToast('URL de Google Sheets guardada correctamente', 'exito');
-    } else {
-        localStorage.removeItem('googleSheetsURL');
-        mostrarToast('URL de Google Sheets eliminada', 'alerta');
-    }
-    cerrarConfigSheets();
-}
+// Config Google Sheets removida - URL hardcodeada en GOOGLE_SHEETS_URL
 
 
 // ============================================
