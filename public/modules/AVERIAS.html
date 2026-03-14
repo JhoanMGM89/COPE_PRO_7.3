@@ -1911,10 +1911,11 @@
 
         function exportarCSVAverias() {
             if (historialAverias.length === 0) { alert('No hay datos para exportar'); return; }
-            let csv = 'Fecha,Plataforma,Categoría,Formulario,Plantilla\n';
+            let csv = 'AVERIA,PLATAFORMA,CATEGORIA,FORMULARIO,OBSERVACION,AGENTE\n';
             historialAverias.forEach(h => {
                 const fecha = new Date(h.timestamp).toLocaleString('es-ES');
-                csv += `"${fecha}","${h.platform || ''}","${h.category || ''}","${h.formulario || ''}","${(h.contenido || '').replace(/"/g, '""')}"\n`;
+                const agente = localStorage.getItem('nombreAgente') || 'N/A';
+                csv += `"${fecha}","${h.platform || ''}","${h.category || ''}","${h.formulario || ''}","${(h.contenido || '').replace(/"/g, '""')}","${agente.toUpperCase()}"\n`;
             });
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
