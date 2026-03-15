@@ -29,7 +29,16 @@ var SPREADSHEET_ID = '1hiIsu-gXkzGoyYcvRsSZmIg35Dv36YrAE6S1jDLMPlQ';
 
 function doPost(e) {
   try {
-    var body = JSON.parse(e.postData.contents);
+    var body;
+    if (e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
+    } else if (e.parameter && e.parameter.payload) {
+      body = JSON.parse(decodeURIComponent(e.parameter.payload));
+    } else {
+      return ContentService.createTextOutput(JSON.stringify({error: 'No data received'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     var sheetName = body.sheet;
     var data = body.data;
     
@@ -52,7 +61,7 @@ function doPost(e) {
     // Agregar la fila al final
     sheet.appendRow(row);
     
-    return ContentService.createTextOutput(JSON.stringify({success: true}))
+    return ContentService.createTextOutput(JSON.stringify({success: true, sheet: sheetName}))
       .setMimeType(ContentService.MimeType.JSON);
       
   } catch(error) {
@@ -62,6 +71,32 @@ function doPost(e) {
 }
 
 function doGet(e) {
+  // Soporte para envío via GET como fallback
+  if (e && e.parameter && e.parameter.payload) {
+    try {
+      var body = JSON.parse(decodeURIComponent(e.parameter.payload));
+      var sheetName = body.sheet;
+      var data = body.data;
+      
+      var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sheet = ss.getSheetByName(sheetName);
+      
+      if (!sheet) {
+        return ContentService.createTextOutput(JSON.stringify({error: 'Hoja no encontrada'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var row = headers.map(function(header) { return data[header] || ''; });
+      sheet.appendRow(row);
+      
+      return ContentService.createTextOutput(JSON.stringify({success: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch(err) {
+      return ContentService.createTextOutput(JSON.stringify({error: err.toString()}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
   return ContentService.createTextOutput('Google Sheets API activa - REGISTRO DE PLANTILLAS')
     .setMimeType(ContentService.MimeType.TEXT);
 }
