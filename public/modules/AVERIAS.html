@@ -1255,7 +1255,7 @@
 
     <script>
         // Función para enviar datos a Google Sheets
-        var GOOGLE_SHEETS_URL = ''; // SE REEMPLAZA CON LA URL DESPLEGADA DEL APPS SCRIPT
+        var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxhUYa-iwfN5KrA3k-uzMl7pyuz6TtdABT3vyXMHjJs5e_gYoLhswAAkWmOLiyAToGJ/exec';
         function enviarAGoogleSheets(hoja, datos) {
             var url = GOOGLE_SHEETS_URL;
             if (!url) return;
@@ -1676,7 +1676,7 @@
                 }
                 // Enviar a Google Sheets
                 enviarAGoogleSheets('AVERIA', {
-                    AVERIA: new Date().toLocaleString('es-CO'),
+                    FECHA: new Date().toLocaleString('es-CO'),
                     PLATAFORMA: activePlatform || 'N/A',
                     CATEGORIA: template.category || 'N/A',
                     FORMULARIO: formularioNum || 'N/A',
@@ -1911,7 +1911,7 @@
 
         function exportarCSVAverias() {
             if (historialAverias.length === 0) { alert('No hay datos para exportar'); return; }
-            let csv = 'AVERIA,PLATAFORMA,CATEGORIA,FORMULARIO,OBSERVACION,AGENTE\n';
+            let csv = 'FECHA,PLATAFORMA,CATEGORIA,FORMULARIO,OBSERVACION,AGENTE\n';
             historialAverias.forEach(h => {
                 const fecha = new Date(h.timestamp).toLocaleString('es-ES');
                 const agente = localStorage.getItem('nombreAgente') || 'N/A';
