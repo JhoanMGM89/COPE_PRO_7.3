@@ -4340,12 +4340,25 @@ function enviarAGoogleSheets(hoja, datos) {
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
+    var payload = JSON.stringify({sheet: hoja, data: datos});
+    
+    // Método 1: Usar no-cors con text/plain
     fetch(url, {
         method: 'POST',
         mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify({sheet: hoja, data: datos})
-    }).catch(function(e) { console.error('Error Google Sheets:', e); });
+        body: payload
+    }).then(function() {
+        console.log('✅ Enviado a Google Sheets:', hoja, datos);
+    }).catch(function(e) {
+        console.error('❌ Error Google Sheets:', e);
+        // Fallback: enviar via imagen beacon
+        try {
+            var params = encodeURIComponent(payload);
+            var img = new Image();
+            img.src = url + '?payload=' + params;
+        } catch(e2) { console.error('Fallback falló:', e2); }
+    });
 }
 
 // Config Google Sheets removida - URL hardcodeada en GOOGLE_SHEETS_URL
