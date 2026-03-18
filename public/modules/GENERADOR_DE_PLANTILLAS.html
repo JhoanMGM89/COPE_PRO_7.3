@@ -6583,7 +6583,7 @@ function exportarHistorial() {
 
     // Hoja 2: AVERÍAS
     html += `<Worksheet ss:Name="AVERIA"><Table>`;
-    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AVERIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
+    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialAverias.forEach(h => {
         html += `<Row><Cell><Data ss:Type="String">${escapeXml(h.name || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
