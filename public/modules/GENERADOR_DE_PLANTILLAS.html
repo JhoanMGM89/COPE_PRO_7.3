@@ -4340,25 +4340,14 @@ function enviarAGoogleSheets(hoja, datos) {
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
-    var payload = JSON.stringify({sheet: hoja, data: datos});
-    
-    // Método 1: Usar no-cors con text/plain
     fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'text/plain'},
-        body: payload
-    }).then(function() {
-        console.log('✅ Enviado a Google Sheets:', hoja, datos);
-    }).catch(function(e) {
-        console.error('❌ Error Google Sheets:', e);
-        // Fallback: enviar via imagen beacon
-        try {
-            var params = encodeURIComponent(payload);
-            var img = new Image();
-            img.src = url + '?payload=' + params;
-        } catch(e2) { console.error('Fallback falló:', e2); }
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheet: hoja, data: datos })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) { console.log('✅ Google Sheets:', res); })
+    .catch(function(e) { console.error('❌ Error Google Sheets:', e); });
 }
 
 // Config Google Sheets removida - URL hardcodeada en GOOGLE_SHEETS_URL
@@ -6594,9 +6583,9 @@ function exportarHistorial() {
 
     // Hoja 2: AVERÍAS
     html += `<Worksheet ss:Name="AVERIA"><Table>`;
-    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AVERIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
+    html += `<Row><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">PLATAFORMA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">CATEGORIA</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">FORMULARIO</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">OBSERVACION</Data></Cell><Cell ss:StyleID="headerOrange"><Data ss:Type="String">AGENTE</Data></Cell></Row>`;
     historialAverias.forEach(h => {
-        html += `<Row><Cell><Data ss:Type="String">${escapeXml(h.name || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
+        html += `<Row><Cell><Data ss:Type="String">${escapeXml(h.timestamp ? new Date(h.timestamp).toLocaleString('es-ES') : '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.platform || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.category || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.formulario || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(h.contenido || '')}</Data></Cell><Cell><Data ss:Type="String">${escapeXml(agenteUpper)}</Data></Cell></Row>`;
     });
     html += `</Table></Worksheet>`;
 

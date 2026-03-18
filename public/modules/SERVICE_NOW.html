@@ -1278,17 +1278,14 @@ function enviarAGoogleSheets(hoja, datos) {
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
-    var payload = JSON.stringify({sheet: hoja, data: datos});
     fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'text/plain'},
-        body: payload
-    }).then(function() {
-        console.log('✅ Enviado a Google Sheets:', hoja, datos);
-    }).catch(function(e) {
-        console.error('❌ Error Google Sheets:', e);
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheet: hoja, data: datos })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) { console.log('✅ Google Sheets:', res); })
+    .catch(function(e) { console.error('❌ Error Google Sheets:', e); });
 }
 
 const agente = localStorage.getItem('nombreAgente') || 'GESTOR';
@@ -1563,12 +1560,9 @@ function exportarExcel() {
         const fecha = new Date(h.timestamp).toLocaleString('es-ES');
         const tipo = h.tipo;
         const sn = h.sn || 'S/N';
-        const plantilla = nombresPlantilla[h.tipo] || h.tipo;
+        const plantilla = (h.contenido || nombresPlantilla[h.tipo] || h.tipo).replace(/"/g, '""').replace(/\n/g, ' ');
         
-        // Escapar comillas para CSV
-        const plantillaLimpia = '"' + plantilla.replace(/"/g, '""') + '"';
-        
-        csv += `"${fecha}","${tipo}","${sn}",${plantillaLimpia}\n`;
+        csv += `"${fecha}","${tipo}","${sn}","${plantilla}"\n`;
     });
     
     // Crear blob con BOM para UTF-8 y tipo CSV correcto
