@@ -1714,7 +1714,7 @@ function exportarExcel() {
         const jira = (h.jira || 'N/A').replace(/"/g, '""');
         const inc = (h.inc || 'N/A').replace(/"/g, '""');
         const ot = (h.ot || 'N/A').replace(/"/g, '""');
-        const plantilla = (nombresPlantilla[h.tipo] || h.tipo).replace(/"/g, '""');
+        const plantilla = (h.contenido || nombresPlantilla[h.tipo] || h.tipo).replace(/"/g, '""').replace(/\n/g, ' ');
         
         csv += `"${fecha}","${tipo}","${jira}","${inc}","${ot}","${plantilla}"\n`;
     });

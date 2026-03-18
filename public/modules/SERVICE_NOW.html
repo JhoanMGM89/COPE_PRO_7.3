@@ -1560,12 +1560,9 @@ function exportarExcel() {
         const fecha = new Date(h.timestamp).toLocaleString('es-ES');
         const tipo = h.tipo;
         const sn = h.sn || 'S/N';
-        const plantilla = nombresPlantilla[h.tipo] || h.tipo;
+        const plantilla = (h.contenido || nombresPlantilla[h.tipo] || h.tipo).replace(/"/g, '""').replace(/\n/g, ' ');
         
-        // Escapar comillas para CSV
-        const plantillaLimpia = '"' + plantilla.replace(/"/g, '""') + '"';
-        
-        csv += `"${fecha}","${tipo}","${sn}",${plantillaLimpia}\n`;
+        csv += `"${fecha}","${tipo}","${sn}","${plantilla}"\n`;
     });
     
     // Crear blob con BOM para UTF-8 y tipo CSV correcto
