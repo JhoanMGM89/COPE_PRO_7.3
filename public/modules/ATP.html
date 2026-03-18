@@ -1419,17 +1419,14 @@ function enviarAGoogleSheets(hoja, datos) {
     if (!url) return;
     var agente = localStorage.getItem('nombreAgente') || 'N/A';
     datos.AGENTE = agente.toUpperCase();
-    var payload = JSON.stringify({sheet: hoja, data: datos});
     fetch(url, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'text/plain'},
-        body: payload
-    }).then(function() {
-        console.log('✅ Enviado a Google Sheets:', hoja, datos);
-    }).catch(function(e) {
-        console.error('❌ Error Google Sheets:', e);
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheet: hoja, data: datos })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) { console.log('✅ Google Sheets:', res); })
+    .catch(function(e) { console.error('❌ Error Google Sheets:', e); });
 }
 
 // El nombre del agente se obtendrá de localStorage (establecido por otro archivo)
