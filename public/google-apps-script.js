@@ -14,64 +14,93 @@
 
 var SPREADSHEET_ID = '1hiIsu-gXkzGoyYcvRsSZmIg35Dv36YrAE6S1jDLMPlQ';
 
+function normalizarTexto(valor) {
+  if (valor === null || valor === undefined) return '';
+  return String(valor);
+}
+
+function obtenerPayload(e) {
+  if (!e) throw new Error('Evento no recibido');
+
+  if (e.parameter && e.parameter.payload) {
+    return JSON.parse(e.parameter.payload);
+  }
+
+  if (e.postData && e.postData.contents) {
+    var contenido = e.postData.contents;
+    try {
+      return JSON.parse(contenido);
+    } catch (jsonError) {
+      if (e.parameter && e.parameter.payload) {
+        return JSON.parse(e.parameter.payload);
+      }
+      throw new Error('No fue posible interpretar el payload enviado');
+    }
+  }
+
+  throw new Error('No se recibió payload');
+}
+
+function registrarEnHoja(payload) {
+  var sheetName = normalizarTexto(payload.sheet).trim();
+  var data = payload.data || {};
+
+  if (!sheetName) {
+    throw new Error('El nombre de la hoja es obligatorio');
+  }
+
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    throw new Error('Hoja no encontrada: ' + sheetName);
+  }
+
+  var lastColumn = Math.max(sheet.getLastColumn(), 1);
+  var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0].map(function(header) {
+    return normalizarTexto(header).trim();
+  });
+
+  var row = headers.map(function(header) {
+    return normalizarTexto(data[header]);
+  });
+
+  sheet.appendRow(row);
+
+  return {
+    success: true,
+    sheet: sheetName,
+    headers: headers,
+    row: row
+  };
+}
+
+function crearRespuestaJSON(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
-    var body = JSON.parse(e.postData.contents);
-    var sheetName = body.sheet;
-    var data = body.data;
-    
-    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName(sheetName);
-    
-    if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({error: 'Hoja no encontrada: ' + sheetName}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var row = headers.map(function(header) {
-      return data[header] || '';
-    });
-    
-    sheet.appendRow(row);
-    
-    return ContentService.createTextOutput(JSON.stringify({success: true, sheet: sheetName}))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+    var payload = obtenerPayload(e);
+    return crearRespuestaJSON(registrarEnHoja(payload));
+  } catch (error) {
+    return crearRespuestaJSON({ success: false, error: error.toString() });
   }
 }
 
 function doGet(e) {
-  if (e && e.parameter && e.parameter.payload) {
-    try {
-      var body = JSON.parse(decodeURIComponent(e.parameter.payload));
-      var sheetName = body.sheet;
-      var data = body.data;
-      
-      var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-      var sheet = ss.getSheetByName(sheetName);
-      
-      if (!sheet) {
-        return ContentService.createTextOutput(JSON.stringify({error: 'Hoja no encontrada'}))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-      
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      var row = headers.map(function(header) { return data[header] || ''; });
-      sheet.appendRow(row);
-      
-      return ContentService.createTextOutput(JSON.stringify({success: true}))
-        .setMimeType(ContentService.MimeType.JSON);
-    } catch(err) {
-      return ContentService.createTextOutput(JSON.stringify({error: err.toString()}))
-        .setMimeType(ContentService.MimeType.JSON);
+  try {
+    if (e && e.parameter && e.parameter.payload) {
+      var payload = obtenerPayload(e);
+      return crearRespuestaJSON(registrarEnHoja(payload));
     }
+
+    return crearRespuestaJSON({ success: true, message: 'Google Sheets API activa' });
+  } catch (error) {
+    return crearRespuestaJSON({ success: false, error: error.toString() });
   }
-  return ContentService.createTextOutput('Google Sheets API activa')
-    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 function configurarHojas() {
