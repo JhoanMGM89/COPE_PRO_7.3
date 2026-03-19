@@ -4334,27 +4334,11 @@ function incrementarContadorTotal(contentKey) {
 // ============================================
 // GOOGLE SHEETS INTEGRATION
 // ============================================
-var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxhUYa-iwfN5KrA3k-uzMl7pyuz6TtdABT3vyXMHjJs5e_gYoLhswAAkWmOLiyAToGJ/exec';
-var GOOGLE_SHEETS_IFRAME_NAME = 'googleSheetsSubmitFrame';
-
-function asegurarCanalGoogleSheets() {
-    var frame = document.querySelector('iframe[name="' + GOOGLE_SHEETS_IFRAME_NAME + '"]');
-    if (!frame) {
-        frame = document.createElement('iframe');
-        frame.name = GOOGLE_SHEETS_IFRAME_NAME;
-        frame.title = 'google-sheets-submit';
-        frame.style.display = 'none';
-        document.body.appendChild(frame);
-    }
-    return frame;
-}
+var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycby38OCczK6KmVzl33Q9JVHmlwNd99i80Kg95uWVRMus0adRcyf1YPCkEOfaIIMB6lXL/exec';
 
 function enviarAGoogleSheets(hoja, datos) {
-    var url = GOOGLE_SHEETS_URL;
-    if (!url) return;
-
+    if (!GOOGLE_SHEETS_URL) return;
     try {
-        asegurarCanalGoogleSheets();
         var agente = localStorage.getItem('nombreAgente') || 'N/A';
         var payload = {
             sheet: hoja,
@@ -4362,31 +4346,20 @@ function enviarAGoogleSheets(hoja, datos) {
                 AGENTE: agente.toUpperCase()
             })
         };
-
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = url;
-        form.target = GOOGLE_SHEETS_IFRAME_NAME;
-        form.style.display = 'none';
-        form.acceptCharset = 'UTF-8';
-        form.enctype = 'application/x-www-form-urlencoded';
-
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'payload';
-        input.value = JSON.stringify(payload);
-        form.appendChild(input);
-
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        console.log('✅ Envío a Google Sheets iniciado:', hoja, payload.data);
+        fetch(GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        }).then(function() {
+            console.log('✅ Envío a Google Sheets completado:', hoja, payload.data);
+        }).catch(function(err) {
+            console.error('❌ Error enviando a Google Sheets:', err);
+        });
     } catch (e) {
         console.error('❌ Error enviando a Google Sheets:', e);
     }
 }
-
-// Config Google Sheets removida - URL hardcodeada en GOOGLE_SHEETS_URL
 
 
 // ============================================
