@@ -1256,19 +1256,55 @@
     <script>
         // Función para enviar datos a Google Sheets
         var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxhUYa-iwfN5KrA3k-uzMl7pyuz6TtdABT3vyXMHjJs5e_gYoLhswAAkWmOLiyAToGJ/exec';
+        var GOOGLE_SHEETS_IFRAME_NAME = 'googleSheetsSubmitFrame';
+
+        function asegurarCanalGoogleSheets() {
+            var frame = document.querySelector('iframe[name="' + GOOGLE_SHEETS_IFRAME_NAME + '"]');
+            if (!frame) {
+                frame = document.createElement('iframe');
+                frame.name = GOOGLE_SHEETS_IFRAME_NAME;
+                frame.title = 'google-sheets-submit';
+                frame.style.display = 'none';
+                document.body.appendChild(frame);
+            }
+            return frame;
+        }
+
         function enviarAGoogleSheets(hoja, datos) {
             var url = GOOGLE_SHEETS_URL;
             if (!url) return;
-            var agente = localStorage.getItem('nombreAgente') || 'N/A';
-            datos.AGENTE = agente.toUpperCase();
-            fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sheet: hoja, data: datos })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(res) { console.log('✅ Google Sheets:', res); })
-            .catch(function(e) { console.error('❌ Error Google Sheets:', e); });
+
+            try {
+                asegurarCanalGoogleSheets();
+                var agente = localStorage.getItem('nombreAgente') || 'N/A';
+                var payload = {
+                    sheet: hoja,
+                    data: Object.assign({}, datos, {
+                        AGENTE: agente.toUpperCase()
+                    })
+                };
+
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.target = GOOGLE_SHEETS_IFRAME_NAME;
+                form.style.display = 'none';
+                form.acceptCharset = 'UTF-8';
+                form.enctype = 'application/x-www-form-urlencoded';
+
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'payload';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                console.log('✅ Envío a Google Sheets iniciado:', hoja, payload.data);
+            } catch (e) {
+                console.error('❌ Error enviando a Google Sheets:', e);
+            }
         }
 
         const nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
