@@ -11,6 +11,8 @@
 //    - Ejecutar como: YO
 //    - Quién tiene acceso: CUALQUIERA
 // 6. Copiar la URL del Web App desplegada
+// IMPORTANTE: Cada vez que cambies el código debes hacer un NUEVO DESPLIEGUE
+// (Administrar implementaciones > Nueva versión)
 
 var SPREADSHEET_ID = '1hiIsu-gXkzGoyYcvRsSZmIg35Dv36YrAE6S1jDLMPlQ';
 
@@ -22,23 +24,30 @@ function normalizarTexto(valor) {
 function obtenerPayload(e) {
   if (!e) throw new Error('Evento no recibido');
 
+  // 1. POST con body JSON (fetch mode no-cors envía como text/plain)
+  if (e.postData && e.postData.contents) {
+    try {
+      return JSON.parse(e.postData.contents);
+    } catch (err) {
+      // Si no es JSON puro, intentar como form-encoded
+    }
+  }
+
+  // 2. POST con form field "payload"
+  if (e.parameter && e.parameter.payload) {
+    try {
+      return JSON.parse(e.parameter.payload);
+    } catch (err) {
+      throw new Error('payload no es JSON válido');
+    }
+  }
+
+  // 3. GET con parámetro payload
   if (e.parameter && e.parameter.payload) {
     return JSON.parse(e.parameter.payload);
   }
 
-  if (e.postData && e.postData.contents) {
-    var contenido = e.postData.contents;
-    try {
-      return JSON.parse(contenido);
-    } catch (jsonError) {
-      if (e.parameter && e.parameter.payload) {
-        return JSON.parse(e.parameter.payload);
-      }
-      throw new Error('No fue posible interpretar el payload enviado');
-    }
-  }
-
-  throw new Error('No se recibió payload');
+  throw new Error('No se recibió payload. postData: ' + JSON.stringify(e.postData) + ' parameter: ' + JSON.stringify(e.parameter));
 }
 
 function registrarEnHoja(payload) {
@@ -84,7 +93,8 @@ function crearRespuestaJSON(obj) {
 function doPost(e) {
   try {
     var payload = obtenerPayload(e);
-    return crearRespuestaJSON(registrarEnHoja(payload));
+    var resultado = registrarEnHoja(payload);
+    return crearRespuestaJSON(resultado);
   } catch (error) {
     return crearRespuestaJSON({ success: false, error: error.toString() });
   }
@@ -93,8 +103,9 @@ function doPost(e) {
 function doGet(e) {
   try {
     if (e && e.parameter && e.parameter.payload) {
-      var payload = obtenerPayload(e);
-      return crearRespuestaJSON(registrarEnHoja(payload));
+      var payload = JSON.parse(e.parameter.payload);
+      var resultado = registrarEnHoja(payload);
+      return crearRespuestaJSON(resultado);
     }
 
     return crearRespuestaJSON({ success: true, message: 'Google Sheets API activa' });
