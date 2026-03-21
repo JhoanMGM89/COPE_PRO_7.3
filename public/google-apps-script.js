@@ -21,33 +21,42 @@ function normalizarTexto(valor) {
   return String(valor);
 }
 
+function parsearJSONSeguro(texto) {
+  return JSON.parse(normalizarTexto(texto));
+}
+
 function obtenerPayload(e) {
   if (!e) throw new Error('Evento no recibido');
 
-  // 1. POST con body JSON (fetch mode no-cors envía como text/plain)
+  if (e.parameter && e.parameter.payload) {
+    return parsearJSONSeguro(e.parameter.payload);
+  }
+
   if (e.postData && e.postData.contents) {
+    var contenido = normalizarTexto(e.postData.contents).trim();
+    if (!contenido) {
+      throw new Error('El cuerpo del POST llegó vacío');
+    }
+
     try {
-      return JSON.parse(e.postData.contents);
-    } catch (err) {
-      // Si no es JSON puro, intentar como form-encoded
+      return parsearJSONSeguro(contenido);
+    } catch (jsonError) {
+      var matchPayload = contenido.match(/(?:^|&)payload=([^&]+)/);
+      if (matchPayload && matchPayload[1]) {
+        return parsearJSONSeguro(decodeURIComponent(matchPayload[1].replace(/\+/g, ' ')));
+      }
+      throw new Error('No fue posible interpretar el payload enviado: ' + contenido);
     }
   }
 
-  // 2. POST con form field "payload"
-  if (e.parameter && e.parameter.payload) {
-    try {
-      return JSON.parse(e.parameter.payload);
-    } catch (err) {
-      throw new Error('payload no es JSON válido');
-    }
+  if (e.parameter && e.parameter.sheet) {
+    return {
+      sheet: e.parameter.sheet,
+      data: e.parameter
+    };
   }
 
-  // 3. GET con parámetro payload
-  if (e.parameter && e.parameter.payload) {
-    return JSON.parse(e.parameter.payload);
-  }
-
-  throw new Error('No se recibió payload. postData: ' + JSON.stringify(e.postData) + ' parameter: ' + JSON.stringify(e.parameter));
+  throw new Error('No se recibió payload');
 }
 
 function registrarEnHoja(payload) {
@@ -55,14 +64,14 @@ function registrarEnHoja(payload) {
   var data = payload.data || {};
 
   if (!sheetName) {
-    throw new Error('El nombre de la hoja es obligatorio');
+    throw new Error('El nombre de la pestaña es obligatorio');
   }
 
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName(sheetName);
 
   if (!sheet) {
-    throw new Error('Hoja no encontrada: ' + sheetName);
+    throw new Error('Pestaña no encontrada: ' + sheetName);
   }
 
   var lastColumn = Math.max(sheet.getLastColumn(), 1);
@@ -78,6 +87,7 @@ function registrarEnHoja(payload) {
 
   return {
     success: true,
+    spreadsheetId: SPREADSHEET_ID,
     sheet: sheetName,
     headers: headers,
     row: row
@@ -93,8 +103,7 @@ function crearRespuestaJSON(obj) {
 function doPost(e) {
   try {
     var payload = obtenerPayload(e);
-    var resultado = registrarEnHoja(payload);
-    return crearRespuestaJSON(resultado);
+    return crearRespuestaJSON(registrarEnHoja(payload));
   } catch (error) {
     return crearRespuestaJSON({ success: false, error: error.toString() });
   }
@@ -102,13 +111,15 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    if (e && e.parameter && e.parameter.payload) {
-      var payload = JSON.parse(e.parameter.payload);
-      var resultado = registrarEnHoja(payload);
-      return crearRespuestaJSON(resultado);
+    if (e && ((e.parameter && e.parameter.payload) || (e.parameter && e.parameter.sheet))) {
+      return crearRespuestaJSON(registrarEnHoja(obtenerPayload(e)));
     }
 
-    return crearRespuestaJSON({ success: true, message: 'Google Sheets API activa' });
+    return crearRespuestaJSON({
+      success: true,
+      message: 'Google Sheets API activa',
+      spreadsheetId: SPREADSHEET_ID
+    });
   } catch (error) {
     return crearRespuestaJSON({ success: false, error: error.toString() });
   }

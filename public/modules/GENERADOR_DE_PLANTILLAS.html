@@ -4334,30 +4334,90 @@ function incrementarContadorTotal(contentKey) {
 // ============================================
 // GOOGLE SHEETS INTEGRATION
 // ============================================
-var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycby38OCczK6KmVzl33Q9JVHmlwNd99i80Kg95uWVRMus0adRcyf1YPCkEOfaIIMB6lXL/exec';
+var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzHWspadAtcnhOFJdcltEA6B0buekBN1utj_DrBfBtsbJlLPy4paUp7fsBR6jcVRyU1/exec'.trim();
+
+function normalizarValorSheets(valor) {
+    if (valor === null || valor === undefined) return '';
+    return String(valor);
+}
+
+function crearPayloadSheets(hoja, datos) {
+    var agente = localStorage.getItem('nombreAgente') || 'N/A';
+    var dataNormalizada = {};
+    Object.keys(datos || {}).forEach(function(clave) {
+        dataNormalizada[clave] = normalizarValorSheets(datos[clave]);
+    });
+    dataNormalizada.AGENTE = normalizarValorSheets(agente).toUpperCase();
+    return {
+        sheet: normalizarValorSheets(hoja).trim(),
+        data: dataNormalizada
+    };
+}
+
+function enviarGoogleSheetsPorFormulario(payload) {
+    var iframe = document.getElementById('googleSheetsSubmitFrame');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'googleSheetsSubmitFrame';
+        iframe.name = 'googleSheetsSubmitFrame';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GOOGLE_SHEETS_URL;
+    form.target = 'googleSheetsSubmitFrame';
+    form.style.display = 'none';
+
+    var textarea = document.createElement('textarea');
+    textarea.name = 'payload';
+    textarea.value = JSON.stringify(payload);
+    form.appendChild(textarea);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    setTimeout(function() {
+        if (form.parentNode) form.parentNode.removeChild(form);
+    }, 1000);
+}
 
 function enviarAGoogleSheets(hoja, datos) {
     if (!GOOGLE_SHEETS_URL) return;
+
+    var payload = crearPayloadSheets(hoja, datos);
+    var body = JSON.stringify(payload);
+
     try {
-        var agente = localStorage.getItem('nombreAgente') || 'N/A';
-        var payload = {
-            sheet: hoja,
-            data: Object.assign({}, datos, {
-                AGENTE: agente.toUpperCase()
-            })
-        };
+        if (navigator.sendBeacon) {
+            var beaconOk = navigator.sendBeacon(
+                GOOGLE_SHEETS_URL,
+                new Blob([body], { type: 'text/plain;charset=UTF-8' })
+            );
+            if (beaconOk) {
+                console.log('✅ Envío a Google Sheets lanzado con sendBeacon:', payload);
+                return;
+            }
+        }
+
         fetch(GOOGLE_SHEETS_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload)
+            cache: 'no-store',
+            credentials: 'omit',
+            keepalive: true,
+            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+            body: body
         }).then(function() {
-            console.log('✅ Envío a Google Sheets completado:', hoja, payload.data);
+            console.log('✅ Envío a Google Sheets lanzado con fetch:', payload);
         }).catch(function(err) {
-            console.error('❌ Error enviando a Google Sheets:', err);
+            console.warn('⚠️ Fetch falló, usando formulario oculto:', err);
+            enviarGoogleSheetsPorFormulario(payload);
         });
     } catch (e) {
-        console.error('❌ Error enviando a Google Sheets:', e);
+        console.warn('⚠️ Envío directo falló, usando formulario oculto:', e);
+        enviarGoogleSheetsPorFormulario(payload);
     }
 }
 
