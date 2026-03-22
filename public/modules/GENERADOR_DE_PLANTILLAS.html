@@ -7832,6 +7832,14 @@ window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'INCREMENTAR_TOTAL') {
         incrementarContadorTotal(e.data.contentKey || null);
     }
+    if (e.data && e.data.type === 'GUARDAR_REGISTRO') {
+        var d = e.data.datos || {};
+        var tipoFalla = d['TIPO DE FALLA'] || d['CATEGORIA'] || d['TIPO'] || '';
+        var idMostrado = d['ID'] || d['JIRA/FO'] || d['SERVICE NOW'] || d['FORMULARIO'] || '';
+        var observation = d['OBSERVACION'] || '';
+        var templateType = d['TIPO'] || '';
+        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation);
+    }
 });
 </script>
 
