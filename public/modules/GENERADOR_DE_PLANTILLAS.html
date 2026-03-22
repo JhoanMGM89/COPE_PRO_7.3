@@ -6774,8 +6774,11 @@ function generarPlantilla() {
     }
     
     // Determinar texto de observación según switches
+    const esCasoCreado = document.getElementById('switchCasoCreado')?.checked || false;
     let textoObservacion = '';
-    if (esSYTEX) textoObservacion = 'SYTEX';
+    if (esCasoCreado && coinv === 'ONNET') {
+        textoObservacion = 'CASO CREADO POR ONNET';
+    } else if (esSYTEX) textoObservacion = 'SYTEX';
     else if (esGDM) textoObservacion = 'GDM';
     else if (esCazamasivos) textoObservacion = 'CAZAMASIVOS';
     
