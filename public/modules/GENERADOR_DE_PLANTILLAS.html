@@ -6009,7 +6009,7 @@ function limpiarYDeshabilitarTrasRechazo() {
     document.getElementById('resultadoCliente').textContent = '-';
     
     // Desactivar switches secundarios
-    const switchesSecundarios = ['switchMultipleIP', 'switchAltaPrioridad', 'switchNoRegistra', 'switchValidarPotencias', 'switchOrganizador'];
+    const switchesSecundarios = ['switchMultipleIP', 'switchAltaPrioridad', 'switchNoRegistra', 'switchCasoCreado', 'switchValidarPotencias', 'switchOrganizador'];
     switchesSecundarios.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.checked = false;
