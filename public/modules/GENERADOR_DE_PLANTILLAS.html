@@ -3855,6 +3855,8 @@ const FALLAS_GDM_CAZAMASIVOS = [
 // VARIABLES GLOBALES
 // ============================================
 let nombreAgente = "";
+let supabaseUserId = "";
+let supabaseClient = null;
 let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
@@ -3871,18 +3873,79 @@ let esIPespecialATP = false; // Flag para IP 10.37.60.146 con puertos específic
 let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
 
 // ============================================
+// SUPABASE INITIALIZATION
+// ============================================
+function initSupabase() {
+    var params = new URLSearchParams(window.location.search);
+    var agentName = params.get('agentName');
+    var userId = params.get('userId');
+    var sbUrl = params.get('supabaseUrl');
+    var sbKey = params.get('supabaseKey');
+
+    if (agentName) {
+        nombreAgente = decodeURIComponent(agentName).toUpperCase();
+        supabaseUserId = userId || '';
+        localStorage.setItem('nombreAgente', nombreAgente);
+    }
+
+    if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
+        // Recover session from parent
+        var session = localStorage.getItem('sb-' + sbUrl.split('//')[1].split('.')[0] + '-auth-token');
+        console.log('✅ Supabase client initialized');
+    }
+}
+
+function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation) {
+    if (!supabaseClient || !supabaseUserId) {
+        console.warn('⚠️ Supabase no disponible, solo guardando localmente');
+        return;
+    }
+
+    supabaseClient.from('records').insert({
+        agent_id: supabaseUserId,
+        module: module,
+        template_type: templateType || null,
+        id_mostrado: idMostrado || null,
+        tipo_falla: tipoFalla || null,
+        observation: observation || null
+    }).then(function(result) {
+        if (result.error) {
+            console.warn('⚠️ Error guardando en DB:', result.error.message);
+        } else {
+            console.log('✅ Registro guardado en base de datos:', module);
+        }
+    });
+}
+
+// ============================================
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cargar nombre guardado y auto-navegar si existe
-    const guardado = localStorage.getItem('nombreAgente');
-    if (guardado) {
-        document.getElementById('inputAgente').value = guardado;
-        // Auto-login: skip to bienvenida
-        nombreAgente = guardado.toUpperCase();
+    // Initialize Supabase first
+    initSupabase();
+
+    // Check if coming from React app (URL params)
+    var params = new URLSearchParams(window.location.search);
+    var agentFromUrl = params.get('agentName');
+    
+    if (agentFromUrl) {
+        // Coming from React login - skip internal login
+        nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
+        localStorage.setItem('nombreAgente', nombreAgente);
         document.getElementById('pantallaLogin').style.display = 'none';
         document.getElementById('pantallaBienvenida').style.display = 'block';
-        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
+        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
+    } else {
+        // Standalone mode - use local login
+        const guardado = localStorage.getItem('nombreAgente');
+        if (guardado) {
+            document.getElementById('inputAgente').value = guardado;
+            nombreAgente = guardado.toUpperCase();
+            document.getElementById('pantallaLogin').style.display = 'none';
+            document.getElementById('pantallaBienvenida').style.display = 'block';
+            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
+        }
     }
     
     // Cargar fondo guardado
@@ -3918,7 +3981,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const historialGuardado = localStorage.getItem('historialDatos');
     if (historialGuardado) {
         historialDatos = JSON.parse(historialGuardado);
-        // Reconstruir el Set de casos guardados
         historialDatos.forEach(caso => {
             if (caso.claveUnica) {
                 casosGuardadosEnHistorial.add(caso.claveUnica);
