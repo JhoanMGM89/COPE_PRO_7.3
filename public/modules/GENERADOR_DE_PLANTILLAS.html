@@ -4256,6 +4256,8 @@ function limpiarFormulario() {
     document.getElementById('rowMultipleSpliter').style.display = 'none';
     document.getElementById('rowTextareaOrganizador').style.display = 'none';
     document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
     document.getElementById('containerValidarPotencias').classList.remove('visible');
     
     // Ocultar organizador
@@ -5126,6 +5128,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex'; // MOSTRAR campos como ATP
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel
         if (nombreAgente) {
@@ -5146,6 +5150,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex'; // MOSTRAR campos como ATP/ATC
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel
         if (nombreAgente) {
@@ -5165,6 +5171,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex';
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel para ATP/ATC
         if (nombreAgente) {
