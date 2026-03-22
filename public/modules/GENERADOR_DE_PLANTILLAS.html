@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Generador de Plantillas - CREACION v2.5</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 /* ============================================
    RESET Y VARIABLES CSS MODERNAS
@@ -633,6 +634,10 @@ input:checked + .slider:before {
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
 }
 #switchNoRegistra:checked + .slider {
+    background-color: #22c55e !important;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+#switchCasoCreado:checked + .slider {
     background-color: #22c55e !important;
     box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
 }
@@ -2919,6 +2924,13 @@ input:checked + .slider:before {
                         </div>
                         <span class="switch-label">NO REGISTRA EN S / N</span>
                     </label>
+                    <label class="switch-item" id="itemCasoCreado" style="display: none;">
+                        <div class="switch">
+                            <input type="checkbox" id="switchCasoCreado" onchange="manejarSwitchCasoCreado()">
+                            <span class="slider"></span>
+                        </div>
+                        <span class="switch-label">CASO CREADO</span>
+                    </label>
                 </div>
             </div>
             
@@ -3855,6 +3867,8 @@ const FALLAS_GDM_CAZAMASIVOS = [
 // VARIABLES GLOBALES
 // ============================================
 let nombreAgente = "";
+let supabaseUserId = "";
+let supabaseClient = null;
 let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
@@ -3871,18 +3885,79 @@ let esIPespecialATP = false; // Flag para IP 10.37.60.146 con puertos específic
 let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
 
 // ============================================
+// SUPABASE INITIALIZATION
+// ============================================
+function initSupabase() {
+    var params = new URLSearchParams(window.location.search);
+    var agentName = params.get('agentName');
+    var userId = params.get('userId');
+    var sbUrl = params.get('supabaseUrl');
+    var sbKey = params.get('supabaseKey');
+
+    if (agentName) {
+        nombreAgente = decodeURIComponent(agentName).toUpperCase();
+        supabaseUserId = userId || '';
+        localStorage.setItem('nombreAgente', nombreAgente);
+    }
+
+    if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
+        // Recover session from parent
+        var session = localStorage.getItem('sb-' + sbUrl.split('//')[1].split('.')[0] + '-auth-token');
+        console.log('✅ Supabase client initialized');
+    }
+}
+
+function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation) {
+    if (!supabaseClient || !supabaseUserId) {
+        console.warn('⚠️ Supabase no disponible, solo guardando localmente');
+        return;
+    }
+
+    supabaseClient.from('records').insert({
+        agent_id: supabaseUserId,
+        module: module,
+        template_type: templateType || null,
+        id_mostrado: idMostrado || null,
+        tipo_falla: tipoFalla || null,
+        observation: observation || null
+    }).then(function(result) {
+        if (result.error) {
+            console.warn('⚠️ Error guardando en DB:', result.error.message);
+        } else {
+            console.log('✅ Registro guardado en base de datos:', module);
+        }
+    });
+}
+
+// ============================================
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cargar nombre guardado y auto-navegar si existe
-    const guardado = localStorage.getItem('nombreAgente');
-    if (guardado) {
-        document.getElementById('inputAgente').value = guardado;
-        // Auto-login: skip to bienvenida
-        nombreAgente = guardado.toUpperCase();
+    // Initialize Supabase first
+    initSupabase();
+
+    // Check if coming from React app (URL params)
+    var params = new URLSearchParams(window.location.search);
+    var agentFromUrl = params.get('agentName');
+    
+    if (agentFromUrl) {
+        // Coming from React login - skip internal login
+        nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
+        localStorage.setItem('nombreAgente', nombreAgente);
         document.getElementById('pantallaLogin').style.display = 'none';
         document.getElementById('pantallaBienvenida').style.display = 'block';
-        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
+        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
+    } else {
+        // Standalone mode - use local login
+        const guardado = localStorage.getItem('nombreAgente');
+        if (guardado) {
+            document.getElementById('inputAgente').value = guardado;
+            nombreAgente = guardado.toUpperCase();
+            document.getElementById('pantallaLogin').style.display = 'none';
+            document.getElementById('pantallaBienvenida').style.display = 'block';
+            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
+        }
     }
     
     // Cargar fondo guardado
@@ -3918,7 +3993,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const historialGuardado = localStorage.getItem('historialDatos');
     if (historialGuardado) {
         historialDatos = JSON.parse(historialGuardado);
-        // Reconstruir el Set de casos guardados
         historialDatos.forEach(caso => {
             if (caso.claveUnica) {
                 casosGuardadosEnHistorial.add(caso.claveUnica);
@@ -4182,6 +4256,8 @@ function limpiarFormulario() {
     document.getElementById('rowMultipleSpliter').style.display = 'none';
     document.getElementById('rowTextareaOrganizador').style.display = 'none';
     document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
     document.getElementById('containerValidarPotencias').classList.remove('visible');
     
     // Ocultar organizador
@@ -4332,93 +4408,24 @@ function incrementarContadorTotal(contentKey) {
 }
 
 // ============================================
-// GOOGLE SHEETS INTEGRATION
+// DATABASE INTEGRATION (replaces Google Sheets)
 // ============================================
-var GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzHWspadAtcnhOFJdcltEA6B0buekBN1utj_DrBfBtsbJlLPy4paUp7fsBR6jcVRyU1/exec'.trim();
-
-function normalizarValorSheets(valor) {
-    if (valor === null || valor === undefined) return '';
-    return String(valor);
-}
-
-function crearPayloadSheets(hoja, datos) {
-    var agente = localStorage.getItem('nombreAgente') || 'N/A';
-    var dataNormalizada = {};
-    Object.keys(datos || {}).forEach(function(clave) {
-        dataNormalizada[clave] = normalizarValorSheets(datos[clave]);
-    });
-    dataNormalizada.AGENTE = normalizarValorSheets(agente).toUpperCase();
-    return {
-        sheet: normalizarValorSheets(hoja).trim(),
-        data: dataNormalizada
-    };
-}
-
-function enviarGoogleSheetsPorFormulario(payload) {
-    var iframe = document.getElementById('googleSheetsSubmitFrame');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'googleSheetsSubmitFrame';
-        iframe.name = 'googleSheetsSubmitFrame';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
-
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GOOGLE_SHEETS_URL;
-    form.target = 'googleSheetsSubmitFrame';
-    form.style.display = 'none';
-
-    var textarea = document.createElement('textarea');
-    textarea.name = 'payload';
-    textarea.value = JSON.stringify(payload);
-    form.appendChild(textarea);
-
-    document.body.appendChild(form);
-    form.submit();
-
-    setTimeout(function() {
-        if (form.parentNode) form.parentNode.removeChild(form);
-    }, 1000);
-}
-
 function enviarAGoogleSheets(hoja, datos) {
-    if (!GOOGLE_SHEETS_URL) return;
+    // Now saves to Supabase database instead of Google Sheets
+    var tipoFalla = datos['TIPO DE FALLA'] || datos['CATEGORIA'] || datos['TIPO'] || '';
+    var idMostrado = datos['ID'] || datos['JIRA/FO'] || datos['SERVICE NOW'] || datos['FORMULARIO'] || '';
+    var observation = datos['OBSERVACION'] || '';
+    var templateType = datos['TIPO'] || '';
+    
+    guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation);
+}
 
-    var payload = crearPayloadSheets(hoja, datos);
-    var body = JSON.stringify(payload);
-
-    try {
-        if (navigator.sendBeacon) {
-            var beaconOk = navigator.sendBeacon(
-                GOOGLE_SHEETS_URL,
-                new Blob([body], { type: 'text/plain;charset=UTF-8' })
-            );
-            if (beaconOk) {
-                console.log('✅ Envío a Google Sheets lanzado con sendBeacon:', payload);
-                return;
-            }
-        }
-
-        fetch(GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            cache: 'no-store',
-            credentials: 'omit',
-            keepalive: true,
-            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-            body: body
-        }).then(function() {
-            console.log('✅ Envío a Google Sheets lanzado con fetch:', payload);
-        }).catch(function(err) {
-            console.warn('⚠️ Fetch falló, usando formulario oculto:', err);
-            enviarGoogleSheetsPorFormulario(payload);
-        });
-    } catch (e) {
-        console.warn('⚠️ Envío directo falló, usando formulario oculto:', e);
-        enviarGoogleSheetsPorFormulario(payload);
-    }
+// ============================================
+// MANEJO DE SWITCH CASO CREADO (ONNET)
+// ============================================
+function manejarSwitchCasoCreado() {
+    var casoCreado = document.getElementById('switchCasoCreado').checked;
+    generarPlantilla();
 }
 
 
@@ -5121,6 +5128,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex'; // MOSTRAR campos como ATP
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel
         if (nombreAgente) {
@@ -5141,6 +5150,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex'; // MOSTRAR campos como ATP/ATC
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel
         if (nombreAgente) {
@@ -5160,6 +5171,8 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCamposSoloLectura.style.display = 'flex';
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'none';
+    document.getElementById('itemCasoCreado').style.display = 'none';
+    document.getElementById('switchCasoCreado').checked = false;
         
         // Actualizar segundo nivel para ATP/ATC
         if (nombreAgente) {
@@ -5175,6 +5188,7 @@ function actualizarVisibilidadCoinv(coinv, esOnnetMaximo = false) {
         rowCS.style.display = 'flex';
         rowSwitchesInferiores.style.display = 'flex';
         document.getElementById('itemNoRegistra').style.display = 'flex';
+        document.getElementById('itemCasoCreado').style.display = 'flex';
         // OCULTAR campos solo lectura para ONNET normal
         rowCamposSoloLectura.style.display = 'none';
         
@@ -5995,7 +6009,7 @@ function limpiarYDeshabilitarTrasRechazo() {
     document.getElementById('resultadoCliente').textContent = '-';
     
     // Desactivar switches secundarios
-    const switchesSecundarios = ['switchMultipleIP', 'switchAltaPrioridad', 'switchNoRegistra', 'switchValidarPotencias', 'switchOrganizador'];
+    const switchesSecundarios = ['switchMultipleIP', 'switchAltaPrioridad', 'switchNoRegistra', 'switchCasoCreado', 'switchValidarPotencias', 'switchOrganizador'];
     switchesSecundarios.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.checked = false;
@@ -6768,8 +6782,11 @@ function generarPlantilla() {
     }
     
     // Determinar texto de observación según switches
+    const esCasoCreado = document.getElementById('switchCasoCreado')?.checked || false;
     let textoObservacion = '';
-    if (esSYTEX) textoObservacion = 'SYTEX';
+    if (esCasoCreado && coinv === 'ONNET') {
+        textoObservacion = 'CASO CREADO POR ONNET';
+    } else if (esSYTEX) textoObservacion = 'SYTEX';
     else if (esGDM) textoObservacion = 'GDM';
     else if (esCazamasivos) textoObservacion = 'CAZAMASIVOS';
     
@@ -7814,6 +7831,14 @@ window.addEventListener('message', function(e) {
     }
     if (e.data && e.data.type === 'INCREMENTAR_TOTAL') {
         incrementarContadorTotal(e.data.contentKey || null);
+    }
+    if (e.data && e.data.type === 'GUARDAR_REGISTRO') {
+        var d = e.data.datos || {};
+        var tipoFalla = d['TIPO DE FALLA'] || d['CATEGORIA'] || d['TIPO'] || '';
+        var idMostrado = d['ID'] || d['JIRA/FO'] || d['SERVICE NOW'] || d['FORMULARIO'] || '';
+        var observation = d['OBSERVACION'] || '';
+        var templateType = d['TIPO'] || '';
+        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation);
     }
 });
 </script>
