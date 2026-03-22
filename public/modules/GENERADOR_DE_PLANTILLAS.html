@@ -4418,6 +4418,14 @@ function enviarAGoogleSheets(hoja, datos) {
     guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation);
 }
 
+// ============================================
+// MANEJO DE SWITCH CASO CREADO (ONNET)
+// ============================================
+function manejarSwitchCasoCreado() {
+    var casoCreado = document.getElementById('switchCasoCreado').checked;
+    generarPlantilla();
+}
+
 
 // ============================================
 function actualizarTituloCoinv(coinv) {
