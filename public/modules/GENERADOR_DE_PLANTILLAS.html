@@ -6916,9 +6916,6 @@ function generarPlantilla() {
     plantilla += `CLIENTES AFECTADOS: ${clientesFinal}\n`;
     plantilla += `IMPACTO: ${impacto}\n`;
     plantilla += `OBSERVACION: ${textoObservacion}\n`;
-    if (fecha) {
-        plantilla += `FECHA: ${fecha}\n`;
-    }
     
     // Las notas de switches AHORA SIEMPRE SE INCLUYEN SI ESTÁN ACTIVAS
     if (notasSwitch) {
@@ -6941,6 +6938,9 @@ function generarPlantilla() {
     
     plantilla += `ID GDM: ${gdmFinal}\n`;
     plantilla += `GESTOR: ${(nombreAgente || 'N/A').toUpperCase()}`;
+    if (fecha) {
+        plantilla += `\nFECHA: ${fecha}`;
+    }
     
     document.getElementById('textareaResultado').value = plantilla;
     
@@ -7119,6 +7119,14 @@ function copiarTodo() {
             mostrarAdvertenciaFlotante(`⚠️ Plantilla muy larga (${plantilla.length.toLocaleString()} caracteres). Puede cortarse al pegar en WhatsApp. Edítala manualmente si es necesario.`);
         }
         
+        enviarAGoogleSheets('CREACION', {
+            FECHA: new Date().toLocaleString('es-CO'),
+            TIPO: 'CREADO',
+            ID: id || 'N/A',
+            'TIPO DE FALLA': falla,
+            OBSERVACION: plantilla
+        });
+
         // Solo guardar en historial si NO existe aún
         if (!yaExiste) {
             // Crear objeto del caso
@@ -7147,14 +7155,6 @@ function copiarTodo() {
             
             // Incrementar contador total global (con dedup)
             incrementarContadorTotal('CREACION_' + claveUnica);
-            
-            enviarAGoogleSheets('CREACION', {
-                FECHA: caso.fecha,
-                TIPO: caso.tipo,
-                ID: caso.idMostrado || caso.id,
-                'TIPO DE FALLA': caso.falla,
-                OBSERVACION: plantilla
-            });
             
             mostrarToast('✓ Copiado y guardado en historial', 'exito');
         } else {
