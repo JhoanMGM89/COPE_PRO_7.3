@@ -3894,16 +3894,13 @@ function initSupabase() {
     var sbUrl = params.get('supabaseUrl');
     var sbKey = params.get('supabaseKey');
 
-    if (agentName) {
+    if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
         supabaseUserId = userId || '';
-        localStorage.setItem('nombreAgente', nombreAgente);
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
         supabaseClient = window.supabase.createClient(sbUrl, sbKey);
-        // Recover session from parent
-        var session = localStorage.getItem('sb-' + sbUrl.split('//')[1].split('.')[0] + '-auth-token');
         console.log('✅ Supabase client initialized');
     }
 }
@@ -3914,7 +3911,7 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
         return;
     }
 
-    supabaseClient.from('records').insert({
+    return supabaseClient.from('records').insert({
         agent_id: supabaseUserId,
         module: module,
         template_type: templateType || null,
@@ -3924,9 +3921,11 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
     }).then(function(result) {
         if (result.error) {
             console.warn('⚠️ Error guardando en DB:', result.error.message);
+            throw result.error;
         } else {
             console.log('✅ Registro guardado en base de datos:', module);
         }
+        return result;
     });
 }
 
@@ -3941,23 +3940,18 @@ document.addEventListener('DOMContentLoaded', () => {
     var params = new URLSearchParams(window.location.search);
     var agentFromUrl = params.get('agentName');
     
-    if (agentFromUrl) {
+    if (agentFromUrl && supabaseUserId) {
         // Coming from React login - skip internal login
         nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
-        localStorage.setItem('nombreAgente', nombreAgente);
         document.getElementById('pantallaLogin').style.display = 'none';
         document.getElementById('pantallaBienvenida').style.display = 'block';
         document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
     } else {
-        // Standalone mode - use local login
-        const guardado = localStorage.getItem('nombreAgente');
-        if (guardado) {
-            document.getElementById('inputAgente').value = guardado;
-            nombreAgente = guardado.toUpperCase();
-            document.getElementById('pantallaLogin').style.display = 'none';
-            document.getElementById('pantallaBienvenida').style.display = 'block';
-            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${guardado.toUpperCase()}`;
-        }
+        // Standalone mode disabled to avoid access without authenticated registration
+        localStorage.removeItem('nombreAgente');
+        nombreAgente = '';
+        document.getElementById('pantallaLogin').style.display = 'block';
+        document.getElementById('pantallaBienvenida').style.display = 'none';
     }
     
     // Cargar fondo guardado
@@ -4076,19 +4070,7 @@ function cerrarVistaPreviaRechazo() {
 // FUNCIONES DE NAVEGACIÓN
 // ============================================
 function confirmarAgente() {
-    const nombre = document.getElementById('inputAgente').value.trim();
-    
-    if (!nombre) {
-        mostrarToast('Por favor ingrese el nombre del agente', 'error');
-        return;
-    }
-    
-    nombreAgente = nombre.toUpperCase();
-    localStorage.setItem('nombreAgente', nombreAgente);
-    
-    document.getElementById('pantallaLogin').style.display = 'none';
-    document.getElementById('pantallaBienvenida').style.display = 'block';
-    document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombre.toUpperCase()}`;
+    mostrarToast('Ingrese desde la pantalla principal con NIT y contraseña', 'alerta');
 }
 
 function volverALogin() {
@@ -4424,8 +4406,18 @@ function enviarAGoogleSheets(hoja, datos) {
 // MANEJO DE SWITCH CASO CREADO (ONNET)
 // ============================================
 function manejarSwitchCasoCreado() {
-    var casoCreado = document.getElementById('switchCasoCreado').checked;
     generarPlantilla();
+}
+
+function obtenerTextoObservacionCreacion(coinv, esSYTEX, esGDM, esCazamasivos) {
+    const esCasoCreado = document.getElementById('switchCasoCreado')?.checked || false;
+    if (esCasoCreado && coinv === 'ONNET') {
+        return 'CASO CREADO POR ONNET';
+    }
+    if (esSYTEX) return 'SYTEX';
+    if (esGDM) return 'GDM';
+    if (esCazamasivos) return 'CAZAMASIVOS';
+    return '';
 }
 
 
@@ -6782,13 +6774,7 @@ function generarPlantilla() {
     }
     
     // Determinar texto de observación según switches
-    const esCasoCreado = document.getElementById('switchCasoCreado')?.checked || false;
-    let textoObservacion = '';
-    if (esCasoCreado && coinv === 'ONNET') {
-        textoObservacion = 'CASO CREADO POR ONNET';
-    } else if (esSYTEX) textoObservacion = 'SYTEX';
-    else if (esGDM) textoObservacion = 'GDM';
-    else if (esCazamasivos) textoObservacion = 'CAZAMASIVOS';
+    let textoObservacion = obtenerTextoObservacionCreacion(coinv, esSYTEX, esGDM, esCazamasivos);
     
     // Calcular clientes
     let clientesFinal = '';
@@ -6930,6 +6916,9 @@ function generarPlantilla() {
     plantilla += `CLIENTES AFECTADOS: ${clientesFinal}\n`;
     plantilla += `IMPACTO: ${impacto}\n`;
     plantilla += `OBSERVACION: ${textoObservacion}\n`;
+    if (fecha) {
+        plantilla += `FECHA: ${fecha}\n`;
+    }
     
     // Las notas de switches AHORA SIEMPRE SE INCLUYEN SI ESTÁN ACTIVAS
     if (notasSwitch) {
@@ -7159,7 +7148,6 @@ function copiarTodo() {
             // Incrementar contador total global (con dedup)
             incrementarContadorTotal('CREACION_' + claveUnica);
             
-            // Enviar a Google Sheets
             enviarAGoogleSheets('CREACION', {
                 FECHA: caso.fecha,
                 TIPO: caso.tipo,
@@ -7234,10 +7222,7 @@ function copiarResumen() {
         else impacto = 'ALTO';
     }
     
-    let textoObs = '';
-    if (esSYTEX) textoObs = 'SYTEX';
-    else if (esGDM) textoObs = 'GDM';
-    else if (esCazamasivos) textoObs = 'CAZAMASIVOS';
+    let textoObs = obtenerTextoObservacionCreacion(coinv, esSYTEX, esGDM, esCazamasivos);
     
     let resumen = '';
     
@@ -7383,10 +7368,7 @@ function copiarDetalle() {
     }
     
     // Determinar texto de observación según plataforma activa
-    let textoObs = '';
-    if (esSYTEX) textoObs = 'SYTEX';
-    else if (esGDM) textoObs = 'GDM';
-    else if (esCazamasivos) textoObs = 'CAZAMASIVOS';
+    let textoObs = obtenerTextoObservacionCreacion(coinvDetalle, esSYTEX, esGDM, esCazamasivos);
     
     // Construir notas de switches
     let notasSwitch = '';
