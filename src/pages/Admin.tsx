@@ -163,7 +163,7 @@ const Admin = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Panel de Administración</h1>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/app")} className="border-zinc-700 text-gray-300 hover:bg-zinc-800">
+            <Button onClick={() => navigate("/app")} className="bg-green-600 text-white hover:bg-green-700">
               Ir a Plantillas
             </Button>
             <Button variant="destructive" onClick={logout}>Cerrar Sesión</Button>
@@ -175,7 +175,7 @@ const Admin = () => {
           <Button onClick={() => setTab("agents")} variant={tab === "agents" ? "default" : "outline"} className={tab !== "agents" ? "border-zinc-700 text-gray-300" : "bg-blue-600"}>
             Gestión de Agentes
           </Button>
-          <Button onClick={() => setTab("records")} variant={tab === "records" ? "default" : "outline"} className={tab !== "records" ? "border-zinc-700 text-gray-300" : "bg-blue-600"}>
+          <Button onClick={() => setTab("records")} variant={tab === "records" ? "default" : "outline"} className={tab === "records" ? "bg-green-600 text-white hover:bg-green-700" : "border-green-600 text-white hover:bg-green-700/20"}>
             Registros / Exportar
           </Button>
         </div>

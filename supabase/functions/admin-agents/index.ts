@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-
-  const body = await req.json();
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  const body = await req.json().catch(() => ({}));
   const { action } = body;
 
   // Allow init-admin without auth
@@ -24,7 +24,8 @@ Deno.serve(async (req) => {
       const password = "cope2026+-*";
 
       const { data: existing } = await supabaseAdmin.from("agents").select("id").eq("nit", "admincope").maybeSingle();
-      if (existing) {
+      if (existing?.id) {
+        await supabaseAdmin.from("user_roles").upsert({ user_id: existing.id, role: "admin" }, { onConflict: "user_id,role" });
         return new Response(JSON.stringify({ success: true, message: "Admin ya existe" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -57,7 +58,13 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+  if (!anonKey) {
+    return new Response(JSON.stringify({ error: "Configuración incompleta del backend" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const callerClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
@@ -73,7 +80,25 @@ Deno.serve(async (req) => {
 
   try {
     if (action === "create") {
-      const { nit, name, password } = body;
+      const nit = String(body.nit || "").trim().toLowerCase();
+      const name = String(body.name || "").trim();
+      const password = String(body.password || "").trim();
+
+      if (!nit || !name || !password) {
+        return new Response(JSON.stringify({ error: "NIT, nombre y contraseña son obligatorios" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: existingAgent } = await supabaseAdmin.from("agents").select("id").eq("nit", nit).maybeSingle();
+      if (existingAgent) {
+        return new Response(JSON.stringify({ error: "Ya existe un agente con ese NIT" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const email = `${nit}@agent.cope.local`;
 
       // Create auth user
@@ -95,7 +120,11 @@ Deno.serve(async (req) => {
 
       // Assign agent role
       const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "agent" });
-      if (roleError) throw roleError;
+      if (roleError) {
+        await supabaseAdmin.from("agents").delete().eq("id", userId);
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        throw roleError;
+      }
 
       return new Response(JSON.stringify({ success: true, agent: { id: userId, nit, name } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -122,6 +151,8 @@ Deno.serve(async (req) => {
 
     if (action === "delete") {
       const { id } = body;
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", id);
+      await supabaseAdmin.from("agents").delete().eq("id", id);
       const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
       if (error) throw error;
 

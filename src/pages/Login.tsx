@@ -26,8 +26,19 @@ const Login = () => {
       body: JSON.stringify({ action: "init-admin" }),
     }).catch(() => {});
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/app");
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+
+      const [{ data: agent }, { data: role }] = await Promise.all([
+        supabase.from("agents").select("id").eq("id", session.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle(),
+      ]);
+
+      if (agent || role) {
+        navigate("/app");
+      } else {
+        await supabase.auth.signOut();
+      }
     });
   }, [navigate]);
 
@@ -45,6 +56,26 @@ const Login = () => {
 
       if (error) {
         toast.error("NIT o contraseña incorrectos");
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+
+      if (!userId) {
+        await supabase.auth.signOut();
+        toast.error("No fue posible validar el acceso");
+        return;
+      }
+
+      const [{ data: agent }, { data: role }] = await Promise.all([
+        supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+      ]);
+
+      if (!agent && !role) {
+        await supabase.auth.signOut();
+        toast.error("Usuario no registrado en la plataforma");
         return;
       }
 
