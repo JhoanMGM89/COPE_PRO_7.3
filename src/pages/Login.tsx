@@ -5,18 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const [nit, setNit] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Init admin on first load
-    supabase.functions.invoke("admin-agents", { body: { action: "init-admin" } }).catch(() => {});
-    
-    // Check if already logged in
+    // Init admin without auth header
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-agents`;
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ action: "init-admin" }),
+    }).catch(() => {});
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/app");
     });
@@ -73,14 +82,23 @@ const Login = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password" className="text-gray-300">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Ingrese su contraseña"
-              className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingrese su contraseña"
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <Button

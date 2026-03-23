@@ -14,7 +14,44 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-  // Verify caller is admin
+  const body = await req.json();
+  const { action } = body;
+
+  // Allow init-admin without auth
+  if (action === "init-admin") {
+    try {
+      const email = "admincope@agent.cope.local";
+      const password = "cope2026+-*";
+
+      const { data: existing } = await supabaseAdmin.from("agents").select("id").eq("nit", "admincope").maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify({ success: true, message: "Admin ya existe" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+      if (authError) throw authError;
+
+      const userId = authData.user.id;
+      await supabaseAdmin.from("agents").insert({ id: userId, nit: "admincope", name: "ADMINISTRADOR" });
+      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
+
+      return new Response(JSON.stringify({ success: true, message: "Admin creado" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Verify caller is admin for all other actions
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -33,9 +70,6 @@ Deno.serve(async (req) => {
   if (!isAdmin) {
     return new Response(JSON.stringify({ error: "Solo administradores" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-
-  const body = await req.json();
-  const { action } = body;
 
   try {
     if (action === "create") {
@@ -105,35 +139,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (action === "init-admin") {
-      // One-time admin setup
-      const email = "admincope@agent.cope.local";
-      const password = "cope2026+-*";
-
-      // Check if admin exists
-      const { data: existing } = await supabaseAdmin.from("agents").select("id").eq("nit", "admincope").maybeSingle();
-      if (existing) {
-        return new Response(JSON.stringify({ success: true, message: "Admin ya existe" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (authError) throw authError;
-
-      const userId = authData.user.id;
-
-      await supabaseAdmin.from("agents").insert({ id: userId, nit: "admincope", name: "ADMINISTRADOR" });
-      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
-
-      return new Response(JSON.stringify({ success: true, message: "Admin creado" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // init-admin handled above
 
     if (action === "export-records") {
       const { agent_id, module } = body;
