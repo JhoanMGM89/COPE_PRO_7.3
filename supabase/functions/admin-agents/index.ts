@@ -70,37 +70,6 @@ Deno.serve(async (req) => {
   if (!isAdmin) {
     return new Response(JSON.stringify({ error: "Solo administradores" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
-    try {
-      const email = "admincope@agent.cope.local";
-      const password = "cope2026+-*";
-
-      const { data: existing } = await supabaseAdmin.from("agents").select("id").eq("nit", "admincope").maybeSingle();
-      if (existing) {
-        return new Response(JSON.stringify({ success: true, message: "Admin ya existe" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (authError) throw authError;
-
-      const userId = authData.user.id;
-      await supabaseAdmin.from("agents").insert({ id: userId, nit: "admincope", name: "ADMINISTRADOR" });
-      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
-
-      return new Response(JSON.stringify({ success: true, message: "Admin creado" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-  }
 
   try {
     if (action === "create") {
