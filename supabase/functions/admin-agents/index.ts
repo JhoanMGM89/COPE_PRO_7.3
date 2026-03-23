@@ -139,35 +139,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (action === "init-admin") {
-      // One-time admin setup
-      const email = "admincope@agent.cope.local";
-      const password = "cope2026+-*";
-
-      // Check if admin exists
-      const { data: existing } = await supabaseAdmin.from("agents").select("id").eq("nit", "admincope").maybeSingle();
-      if (existing) {
-        return new Response(JSON.stringify({ success: true, message: "Admin ya existe" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (authError) throw authError;
-
-      const userId = authData.user.id;
-
-      await supabaseAdmin.from("agents").insert({ id: userId, nit: "admincope", name: "ADMINISTRADOR" });
-      await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
-
-      return new Response(JSON.stringify({ success: true, message: "Admin creado" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // init-admin handled above
 
     if (action === "export-records") {
       const { agent_id, module } = body;
