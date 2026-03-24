@@ -6939,7 +6939,7 @@ function generarPlantilla() {
     plantilla += `ID GDM: ${gdmFinal}\n`;
     plantilla += `GESTOR: ${(nombreAgente || 'N/A').toUpperCase()}`;
     if (fecha) {
-        plantilla += `\nFECHA: ${fecha}`;
+        plantilla += `\n${fecha}`;
     }
     
     document.getElementById('textareaResultado').value = plantilla;
