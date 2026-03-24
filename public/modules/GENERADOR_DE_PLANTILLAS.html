@@ -6649,7 +6649,7 @@ function exportarHistorial() {
 <Style ss:ID="headerBlue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 </Styles>`;
 
-    const agente = localStorage.getItem('nombreAgente') || 'N/A';
+    const agente = nombreAgente || 'N/A';
     const agenteUpper = agente.toUpperCase();
 
     // Hoja 1: CREACIÓN
