@@ -6872,7 +6872,10 @@ function generarPlantilla() {
     // IPs especiales ATP usan cálculo de impacto como ATP
     // IPs especiales ONNET (10.37.60.146 con puertos ONNET) y ONNET-MAXIMO usan cálculo de impacto como ONNET
     let impacto = 'N/A';
+    const fallasImpactoBajo = ['PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA', 'ALTA POTENCIA ATENUADA', 'CTO POTENCIA ATENUADA', 'DESEMPEÑO', 'PUERTO CTO POTENCIA ATENUADA'];
     if (falla.includes('PRIMERA ALTA')) {
+        impacto = 'BAJO';
+    } else if (coinv === 'ONNET' && fallasImpactoBajo.includes(falla)) {
         impacto = 'BAJO';
     } else if (ip && (coinv === 'ATP' || coinv === 'ATC' || esIPespecialATP)) {
         // ATP/ATC normal y IP especial ATP usan su propio cálculo
