@@ -2630,8 +2630,12 @@ input:checked + .slider:before {
     </div>
     
     <div style="margin-top: 2rem; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn-fondo" onclick="volverALogin()" title="Cambiar agente y fondo">
-            ⚙️ Cambiar agente / fondo
+        <label for="inputFondoBienvenida" class="btn-fondo" title="Cargar imagen de fondo">
+            🖼️ Cargar imagen de fondo
+        </label>
+        <input type="file" id="inputFondoBienvenida" accept="image/*" hidden>
+        <button id="btnEliminarFondoBienvenida" class="btn-eliminar-fondo" onclick="eliminarFondo()" title="Eliminar fondo" style="display: none;">
+            🗑️
         </button>
     </div>
 </div>
