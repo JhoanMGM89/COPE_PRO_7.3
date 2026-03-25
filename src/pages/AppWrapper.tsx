@@ -46,7 +46,7 @@ const AppWrapper = () => {
         </div>
         <div className="flex gap-2">
           {isAdmin && (
-            <Button size="sm" variant="outline" onClick={() => navigate("/admin")} className="border-zinc-700 text-gray-300 hover:bg-zinc-800 text-xs">
+            <Button size="sm" onClick={() => navigate("/admin")} className="bg-blue-600 text-white hover:bg-blue-700 text-xs">
               ⚙️ Admin
             </Button>
           )}

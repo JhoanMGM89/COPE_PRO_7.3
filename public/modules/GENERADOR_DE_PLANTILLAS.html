@@ -7219,7 +7219,10 @@ function copiarResumen() {
     
     // Calcular impacto para ONNET
     let impacto = 'MEDIO';
+    const fallasImpactoBajoR = ['PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA', 'ALTA POTENCIA ATENUADA', 'CTO POTENCIA ATENUADA', 'DESEMPEÑO', 'PUERTO CTO POTENCIA ATENUADA'];
     if (falla.includes('PRIMERA ALTA')) {
+        impacto = 'BAJO';
+    } else if (coinv === 'ONNET' && fallasImpactoBajoR.includes(falla)) {
         impacto = 'BAJO';
     } else {
         const totalClientes = parseInt(clientes) || 0;

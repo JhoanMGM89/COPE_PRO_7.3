@@ -175,7 +175,7 @@ const Admin = () => {
           <Button onClick={() => setTab("agents")} variant={tab === "agents" ? "default" : "outline"} className={tab !== "agents" ? "border-zinc-700 text-gray-300" : "bg-blue-600"}>
             Gestión de Agentes
           </Button>
-          <Button onClick={() => setTab("records")} variant={tab === "records" ? "default" : "outline"} className={tab === "records" ? "bg-green-600 text-white hover:bg-green-700" : "border-green-600 text-white hover:bg-green-700/20"}>
+          <Button onClick={() => setTab("records")} variant={tab === "records" ? "default" : "outline"} className="bg-green-600 text-white hover:bg-green-700">
             Registros / Exportar
           </Button>
         </div>
