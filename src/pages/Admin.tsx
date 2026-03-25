@@ -35,6 +35,7 @@ const Admin = () => {
   const [editName, setEditName] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [filterModule, setFilterModule] = useState("");
+  const [filterSubmodule, setFilterSubmodule] = useState("");
   const [filterAgent, setFilterAgent] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -56,13 +57,23 @@ const Admin = () => {
     const body: Record<string, string> = { action: "export-records" };
     if (filterAgent) body.agent_id = filterAgent;
     if (filterModule) body.module = filterModule;
-    const { data } = await supabase.functions.invoke("admin-agents", { body });
-    if (data?.records) setRecords(data.records);
-  }, [filterAgent, filterModule]);
+    if (filterSubmodule) body.template_type = filterSubmodule;
+    const { data, error } = await supabase.functions.invoke("admin-agents", { body });
+    if (error || data?.error) {
+      setRecords([]);
+      toast.error(data?.error || "Error al cargar registros");
+      return;
+    }
+    setRecords(data?.records ?? []);
+  }, [filterAgent, filterModule, filterSubmodule]);
 
   useEffect(() => { checkAdmin(); }, [checkAdmin]);
   useEffect(() => { loadAgents(); }, [loadAgents]);
   useEffect(() => { if (tab === "records") loadRecords(); }, [tab, loadRecords]);
+
+  const submoduleOptions = Array.from(
+    new Set(records.map((record) => record.template_type).filter((value): value is string => Boolean(value)))
+  ).sort((a, b) => a.localeCompare(b));
 
   const createAgent = async () => {
     if (!newNit.trim() || !newName.trim() || !newPassword.trim()) {
@@ -172,10 +183,10 @@ const Admin = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          <Button onClick={() => setTab("agents")} variant={tab === "agents" ? "default" : "outline"} className={tab !== "agents" ? "border-zinc-700 text-gray-300" : "bg-blue-600"}>
+          <Button onClick={() => setTab("agents")} className={`bg-blue-600 text-white hover:bg-blue-700 ${tab === "agents" ? "ring-2 ring-white/30" : "opacity-90"}`}>
             Gestión de Agentes
           </Button>
-          <Button onClick={() => setTab("records")} variant={tab === "records" ? "default" : "outline"} className="bg-green-600 text-white hover:bg-green-700">
+          <Button onClick={() => setTab("records")} className={`bg-green-600 text-white hover:bg-green-700 ${tab === "records" ? "ring-2 ring-white/30" : "opacity-90"}`}>
             Registros / Exportar
           </Button>
         </div>
@@ -231,7 +242,7 @@ const Admin = () => {
                         <div className="flex gap-2">
                           {agent.nit !== "admincope" && (
                             <>
-                              <Button size="sm" variant="outline" className="border-zinc-600 text-gray-300" onClick={() => { setEditingId(agent.id); setEditName(agent.name); setEditPassword(""); }}>
+                              <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => { setEditingId(agent.id); setEditName(agent.name); setEditPassword(""); }}>
                                 Editar
                               </Button>
                               <Button size="sm" variant="destructive" onClick={() => deleteAgent(agent.id, agent.name)}>
@@ -255,10 +266,10 @@ const Admin = () => {
             {/* Filters */}
             <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <h2 className="text-lg font-semibold mb-4">Filtros</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-gray-400">Módulo</Label>
-                  <select value={filterModule} onChange={(e) => setFilterModule(e.target.value)} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
+                  <select value={filterModule} onChange={(e) => { setFilterModule(e.target.value); setFilterSubmodule(""); }} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
                     <option value="">Todos</option>
                     <option value="CREACION">CREACIÓN</option>
                     <option value="AVERIA">AVERÍAS</option>
@@ -266,6 +277,13 @@ const Admin = () => {
                     <option value="SERVICE NOW">SERVICE NOW</option>
                     <option value="RECHAZO_SYTEX">RECHAZO SYTEX</option>
                     <option value="RECHAZO_GDM">RECHAZO GDM</option>
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-gray-400">Submódulo</Label>
+                  <select value={filterSubmodule} onChange={(e) => setFilterSubmodule(e.target.value)} disabled={!filterModule} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <option value="">Todos</option>
+                    {submoduleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </div>
                 <div>
@@ -301,7 +319,7 @@ const Admin = () => {
                   {records.map((r) => (
                     <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
                       <td className="p-2 text-xs">{new Date(r.created_at).toLocaleString("es-CO")}</td>
-                      <td className="p-2">{r.agents?.name}</td>
+                      <td className="p-2">{r.agents?.name || "N/A"}</td>
                       <td className="p-2">
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
                           r.module === "CREACION" ? "bg-green-600/20 text-green-400" :
@@ -311,7 +329,7 @@ const Admin = () => {
                           "bg-red-600/20 text-red-400"
                         }`}>{r.module}</span>
                       </td>
-                      <td className="p-2 text-xs">{r.template_type}</td>
+                      <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
                       <td className="p-2 text-xs font-mono">{r.id_mostrado}</td>
                       <td className="p-2 text-xs">{r.tipo_falla}</td>
                       <td className="p-2 text-xs max-w-xs truncate">{r.observation?.substring(0, 100)}</td>

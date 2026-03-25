@@ -1268,7 +1268,7 @@
             }
         }
 
-        const nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
+        let nombreAgente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
         let historialAverias = JSON.parse(localStorage.getItem('historialAverias')) || [];
         let formularioNum = '';
         
@@ -1318,6 +1318,14 @@
             { id: 19, category: 'noprocedente', tag: 'No Procedente', tagClass: 'tag-noprocedente', text: 'No es posible realizar la gestión ya que la AVERIA no esta relacionada a este caso (CS / TC).', agent: nombreAgente, platform: 'both' }
         ];
 
+        function sincronizarNombreAgente(nextName) {
+            nombreAgente = (nextName || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
+            localStorage.setItem('nombreAgente', nombreAgente);
+            templates.forEach(template => {
+                if (!template.isValidarPotencias) template.agent = nombreAgente;
+            });
+        }
+
         let selectedTemplate = null;
         let currentFilter = 'marcacion';
         let activePlatform = null;
@@ -1340,6 +1348,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            sincronizarNombreAgente(nombreAgente);
             updateCategoryCounts();
             renderTemplates();
             updateOverlay();
@@ -1947,6 +1956,11 @@
 
         // Listen for form clear messages from parent window
         window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'SET_SESSION') {
+                sincronizarNombreAgente(event.data.nombreAgente);
+                renderTemplates();
+                return;
+            }
             if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
                 clearAll();
             }

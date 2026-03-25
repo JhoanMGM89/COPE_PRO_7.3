@@ -173,15 +173,37 @@ Deno.serve(async (req) => {
     // init-admin handled above
 
     if (action === "export-records") {
-      const { agent_id, module } = body;
-      let query = supabaseAdmin.from("records").select("*, agents(name, nit)").order("created_at", { ascending: false });
+      const { agent_id, module, template_type } = body;
+      let query = supabaseAdmin
+        .from("records")
+        .select("id, agent_id, module, template_type, id_mostrado, tipo_falla, observation, created_at")
+        .order("created_at", { ascending: false });
       if (agent_id) query = query.eq("agent_id", agent_id);
       if (module) query = query.eq("module", module);
+      if (template_type) query = query.eq("template_type", template_type);
 
-      const { data, error } = await query;
+      const { data: rawRecords, error } = await query;
       if (error) throw error;
 
-      return new Response(JSON.stringify({ records: data }), {
+      const agentIds = [...new Set((rawRecords || []).map((record) => record.agent_id).filter(Boolean))];
+      let agentMap = new Map();
+
+      if (agentIds.length > 0) {
+        const { data: agentsData, error: agentsError } = await supabaseAdmin
+          .from("agents")
+          .select("id, name, nit")
+          .in("id", agentIds);
+
+        if (agentsError) throw agentsError;
+        agentMap = new Map((agentsData || []).map((agent) => [agent.id, { name: agent.name, nit: agent.nit }]));
+      }
+
+      const records = (rawRecords || []).map((record) => ({
+        ...record,
+        agents: agentMap.get(record.agent_id) || null,
+      }));
+
+      return new Response(JSON.stringify({ records }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

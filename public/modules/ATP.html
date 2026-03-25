@@ -1426,9 +1426,7 @@ function enviarAGoogleSheets(hoja, datos) {
     }
 }
 
-// El nombre del agente se obtendrá de localStorage (establecido por otro archivo)
-// o usará un valor por defecto
-let nombreAgente = localStorage.getItem('nombreAgente') || 'GESTOR';
+let nombreAgente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
 let historial = JSON.parse(localStorage.getItem('historialATPATC')) || [];
 let contadores = JSON.parse(localStorage.getItem('contadoresATPATC')) || {
     CIERRE: 0,
@@ -1441,6 +1439,7 @@ let accionPendiente = null;
 let colorActual = localStorage.getItem('colorATPATC') || '#FFB400';
 
 document.addEventListener('DOMContentLoaded', () => {
+    nombreAgente = (localStorage.getItem('nombreAgente') || nombreAgente || 'GESTOR').toUpperCase();
     actualizarEstadisticas();
     aplicarColor(colorActual);
 });
@@ -2389,6 +2388,11 @@ document.getElementById('modalCulminar').addEventListener('click', (e) => {
 
 // Listen for form clear messages from parent window
 window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'SET_SESSION') {
+        nombreAgente = (event.data.nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
+        localStorage.setItem('nombreAgente', nombreAgente);
+        return;
+    }
     if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
         limpiarFormularioCompleto();
     }
