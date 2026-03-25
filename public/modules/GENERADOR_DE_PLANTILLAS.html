@@ -2630,8 +2630,12 @@ input:checked + .slider:before {
     </div>
     
     <div style="margin-top: 2rem; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn-fondo" onclick="volverALogin()" title="Cambiar agente y fondo">
-            ⚙️ Cambiar agente / fondo
+        <label for="inputFondoBienvenida" class="btn-fondo" title="Cargar imagen de fondo">
+            🖼️ Cargar imagen de fondo
+        </label>
+        <input type="file" id="inputFondoBienvenida" accept="image/*" hidden>
+        <button id="btnEliminarFondoBienvenida" class="btn-eliminar-fondo" onclick="eliminarFondo()" title="Eliminar fondo" style="display: none;">
+            🗑️
         </button>
     </div>
 </div>
@@ -3996,6 +4000,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Event listeners
     document.getElementById('inputFondo').addEventListener('change', manejarCargaFondo);
+    document.getElementById('inputFondoBienvenida').addEventListener('change', manejarCargaFondo);
     
     // Inicializar módulo de rechazos
     inicializarRechazos();
@@ -6645,7 +6650,7 @@ function exportarHistorial() {
 <Style ss:ID="headerBlue"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
 </Styles>`;
 
-    const agente = localStorage.getItem('nombreAgente') || 'N/A';
+    const agente = nombreAgente || 'N/A';
     const agenteUpper = agente.toUpperCase();
 
     // Hoja 1: CREACIÓN
@@ -6868,7 +6873,10 @@ function generarPlantilla() {
     // IPs especiales ATP usan cálculo de impacto como ATP
     // IPs especiales ONNET (10.37.60.146 con puertos ONNET) y ONNET-MAXIMO usan cálculo de impacto como ONNET
     let impacto = 'N/A';
+    const fallasImpactoBajo = ['PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA', 'ALTA POTENCIA ATENUADA', 'CTO POTENCIA ATENUADA', 'DESEMPEÑO', 'PUERTO CTO POTENCIA ATENUADA'];
     if (falla.includes('PRIMERA ALTA')) {
+        impacto = 'BAJO';
+    } else if (coinv === 'ONNET' && fallasImpactoBajo.includes(falla)) {
         impacto = 'BAJO';
     } else if (ip && (coinv === 'ATP' || coinv === 'ATC' || esIPespecialATP)) {
         // ATP/ATC normal y IP especial ATP usan su propio cálculo
@@ -6939,7 +6947,7 @@ function generarPlantilla() {
     plantilla += `ID GDM: ${gdmFinal}\n`;
     plantilla += `GESTOR: ${(nombreAgente || 'N/A').toUpperCase()}`;
     if (fecha) {
-        plantilla += `\nFECHA: ${fecha}`;
+        plantilla += `\n${fecha}`;
     }
     
     document.getElementById('textareaResultado').value = plantilla;
@@ -7212,7 +7220,10 @@ function copiarResumen() {
     
     // Calcular impacto para ONNET
     let impacto = 'MEDIO';
+    const fallasImpactoBajoR = ['PRIMERA ALTA POTENCIA ATENUADA', 'PRIMERA ALTA SIN POTENCIA', 'ALTA POTENCIA ATENUADA', 'CTO POTENCIA ATENUADA', 'DESEMPEÑO', 'PUERTO CTO POTENCIA ATENUADA'];
     if (falla.includes('PRIMERA ALTA')) {
+        impacto = 'BAJO';
+    } else if (coinv === 'ONNET' && fallasImpactoBajoR.includes(falla)) {
         impacto = 'BAJO';
     } else {
         const totalClientes = parseInt(clientes) || 0;
