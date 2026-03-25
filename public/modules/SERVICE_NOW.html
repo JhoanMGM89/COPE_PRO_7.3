@@ -1285,7 +1285,7 @@ function enviarAGoogleSheets(hoja, datos) {
     }
 }
 
-const agente = localStorage.getItem('nombreAgente') || 'GESTOR';
+let agente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
 let historial = JSON.parse(localStorage.getItem('historialServiceNow')) || [];
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
@@ -1299,6 +1299,7 @@ let accionPendiente = null;
 let colorActual = localStorage.getItem('colorServiceNow') || '#0d6efd';
 
 document.addEventListener('DOMContentLoaded', () => {
+    agente = (localStorage.getItem('nombreAgente') || agente || 'GESTOR').toUpperCase();
     actualizarEstadisticas();
     actualizarCampos();
     aplicarColor(colorActual);
@@ -2041,6 +2042,11 @@ document.getElementById('modalConfirm').addEventListener('click', (e) => {
 
 // Listen for form clear messages from parent window
 window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'SET_SESSION') {
+        agente = (event.data.nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
+        localStorage.setItem('nombreAgente', agente);
+        return;
+    }
     if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
         limpiarFormularioCompleto();
     }

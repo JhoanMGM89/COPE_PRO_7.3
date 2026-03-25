@@ -2596,23 +2596,8 @@ input:checked + .slider:before {
      PANTALLA DE LOGIN
      ============================================ -->
 <div id="pantallaLogin" class="pantalla-login">
-    <h1 class="titulo-principal">Ingresar nombre de agente</h1>
-    
-    <input type="text" id="inputAgente" class="input-agente" placeholder="Ej: Juan Pérez">
-    
-    <br>
-    
-    <button id="btnConfirmar" class="btn-principal" onclick="confirmarAgente()">Ingresar</button>
-    
-    <div class="cargar-fondo">
-        <label for="inputFondo" class="btn-fondo">
-            Cargar imagen de fondo
-        </label>
-        <input type="file" id="inputFondo" accept="image/*" hidden>
-        <button id="btnEliminarFondo" class="btn-eliminar-fondo" onclick="eliminarFondo()" title="Eliminar fondo" style="display: none;">
-            🗑️
-        </button>
-    </div>
+    <h1 class="titulo-principal">Acceso gestionado desde el inicio de sesión</h1>
+    <p class="subtitulo">Para ingresar debe iniciar sesión con NIT y contraseña desde la aplicación principal.</p>
 </div>
 
 <!-- ============================================
@@ -3901,6 +3886,7 @@ function initSupabase() {
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
         supabaseUserId = userId || '';
+        localStorage.setItem('nombreAgente', nombreAgente);
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
@@ -3933,6 +3919,18 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
     });
 }
 
+function obtenerSesionModulo() {
+    return {
+        type: 'SET_SESSION',
+        nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase()
+    };
+}
+
+function enviarSesionAlIframe(targetWindow) {
+    if (!targetWindow) return;
+    targetWindow.postMessage(obtenerSesionModulo(), '*');
+}
+
 // ============================================
 // INICIALIZACIÓN
 // ============================================
@@ -3947,6 +3945,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (agentFromUrl && supabaseUserId) {
         // Coming from React login - skip internal login
         nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
+        localStorage.setItem('nombreAgente', nombreAgente);
         document.getElementById('pantallaLogin').style.display = 'none';
         document.getElementById('pantallaBienvenida').style.display = 'block';
         document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
@@ -3963,7 +3962,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fondoGuardado) {
         document.body.style.backgroundImage = `url('${fondoGuardado}')`;
         document.body.classList.add('fondo-personalizado');
-        document.getElementById('btnEliminarFondo').style.display = 'flex';
         var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
         if (btnBienvenida) btnBienvenida.style.display = 'flex';
     }
@@ -3999,8 +3997,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Event listeners
-    document.getElementById('inputFondo').addEventListener('change', manejarCargaFondo);
-    document.getElementById('inputFondoBienvenida').addEventListener('change', manejarCargaFondo);
+    var inputFondoBienvenida = document.getElementById('inputFondoBienvenida');
+    if (inputFondoBienvenida) inputFondoBienvenida.addEventListener('change', manejarCargaFondo);
     
     // Inicializar módulo de rechazos
     inicializarRechazos();
@@ -4083,7 +4081,6 @@ function volverALogin() {
     nombreAgente = '';
     document.getElementById('pantallaBienvenida').style.display = 'none';
     document.getElementById('pantallaLogin').style.display = 'block';
-    document.getElementById('inputAgente').value = '';
 }
 
 function abrirModal() {
@@ -4127,7 +4124,6 @@ function manejarCargaFondo(event) {
         
         try {
             localStorage.setItem('fondoPersonalizado', imagenBase64);
-            document.getElementById('btnEliminarFondo').style.display = 'flex';
             var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
             if (btnBienvenida) btnBienvenida.style.display = 'flex';
             mostrarToast('Fondo cargado correctamente', 'exito');
@@ -4142,10 +4138,10 @@ function eliminarFondo() {
     document.body.style.backgroundImage = '';
     document.body.classList.remove('fondo-personalizado');
     localStorage.removeItem('fondoPersonalizado');
-    document.getElementById('btnEliminarFondo').style.display = 'none';
     var btnBienvenida = document.getElementById('btnEliminarFondoBienvenida');
     if (btnBienvenida) btnBienvenida.style.display = 'none';
-    document.getElementById('inputFondo').value = '';
+    var inputFondoBienvenida = document.getElementById('inputFondoBienvenida');
+    if (inputFondoBienvenida) inputFondoBienvenida.value = '';
     mostrarToast('Fondo eliminado', 'exito');
 }
 
@@ -7718,9 +7714,12 @@ function abrirModulo(modulo, params) {
         if (params) {
             nestedIframe.onload = function() {
                 nestedIframe.contentWindow.postMessage(params, '*');
+                enviarSesionAlIframe(nestedIframe.contentWindow);
             };
         } else {
-            nestedIframe.onload = null;
+            nestedIframe.onload = function() {
+                enviarSesionAlIframe(nestedIframe.contentWindow);
+            };
         }
         
         nestedIframe.src = modulo;
@@ -7755,6 +7754,7 @@ function abrirModulo(modulo, params) {
             if (params) {
                 iframe.contentWindow.postMessage(params, '*');
             }
+            enviarSesionAlIframe(iframe.contentWindow);
         };
         iframe.src = modulo;
         iframe.setAttribute('data-module', modulo);
@@ -7773,6 +7773,7 @@ function abrirModulo(modulo, params) {
                 if (params) {
                     iframe.contentWindow.postMessage(params, '*');
                 }
+                enviarSesionAlIframe(iframe.contentWindow);
             }, 50);
         }
     }
