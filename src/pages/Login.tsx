@@ -79,7 +79,6 @@ const Login = () => {
         return;
       }
 
-      toast.success("Bienvenido");
       navigate("/app");
     } catch {
       toast.error("Error al iniciar sesión");
