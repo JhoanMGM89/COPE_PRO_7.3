@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_base: {
+        Row: {
+          articulo_config: string
+          coinversor: string
+          created_at: string | null
+          grupo_trabajo: string
+          id: string
+          ip: string
+          localidad: string
+          olt: string
+          tecnologia: string
+          updated_at: string | null
+        }
+        Insert: {
+          articulo_config?: string
+          coinversor?: string
+          created_at?: string | null
+          grupo_trabajo?: string
+          id?: string
+          ip: string
+          localidad?: string
+          olt?: string
+          tecnologia?: string
+          updated_at?: string | null
+        }
+        Update: {
+          articulo_config?: string
+          coinversor?: string
+          created_at?: string | null
+          grupo_trabajo?: string
+          id?: string
+          ip?: string
+          localidad?: string
+          olt?: string
+          tecnologia?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       records: {
         Row: {
           agent_id: string
