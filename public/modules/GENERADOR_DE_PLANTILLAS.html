@@ -6323,6 +6323,9 @@ function guardarGDMEnHistorial(textoFinal) {
         guardarEnHistorial(caso);
         casosGuardadosEnHistorial.add(claveUnica);
         
+        // Guardar en Supabase
+        guardarEnSupabase('RECHAZO_GDM', 'RECHAZO GDM', gdm, falla, textoFinal);
+        
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
