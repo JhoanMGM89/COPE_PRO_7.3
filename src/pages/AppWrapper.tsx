@@ -42,7 +42,7 @@ const AppWrapper = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-white font-semibold text-sm">👤 {agentName || "Cargando..."}</span>
+          <span className="text-white font-semibold text-sm">👤 {agentName || "Agente"}</span>
         </div>
         <div className="flex gap-2">
           {isAdmin && (
