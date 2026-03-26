@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, X } from "lucide-react";
+import { Eye, X, Trash2 } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -25,10 +25,23 @@ interface RecordRow {
   agents: { name: string; nit: string } | null;
 }
 
+interface IpEntry {
+  id: string;
+  ip: string;
+  olt: string;
+  localidad: string;
+  coinversor: string;
+  tecnologia: string;
+  grupo_trabajo: string;
+  articulo_config: string;
+}
+
+const PROTECTED_NITS = ["admincope", "1143330990"];
+
 const Admin = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [records, setRecords] = useState<RecordRow[]>([]);
-  const [tab, setTab] = useState<"agents" | "records">("agents");
+  const [tab, setTab] = useState<"agents" | "records" | "ips">("agents");
   const [newNit, setNewNit] = useState("");
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -38,14 +51,24 @@ const Admin = () => {
   const [filterModule, setFilterModule] = useState("");
   const [filterSubmodule, setFilterSubmodule] = useState("");
   const [filterAgent, setFilterAgent] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [viewingObs, setViewingObs] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState(false);
+  // IP Base state
+  const [ipEntries, setIpEntries] = useState<IpEntry[]>([]);
+  const [ipSearch, setIpSearch] = useState("");
+  const [editingIpId, setEditingIpId] = useState<string | null>(null);
+  const [editIpData, setEditIpData] = useState<Partial<IpEntry>>({});
+  const [newIp, setNewIp] = useState({ ip: "", olt: "", localidad: "", coinversor: "", tecnologia: "", grupo_trabajo: "", articulo_config: "" });
+  const [showAddIp, setShowAddIp] = useState(false);
+
   const navigate = useNavigate();
 
   const checkAdmin = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { navigate("/"); return; }
-
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").maybeSingle();
     if (!data) { navigate("/app"); toast.error("No tiene permisos de administrador"); }
   }, [navigate]);
@@ -66,33 +89,44 @@ const Admin = () => {
       toast.error(data?.error || "Error al cargar registros");
       return;
     }
-    setRecords(data?.records ?? []);
-  }, [filterAgent, filterModule, filterSubmodule]);
+    let recs: RecordRow[] = data?.records ?? [];
+    // Client-side date filter
+    if (filterDateFrom) {
+      const from = new Date(filterDateFrom);
+      from.setHours(0, 0, 0, 0);
+      recs = recs.filter(r => new Date(r.created_at) >= from);
+    }
+    if (filterDateTo) {
+      const to = new Date(filterDateTo);
+      to.setHours(23, 59, 59, 999);
+      recs = recs.filter(r => new Date(r.created_at) <= to);
+    }
+    setRecords(recs);
+  }, [filterAgent, filterModule, filterSubmodule, filterDateFrom, filterDateTo]);
+
+  const loadIps = useCallback(async () => {
+    const { data, error } = await supabase.from("ip_base").select("*").order("ip");
+    if (error) { toast.error("Error cargando IPs"); return; }
+    setIpEntries(data || []);
+  }, []);
 
   useEffect(() => { checkAdmin(); }, [checkAdmin]);
   useEffect(() => { loadAgents(); }, [loadAgents]);
   useEffect(() => { if (tab === "records") loadRecords(); }, [tab, loadRecords]);
+  useEffect(() => { if (tab === "ips") loadIps(); }, [tab, loadIps]);
 
   const submoduleOptions = Array.from(
-    new Set(records.map((record) => record.template_type).filter((value): value is string => Boolean(value)))
+    new Set(records.map(r => r.template_type).filter((v): v is string => Boolean(v)))
   ).sort((a, b) => a.localeCompare(b));
 
   const createAgent = async () => {
-    if (!newNit.trim() || !newName.trim() || !newPassword.trim()) {
-      toast.error("Complete todos los campos");
-      return;
-    }
+    if (!newNit.trim() || !newName.trim() || !newPassword.trim()) { toast.error("Complete todos los campos"); return; }
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("admin-agents", {
       body: { action: "create", nit: newNit.trim(), name: newName.trim().toUpperCase(), password: newPassword.trim() },
     });
-    if (error || data?.error) {
-      toast.error(data?.error || "Error al crear agente");
-    } else {
-      toast.success("Agente creado");
-      setNewNit(""); setNewName(""); setNewPassword("");
-      loadAgents();
-    }
+    if (error || data?.error) { toast.error(data?.error || "Error al crear agente"); }
+    else { toast.success("Agente creado"); setNewNit(""); setNewName(""); setNewPassword(""); loadAgents(); }
     setLoading(false);
   };
 
@@ -102,47 +136,41 @@ const Admin = () => {
     const body: Record<string, string> = { action: "update", id, name: editName.trim().toUpperCase() };
     if (editPassword.trim()) body.password = editPassword.trim();
     const { data, error } = await supabase.functions.invoke("admin-agents", { body });
-    if (error || data?.error) {
-      toast.error(data?.error || "Error al actualizar");
-    } else {
-      toast.success("Agente actualizado");
-      setEditingId(null);
-      loadAgents();
-    }
+    if (error || data?.error) { toast.error(data?.error || "Error al actualizar"); }
+    else { toast.success("Agente actualizado"); setEditingId(null); loadAgents(); }
     setLoading(false);
   };
 
   const deleteAgent = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar al agente ${name}? Se eliminarán todos sus registros.`)) return;
+    if (!confirm(`¿Eliminar al agente ${name}?`)) return;
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("admin-agents", { body: { action: "delete", id } });
-    if (error || data?.error) {
-      toast.error(data?.error || "Error al eliminar");
-    } else {
-      toast.success("Agente eliminado");
-      loadAgents();
-    }
+    if (error || data?.error) { toast.error(data?.error || "Error al eliminar"); }
+    else { toast.success("Agente eliminado"); loadAgents(); }
     setLoading(false);
+  };
+
+  const deleteRecord = async (recordId: string) => {
+    if (!confirm("¿Eliminar este registro?")) return;
+    const { error } = await supabase.from("records").delete().eq("id", recordId);
+    if (error) { toast.error("Error al eliminar registro"); return; }
+    toast.success("Registro eliminado");
+    setRecords(prev => prev.filter(r => r.id !== recordId));
   };
 
   const exportExcel = () => {
     if (records.length === 0) { toast.error("No hay registros"); return; }
-
-    let html = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-<Styles>
-<Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/></Style>
-</Styles>
-<Worksheet ss:Name="REGISTROS"><Table>
-<Row><Cell ss:StyleID="h"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">AGENTE</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">NIT</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">MÓDULO</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">ID</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">FALLA</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">OBSERVACION</Data></Cell></Row>`;
-
     const esc = (t: string | null | undefined) => {
       if (!t) return "";
       return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     };
-
-    records.forEach((r) => {
+    let html = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#0d6efd" ss:Pattern="Solid"/></Style></Styles>
+<Worksheet ss:Name="REGISTROS"><Table>
+<Row><Cell ss:StyleID="h"><Data ss:Type="String">FECHA</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">AGENTE</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">NIT</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">MÓDULO</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">TIPO</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">ID</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">FALLA</Data></Cell><Cell ss:StyleID="h"><Data ss:Type="String">OBSERVACION</Data></Cell></Row>`;
+    records.forEach(r => {
       html += `<Row>
 <Cell><Data ss:Type="String">${esc(new Date(r.created_at).toLocaleString("es-CO"))}</Data></Cell>
 <Cell><Data ss:Type="String">${esc(r.agents?.name)}</Data></Cell>
@@ -154,7 +182,6 @@ const Admin = () => {
 <Cell><Data ss:Type="String">${esc(r.observation)}</Data></Cell>
 </Row>`;
     });
-
     html += `</Table></Worksheet></Workbook>`;
     const blob = new Blob([html], { type: "application/vnd.ms-excel" });
     const link = document.createElement("a");
@@ -164,74 +191,107 @@ const Admin = () => {
     toast.success(`${records.length} registros exportados`);
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
+  // IP functions
+  const filteredIps = ipEntries.filter(ip => {
+    if (!ipSearch) return true;
+    const s = ipSearch.toLowerCase();
+    return ip.ip.toLowerCase().includes(s) || ip.olt.toLowerCase().includes(s) || ip.localidad.toLowerCase().includes(s) || ip.coinversor.toLowerCase().includes(s) || ip.tecnologia.toLowerCase().includes(s);
+  });
+
+  const saveIpEdit = async (id: string) => {
+    const { error } = await supabase.from("ip_base").update({
+      ip: editIpData.ip, olt: editIpData.olt, localidad: editIpData.localidad,
+      coinversor: editIpData.coinversor, tecnologia: editIpData.tecnologia,
+      grupo_trabajo: editIpData.grupo_trabajo, articulo_config: editIpData.articulo_config,
+      updated_at: new Date().toISOString()
+    }).eq("id", id);
+    if (error) { toast.error("Error al guardar"); return; }
+    toast.success("IP actualizada");
+    setEditingIpId(null);
+    loadIps();
+  };
+
+  const deleteIp = async (id: string) => {
+    if (!confirm("¿Eliminar esta IP?")) return;
+    const { error } = await supabase.from("ip_base").delete().eq("id", id);
+    if (error) { toast.error("Error al eliminar"); return; }
+    toast.success("IP eliminada");
+    loadIps();
+  };
+
+  const addIp = async () => {
+    if (!newIp.ip.trim()) { toast.error("IP es obligatoria"); return; }
+    const { error } = await supabase.from("ip_base").insert({
+      ip: newIp.ip.trim(), olt: newIp.olt.trim(), localidad: newIp.localidad.trim(),
+      coinversor: newIp.coinversor.trim(), tecnologia: newIp.tecnologia.trim(),
+      grupo_trabajo: newIp.grupo_trabajo.trim(), articulo_config: newIp.articulo_config.trim()
+    });
+    if (error) { toast.error(error.message.includes("duplicate") ? "IP ya existe" : "Error al agregar"); return; }
+    toast.success("IP agregada");
+    setNewIp({ ip: "", olt: "", localidad: "", coinversor: "", tecnologia: "", grupo_trabajo: "", articulo_config: "" });
+    setShowAddIp(false);
+    loadIps();
+  };
+
+  const logout = async () => { await supabase.auth.signOut(); navigate("/"); };
+
+  const moduleColor = (mod: string) => {
+    if (mod === "CREACION") return "bg-green-600/20 text-green-400";
+    if (mod === "AVERIA") return "bg-orange-600/20 text-orange-400";
+    if (mod === "ATP") return "bg-yellow-600/20 text-yellow-400";
+    if (mod === "SERVICE NOW") return "bg-blue-600/20 text-blue-400";
+    if (mod.includes("RECHAZO")) return "bg-red-600/20 text-red-400";
+    return "bg-zinc-600/20 text-zinc-400";
   };
 
   return (
     <div className="min-h-screen bg-black text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Panel de Administración</h1>
           <div className="flex gap-2">
-            <Button onClick={() => navigate("/app")} className="bg-green-600 text-white hover:bg-green-700">
-              Ir a Plantillas
-            </Button>
+            <Button onClick={() => navigate("/app")} className="bg-green-600 text-white hover:bg-green-700">Ir a Plantillas</Button>
             <Button variant="destructive" onClick={logout}>Cerrar Sesión</Button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <Button onClick={() => setTab("agents")} className="bg-blue-600 text-white hover:bg-blue-700">
-            Gestión de Agentes
-          </Button>
-          <Button onClick={() => setTab("records")} className="bg-green-600 text-white hover:bg-green-700">
-            Registros / Exportar
-          </Button>
-          <Button onClick={() => toast.info("Módulo de gestión de IPs próximamente")} className="bg-yellow-500 text-white hover:bg-yellow-600">
-            Base de IPs
-          </Button>
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <Button onClick={() => setTab("agents")} className="bg-blue-600 text-white hover:bg-blue-700">Gestión de Agentes</Button>
+          <Button onClick={() => setTab("records")} className="bg-green-600 text-white hover:bg-green-700">Registros / Exportar</Button>
+          <Button onClick={() => setTab("ips")} className="bg-yellow-500 text-white hover:bg-yellow-600">Base de IPs</Button>
+          {tab === "records" && (
+            <Button
+              onClick={() => setDeleteMode(!deleteMode)}
+              className={`${deleteMode ? "bg-red-800" : "bg-red-600"} text-white hover:bg-red-700`}
+            >
+              {deleteMode ? "Desactivar Eliminación" : "Eliminar Registros"}
+            </Button>
+          )}
         </div>
 
+        {/* AGENTS TAB */}
         {tab === "agents" && (
           <div className="space-y-6">
-            {/* Create Agent */}
             <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <h2 className="text-lg font-semibold mb-4">Crear Nuevo Agente</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label className="text-gray-400">NIT</Label>
-                  <Input value={newNit} onChange={(e) => setNewNit(e.target.value)} placeholder="NIT del agente" className="bg-zinc-800 border-zinc-700 text-white" />
-                </div>
-                <div>
-                  <Label className="text-gray-400">Nombre</Label>
-                  <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nombre completo" className="bg-zinc-800 border-zinc-700 text-white" />
-                </div>
-                <div>
-                  <Label className="text-gray-400">Contraseña</Label>
-                  <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Contraseña" className="bg-zinc-800 border-zinc-700 text-white" />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={createAgent} disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white">
-                    Crear Agente
-                  </Button>
-                </div>
+                <div><Label className="text-gray-400">NIT</Label><Input value={newNit} onChange={e => setNewNit(e.target.value)} placeholder="NIT del agente" className="bg-zinc-800 border-zinc-700 text-white" /></div>
+                <div><Label className="text-gray-400">Nombre</Label><Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nombre completo" className="bg-zinc-800 border-zinc-700 text-white" /></div>
+                <div><Label className="text-gray-400">Contraseña</Label><Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Contraseña" className="bg-zinc-800 border-zinc-700 text-white" /></div>
+                <div className="flex items-end"><Button onClick={createAgent} disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white">Crear Agente</Button></div>
               </div>
             </div>
-
-            {/* Agent List */}
             <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <h2 className="text-lg font-semibold mb-4">Agentes Registrados ({agents.length})</h2>
-              <div className="space-y-3">
-                {agents.map((agent) => (
+              <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                {agents.map(agent => (
                   <div key={agent.id} className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg">
                     {editingId === agent.id ? (
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 mr-4">
-                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre" className="bg-zinc-700 border-zinc-600 text-white" />
-                        <Input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder="Nueva contraseña (opcional)" className="bg-zinc-700 border-zinc-600 text-white" />
+                        <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Nombre" className="bg-zinc-700 border-zinc-600 text-white" />
+                        <Input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)} placeholder="Nueva contraseña (opcional)" className="bg-zinc-700 border-zinc-600 text-white" />
                         <div className="flex gap-2">
                           <Button onClick={() => updateAgent(agent.id)} disabled={loading} size="sm" className="bg-blue-600 text-white hover:bg-blue-700">Guardar</Button>
                           <Button onClick={() => setEditingId(null)} variant="outline" size="sm" className="border-zinc-600 text-gray-300">Cancelar</Button>
@@ -242,17 +302,13 @@ const Admin = () => {
                         <div>
                           <span className="font-semibold text-white">{agent.name}</span>
                           <span className="ml-3 text-sm text-gray-400">NIT: {agent.nit}</span>
-                          {agent.nit === "admincope" && <span className="ml-2 px-2 py-0.5 bg-red-600 text-xs rounded-full">ADMIN</span>}
+                          {PROTECTED_NITS.includes(agent.nit) && <span className="ml-2 px-2 py-0.5 bg-red-600 text-xs rounded-full">ADMIN</span>}
                         </div>
                         <div className="flex gap-2">
-                          {agent.nit !== "admincope" && (
+                          {!PROTECTED_NITS.includes(agent.nit) && (
                             <>
-                              <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => { setEditingId(agent.id); setEditName(agent.name); setEditPassword(""); }}>
-                                Editar
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => deleteAgent(agent.id, agent.name)}>
-                                Eliminar
-                              </Button>
+                              <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => { setEditingId(agent.id); setEditName(agent.name); setEditPassword(""); }}>Editar</Button>
+                              <Button size="sm" variant="destructive" onClick={() => deleteAgent(agent.id, agent.name)}>Eliminar</Button>
                             </>
                           )}
                         </div>
@@ -266,15 +322,15 @@ const Admin = () => {
           </div>
         )}
 
+        {/* RECORDS TAB */}
         {tab === "records" && (
           <div className="space-y-6">
-            {/* Filters */}
             <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <h2 className="text-lg font-semibold mb-4">Filtros</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div>
                   <Label className="text-gray-400">Módulo</Label>
-                  <select value={filterModule} onChange={(e) => { setFilterModule(e.target.value); setFilterSubmodule(""); }} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
+                  <select value={filterModule} onChange={e => { setFilterModule(e.target.value); setFilterSubmodule(""); }} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
                     <option value="">Todos</option>
                     <option value="CREACION">CREACIÓN</option>
                     <option value="AVERIA">AVERÍAS</option>
@@ -286,75 +342,156 @@ const Admin = () => {
                 </div>
                 <div>
                   <Label className="text-gray-400">Submódulo</Label>
-                  <select value={filterSubmodule} onChange={(e) => setFilterSubmodule(e.target.value)} disabled={!filterModule} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <select value={filterSubmodule} onChange={e => setFilterSubmodule(e.target.value)} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
                     <option value="">Todos</option>
-                    {submoduleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    {submoduleOptions.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
                   <Label className="text-gray-400">Agente</Label>
-                  <select value={filterAgent} onChange={(e) => setFilterAgent(e.target.value)} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
+                  <select value={filterAgent} onChange={e => setFilterAgent(e.target.value)} className="w-full h-10 rounded-md bg-zinc-800 border border-zinc-700 text-white px-3">
                     <option value="">Todos</option>
-                    {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
+                </div>
+                <div>
+                  <Label className="text-gray-400">Desde</Label>
+                  <Input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white" />
+                </div>
+                <div>
+                  <Label className="text-gray-400">Hasta</Label>
+                  <Input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} className="bg-zinc-800 border-zinc-700 text-white" />
                 </div>
                 <div className="flex items-end gap-2">
                   <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700 text-white">Buscar</Button>
-                  <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white">Exportar Excel</Button>
+                  <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white">Exportar</Button>
                 </div>
               </div>
             </div>
 
-            {/* Records Table */}
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 overflow-x-auto">
+            <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
               <h2 className="text-lg font-semibold mb-4">Registros ({records.length})</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-700">
-                    <th className="text-left p-2 text-gray-400">FECHA</th>
-                    <th className="text-left p-2 text-gray-400">AGENTE</th>
-                    <th className="text-left p-2 text-gray-400">MÓDULO</th>
-                    <th className="text-left p-2 text-gray-400">TIPO</th>
-                    <th className="text-left p-2 text-gray-400">ID</th>
-                    <th className="text-left p-2 text-gray-400">FALLA</th>
-                    <th className="text-left p-2 text-gray-400">OBS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((r) => (
-                    <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
-                      <td className="p-2 text-xs">{new Date(r.created_at).toLocaleString("es-CO")}</td>
-                      <td className="p-2">{r.agents?.name || "N/A"}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          r.module === "CREACION" ? "bg-green-600/20 text-green-400" :
-                          r.module === "AVERIA" ? "bg-orange-600/20 text-orange-400" :
-                          r.module === "ATP" ? "bg-yellow-600/20 text-yellow-400" :
-                          r.module === "SERVICE NOW" ? "bg-blue-600/20 text-blue-400" :
-                          "bg-red-600/20 text-red-400"
-                        }`}>{r.module}</span>
-                      </td>
-                      <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                      <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
-                      <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
-                      <td className="p-2">
-                        {r.observation ? (
-                          <button
-                            onClick={() => setViewingObs(r.observation)}
-                            className="text-blue-400 hover:text-blue-300 transition-colors"
-                            title="Ver plantilla"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
+              <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-zinc-900 z-10">
+                    <tr className="border-b border-zinc-700">
+                      <th className="text-left p-2 text-gray-400">FECHA</th>
+                      <th className="text-left p-2 text-gray-400">AGENTE</th>
+                      <th className="text-left p-2 text-gray-400">MÓDULO</th>
+                      <th className="text-left p-2 text-gray-400">TIPO</th>
+                      <th className="text-left p-2 text-gray-400">ID</th>
+                      <th className="text-left p-2 text-gray-400">FALLA</th>
+                      <th className="text-left p-2 text-gray-400">OBS</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {records.map(r => (
+                      <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
+                        <td className="p-2 text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("es-CO")}</td>
+                        <td className="p-2">{r.agents?.name || "N/A"}</td>
+                        <td className="p-2"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${moduleColor(r.module)}`}>{r.module}</span></td>
+                        <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
+                        <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
+                        <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
+                        <td className="p-2 flex items-center gap-1">
+                          {r.observation ? (
+                            <button onClick={() => setViewingObs(r.observation)} className="text-blue-400 hover:text-blue-300" title="Ver plantilla">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          ) : <span className="text-gray-600">—</span>}
+                          {deleteMode && (
+                            <button onClick={() => deleteRecord(r.id)} className="text-red-400 hover:text-red-300 ml-1" title="Eliminar registro">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               {records.length === 0 && <p className="text-gray-500 text-center py-8">No hay registros</p>}
+            </div>
+          </div>
+        )}
+
+        {/* IPS TAB */}
+        {tab === "ips" && (
+          <div className="space-y-6">
+            <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">📋 Base de IPs ({filteredIps.length})</h2>
+                <div className="flex gap-2">
+                  <Input value={ipSearch} onChange={e => setIpSearch(e.target.value)} placeholder="Buscar IP, OLT, localidad..." className="bg-zinc-800 border-zinc-700 text-white w-64" />
+                  <Button onClick={() => setShowAddIp(!showAddIp)} className="bg-green-600 text-white hover:bg-green-700">{showAddIp ? "Cancelar" : "Agregar IP"}</Button>
+                </div>
+              </div>
+
+              {showAddIp && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-4 bg-zinc-800 rounded-lg">
+                  <Input value={newIp.ip} onChange={e => setNewIp({ ...newIp, ip: e.target.value })} placeholder="IP" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.olt} onChange={e => setNewIp({ ...newIp, olt: e.target.value })} placeholder="OLT" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.localidad} onChange={e => setNewIp({ ...newIp, localidad: e.target.value })} placeholder="Localidad" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.coinversor} onChange={e => setNewIp({ ...newIp, coinversor: e.target.value })} placeholder="Coinversor" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.tecnologia} onChange={e => setNewIp({ ...newIp, tecnologia: e.target.value })} placeholder="Tecnología" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.grupo_trabajo} onChange={e => setNewIp({ ...newIp, grupo_trabajo: e.target.value })} placeholder="Grupo Trabajo" className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Input value={newIp.articulo_config} onChange={e => setNewIp({ ...newIp, articulo_config: e.target.value })} placeholder="Art. Config." className="bg-zinc-700 border-zinc-600 text-white" />
+                  <Button onClick={addIp} className="bg-blue-600 text-white hover:bg-blue-700">Guardar</Button>
+                </div>
+              )}
+
+              <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-zinc-900 z-10">
+                    <tr className="border-b border-zinc-700">
+                      <th className="text-left p-2 text-gray-400">IP</th>
+                      <th className="text-left p-2 text-gray-400">OLT</th>
+                      <th className="text-left p-2 text-gray-400">LOCALIDAD</th>
+                      <th className="text-left p-2 text-gray-400">COINVERSOR</th>
+                      <th className="text-left p-2 text-gray-400">TECNOLOGÍA</th>
+                      <th className="text-left p-2 text-gray-400">GRUPO</th>
+                      <th className="text-left p-2 text-gray-400">ART. CONFIG.</th>
+                      <th className="text-left p-2 text-gray-400">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredIps.map(ip => (
+                      <tr key={ip.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
+                        {editingIpId === ip.id ? (
+                          <>
+                            <td className="p-1"><Input value={editIpData.ip || ""} onChange={e => setEditIpData({ ...editIpData, ip: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.olt || ""} onChange={e => setEditIpData({ ...editIpData, olt: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.localidad || ""} onChange={e => setEditIpData({ ...editIpData, localidad: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.coinversor || ""} onChange={e => setEditIpData({ ...editIpData, coinversor: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.tecnologia || ""} onChange={e => setEditIpData({ ...editIpData, tecnologia: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.grupo_trabajo || ""} onChange={e => setEditIpData({ ...editIpData, grupo_trabajo: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1"><Input value={editIpData.articulo_config || ""} onChange={e => setEditIpData({ ...editIpData, articulo_config: e.target.value })} className="bg-zinc-700 border-zinc-600 text-white text-xs h-8" /></td>
+                            <td className="p-1 flex gap-1">
+                              <Button size="sm" onClick={() => saveIpEdit(ip.id)} className="bg-green-600 text-white hover:bg-green-700 text-xs h-8">✓</Button>
+                              <Button size="sm" onClick={() => setEditingIpId(null)} className="bg-zinc-600 text-white hover:bg-zinc-500 text-xs h-8">✕</Button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="p-2 text-xs font-mono text-cyan-400 font-semibold">{ip.ip}</td>
+                            <td className="p-2 text-xs">{ip.olt}</td>
+                            <td className="p-2 text-xs">{ip.localidad}</td>
+                            <td className="p-2 text-xs"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${ip.coinversor === "ONNET" ? "bg-blue-600/20 text-blue-400" : ip.coinversor === "ONNET MAXIMO" ? "bg-green-600/20 text-green-400" : "bg-orange-600/20 text-orange-400"}`}>{ip.coinversor}</span></td>
+                            <td className="p-2 text-xs">{ip.tecnologia}</td>
+                            <td className="p-2 text-xs">{ip.grupo_trabajo}</td>
+                            <td className="p-2 text-xs">{ip.articulo_config}</td>
+                            <td className="p-2 flex gap-1">
+                              <Button size="sm" onClick={() => { setEditingIpId(ip.id); setEditIpData(ip); }} className="bg-blue-600 text-white hover:bg-blue-700 text-xs h-7">Editar</Button>
+                              <Button size="sm" onClick={() => deleteIp(ip.id)} variant="destructive" className="text-xs h-7">✕</Button>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {filteredIps.length === 0 && <p className="text-gray-500 text-center py-8">No hay IPs registradas</p>}
             </div>
           </div>
         )}
@@ -363,10 +500,8 @@ const Admin = () => {
       {/* Observation Modal */}
       {viewingObs && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setViewingObs(null)}>
-          <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setViewingObs(null)} className="absolute top-3 right-3 text-gray-400 hover:text-white">
-              <X className="h-5 w-5" />
-            </button>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setViewingObs(null)} className="absolute top-3 right-3 text-gray-400 hover:text-white"><X className="h-5 w-5" /></button>
             <h3 className="text-lg font-semibold mb-4 text-white">Plantilla del Registro</h3>
             <pre className="whitespace-pre-wrap text-sm text-gray-300 font-mono bg-zinc-800 p-4 rounded-lg">{viewingObs}</pre>
           </div>

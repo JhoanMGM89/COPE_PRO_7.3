@@ -3242,7 +3242,7 @@ input:checked + .slider:before {
         </div>
         <div class="historial-footer">
             <button class="historial-btn-cerrar" onclick="cerrarHistorial()">CERRAR</button>
-            <button class="historial-btn-limpiar" onclick="limpiarHistorial()">LIMPIAR HISTORIAL</button>
+            
             <button class="historial-btn-exportar" id="btnExportarHistorial" onclick="exportarHistorial()">EXPORTAR A EXCEL</button>
         </div>
     </div>
@@ -5754,6 +5754,17 @@ function copiarPlantillaRechazo(id, event) {
             // Guardar en historial como rechazado
             guardarRechazoEnHistorial(template, finalText);
             
+            // Guardar en Supabase
+            const esSYTEX = document.getElementById('switchSYTEX').checked;
+            const esGDM = document.getElementById('switchGDM').checked;
+            let rechazoModule = 'RECHAZO_SYTEX';
+            let rechazoId = document.getElementById('inputFO').value.trim();
+            if (esGDM) {
+                rechazoModule = 'RECHAZO_GDM';
+                rechazoId = document.getElementById('inputGDM').value.trim();
+            }
+            guardarEnSupabase(rechazoModule, template.tag, rechazoId, document.getElementById('selectFalla').value || 'RECHAZO', finalText);
+            
             // Issue 1 & 6: Limpiar inputs del rechazo y deshabilitar inputs del módulo creación
             limpiarYDeshabilitarTrasRechazo();
         });
@@ -6311,6 +6322,9 @@ function guardarGDMEnHistorial(textoFinal) {
         
         guardarEnHistorial(caso);
         casosGuardadosEnHistorial.add(claveUnica);
+        
+        // Guardar en Supabase
+        guardarEnSupabase('RECHAZO_GDM', 'RECHAZO GDM', gdm, falla, textoFinal);
         
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
