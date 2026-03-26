@@ -2595,10 +2595,7 @@ input:checked + .slider:before {
 <!-- ============================================
      PANTALLA DE LOGIN
      ============================================ -->
-<div id="pantallaLogin" class="pantalla-login">
-    <h1 class="titulo-principal">Acceso gestionado desde el inicio de sesión</h1>
-    <p class="subtitulo">Para ingresar debe iniciar sesión con NIT y contraseña desde la aplicación principal.</p>
-</div>
+<div id="pantallaLogin" class="pantalla-login" style="display:none;"></div>
 
 <!-- ============================================
      PANTALLA DE BIENVENIDA
@@ -3946,15 +3943,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Coming from React login - skip internal login
         nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
         localStorage.setItem('nombreAgente', nombreAgente);
-        document.getElementById('pantallaLogin').style.display = 'none';
         document.getElementById('pantallaBienvenida').style.display = 'block';
         document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
     } else {
-        // Standalone mode disabled to avoid access without authenticated registration
-        localStorage.removeItem('nombreAgente');
-        nombreAgente = '';
-        document.getElementById('pantallaLogin').style.display = 'block';
-        document.getElementById('pantallaBienvenida').style.display = 'none';
+        // Try from localStorage as fallback
+        var savedName = localStorage.getItem('nombreAgente');
+        if (savedName) {
+            nombreAgente = savedName.toUpperCase();
+            document.getElementById('pantallaBienvenida').style.display = 'block';
+            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
+        }
     }
     
     // Cargar fondo guardado
@@ -7243,7 +7241,8 @@ function copiarResumen() {
             let partes = [`${ip} ${olt}`];
             if (cto) {
                 const lineasCTO = cto.split('\n').map(l => l.trim()).filter(l => l);
-                lineasCTO.forEach(l => partes.push(l));
+                // Solo tomar la primera línea del CTO/SPLITER para el resumen
+                if (lineasCTO.length > 0) partes.push(lineasCTO[0]);
             }
             partes.push(falla);
             resumen = partes.join(' / ');

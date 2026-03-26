@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Eye, X } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -38,6 +39,7 @@ const Admin = () => {
   const [filterSubmodule, setFilterSubmodule] = useState("");
   const [filterAgent, setFilterAgent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [viewingObs, setViewingObs] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const checkAdmin = useCallback(async () => {
@@ -183,11 +185,14 @@ const Admin = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
-          <Button onClick={() => setTab("agents")} className={`bg-blue-600 text-white hover:bg-blue-700 ${tab === "agents" ? "ring-2 ring-white/30" : "opacity-90"}`}>
+          <Button onClick={() => setTab("agents")} className="bg-blue-600 text-white hover:bg-blue-700">
             Gestión de Agentes
           </Button>
-          <Button onClick={() => setTab("records")} className={`bg-green-600 text-white hover:bg-green-700 ${tab === "records" ? "ring-2 ring-white/30" : "opacity-90"}`}>
+          <Button onClick={() => setTab("records")} className="bg-green-600 text-white hover:bg-green-700">
             Registros / Exportar
+          </Button>
+          <Button onClick={() => toast.info("Módulo de gestión de IPs próximamente")} className="bg-yellow-500 text-white hover:bg-yellow-600">
+            Base de IPs
           </Button>
         </div>
 
@@ -210,7 +215,7 @@ const Admin = () => {
                   <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Contraseña" className="bg-zinc-800 border-zinc-700 text-white" />
                 </div>
                 <div className="flex items-end">
-                  <Button onClick={createAgent} disabled={loading} className="w-full bg-green-600 hover:bg-green-700">
+                  <Button onClick={createAgent} disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white">
                     Crear Agente
                   </Button>
                 </div>
@@ -228,7 +233,7 @@ const Admin = () => {
                         <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre" className="bg-zinc-700 border-zinc-600 text-white" />
                         <Input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)} placeholder="Nueva contraseña (opcional)" className="bg-zinc-700 border-zinc-600 text-white" />
                         <div className="flex gap-2">
-                          <Button onClick={() => updateAgent(agent.id)} disabled={loading} size="sm" className="bg-blue-600">Guardar</Button>
+                          <Button onClick={() => updateAgent(agent.id)} disabled={loading} size="sm" className="bg-blue-600 text-white hover:bg-blue-700">Guardar</Button>
                           <Button onClick={() => setEditingId(null)} variant="outline" size="sm" className="border-zinc-600 text-gray-300">Cancelar</Button>
                         </div>
                       </div>
@@ -294,8 +299,8 @@ const Admin = () => {
                   </select>
                 </div>
                 <div className="flex items-end gap-2">
-                  <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700">Buscar</Button>
-                  <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700">Exportar Excel</Button>
+                  <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700 text-white">Buscar</Button>
+                  <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white">Exportar Excel</Button>
                 </div>
               </div>
             </div>
@@ -312,7 +317,7 @@ const Admin = () => {
                     <th className="text-left p-2 text-gray-400">TIPO</th>
                     <th className="text-left p-2 text-gray-400">ID</th>
                     <th className="text-left p-2 text-gray-400">FALLA</th>
-                    <th className="text-left p-2 text-gray-400 max-w-xs">OBSERVACIÓN</th>
+                    <th className="text-left p-2 text-gray-400">OBS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -330,9 +335,21 @@ const Admin = () => {
                         }`}>{r.module}</span>
                       </td>
                       <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                      <td className="p-2 text-xs font-mono">{r.id_mostrado}</td>
-                      <td className="p-2 text-xs">{r.tipo_falla}</td>
-                      <td className="p-2 text-xs max-w-xs truncate">{r.observation?.substring(0, 100)}</td>
+                      <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
+                      <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
+                      <td className="p-2">
+                        {r.observation ? (
+                          <button
+                            onClick={() => setViewingObs(r.observation)}
+                            className="text-blue-400 hover:text-blue-300 transition-colors"
+                            title="Ver plantilla"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -342,6 +359,19 @@ const Admin = () => {
           </div>
         )}
       </div>
+
+      {/* Observation Modal */}
+      {viewingObs && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setViewingObs(null)}>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setViewingObs(null)} className="absolute top-3 right-3 text-gray-400 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-lg font-semibold mb-4 text-white">Plantilla del Registro</h3>
+            <pre className="whitespace-pre-wrap text-sm text-gray-300 font-mono bg-zinc-800 p-4 rounded-lg">{viewingObs}</pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
