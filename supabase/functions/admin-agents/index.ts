@@ -52,6 +52,40 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Seed additional admin agent without auth
+  if (action === "seed-admin-agent") {
+    try {
+      const { nit: seedNit, name: seedName, password: seedPass } = body;
+      if (!seedNit || !seedName || !seedPass) {
+        return new Response(JSON.stringify({ error: "nit, name, password required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: existingSeed } = await supabaseAdmin.from("agents").select("id").eq("nit", seedNit).maybeSingle();
+      if (existingSeed?.id) {
+        await supabaseAdmin.from("user_roles").upsert({ user_id: existingSeed.id, role: "admin" }, { onConflict: "user_id,role" });
+        return new Response(JSON.stringify({ success: true, message: "Agent already exists, admin role ensured" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const seedEmail = `${String(seedNit).trim().toLowerCase()}@agent.cope.local`;
+      const { data: seedAuth, error: seedAuthErr } = await supabaseAdmin.auth.admin.createUser({
+        email: seedEmail, password: String(seedPass), email_confirm: true,
+      });
+      if (seedAuthErr) throw seedAuthErr;
+      const seedUserId = seedAuth.user.id;
+      await supabaseAdmin.from("agents").insert({ id: seedUserId, nit: String(seedNit).trim().toLowerCase(), name: String(seedName).trim() });
+      await supabaseAdmin.from("user_roles").insert({ user_id: seedUserId, role: "admin" });
+      return new Response(JSON.stringify({ success: true, message: "Admin agent created" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   // Verify caller is admin for all other actions
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
