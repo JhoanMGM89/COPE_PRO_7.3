@@ -5754,6 +5754,17 @@ function copiarPlantillaRechazo(id, event) {
             // Guardar en historial como rechazado
             guardarRechazoEnHistorial(template, finalText);
             
+            // Guardar en Supabase
+            const esSYTEX = document.getElementById('switchSYTEX').checked;
+            const esGDM = document.getElementById('switchGDM').checked;
+            let rechazoModule = 'RECHAZO_SYTEX';
+            let rechazoId = document.getElementById('inputFO').value.trim();
+            if (esGDM) {
+                rechazoModule = 'RECHAZO_GDM';
+                rechazoId = document.getElementById('inputGDM').value.trim();
+            }
+            guardarEnSupabase(rechazoModule, template.tag, rechazoId, document.getElementById('selectFalla').value || 'RECHAZO', finalText);
+            
             // Issue 1 & 6: Limpiar inputs del rechazo y deshabilitar inputs del módulo creación
             limpiarYDeshabilitarTrasRechazo();
         });
