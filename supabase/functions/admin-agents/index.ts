@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
       const { agent_id, module, template_type } = body;
       let query = supabaseAdmin
         .from("records")
-        .select("id, agent_id, module, template_type, id_mostrado, tipo_falla, observation, created_at")
+        .select("id, agent_id, module, template_type, id_mostrado, tipo_falla, observation, incidencia, ot, cs, created_at")
         .order("created_at", { ascending: false });
       if (agent_id) query = query.eq("agent_id", agent_id);
       if (module) query = query.eq("module", module);
