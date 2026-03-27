@@ -7150,12 +7150,21 @@ function copiarTodo() {
             mostrarAdvertenciaFlotante(`⚠️ Plantilla muy larga (${plantilla.length.toLocaleString()} caracteres). Puede cortarse al pegar en WhatsApp. Edítala manualmente si es necesario.`);
         }
         
+        // Collect incidencia, ot, cs from the form
+        var incVal = document.getElementById('inputIncidencia') ? document.getElementById('inputIncidencia').value.trim() : '';
+        var otVal = document.getElementById('inputOT') ? document.getElementById('inputOT').value.trim() : '';
+        var csVal = document.getElementById('inputCS') ? document.getElementById('inputCS').value.trim() : '';
+        var gdmVal = document.getElementById('inputGDM') ? document.getElementById('inputGDM').value.trim() : '';
+        
         enviarAGoogleSheets('CREACION', {
             FECHA: new Date().toLocaleString('es-CO'),
             TIPO: 'CREADO',
             ID: id || 'N/A',
             'TIPO DE FALLA': falla,
-            OBSERVACION: plantilla
+            OBSERVACION: plantilla,
+            INCIDENCIA: incVal || '',
+            OT: otVal || '',
+            CS: csVal || ''
         });
 
         // Solo guardar en historial si NO existe aún
