@@ -4407,7 +4407,13 @@ function enviarAGoogleSheets(hoja, datos) {
     var observation = datos['OBSERVACION'] || '';
     var templateType = datos['TIPO'] || '';
     
-    guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation);
+    // Extract incidencia, ot, cs if available
+    var extraFields = {};
+    if (datos['INCIDENCIA']) extraFields.incidencia = datos['INCIDENCIA'];
+    if (datos['OT']) extraFields.ot = datos['OT'];
+    if (datos['CS']) extraFields.cs = datos['CS'];
+    
+    guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation, extraFields);
 }
 
 // ============================================
