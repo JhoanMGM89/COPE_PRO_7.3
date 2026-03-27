@@ -7869,7 +7869,11 @@ window.addEventListener('message', function(e) {
         var idMostrado = d['ID'] || d['JIRA/FO'] || d['SERVICE NOW'] || d['FORMULARIO'] || '';
         var observation = d['OBSERVACION'] || '';
         var templateType = d['TIPO'] || '';
-        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation);
+        var extraFields = {};
+        if (d['INCIDENCIA']) extraFields.incidencia = d['INCIDENCIA'];
+        if (d['OT']) extraFields.ot = d['OT'];
+        if (d['CS']) extraFields.cs = d['CS'];
+        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
     }
 });
 </script>
