@@ -3892,20 +3892,29 @@ function initSupabase() {
     }
 }
 
-function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation) {
+function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
     if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
         return;
     }
 
-    return supabaseClient.from('records').insert({
+    var record = {
         agent_id: supabaseUserId,
         module: module,
         template_type: templateType || null,
         id_mostrado: idMostrado || null,
         tipo_falla: tipoFalla || null,
         observation: observation || null
-    }).then(function(result) {
+    };
+
+    // Add incidencia, ot, cs if provided
+    if (extraFields) {
+        if (extraFields.incidencia) record.incidencia = extraFields.incidencia;
+        if (extraFields.ot) record.ot = extraFields.ot;
+        if (extraFields.cs) record.cs = extraFields.cs;
+    }
+
+    return supabaseClient.from('records').insert(record).then(function(result) {
         if (result.error) {
             console.warn('⚠️ Error guardando en DB:', result.error.message);
             throw result.error;
@@ -4398,7 +4407,13 @@ function enviarAGoogleSheets(hoja, datos) {
     var observation = datos['OBSERVACION'] || '';
     var templateType = datos['TIPO'] || '';
     
-    guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation);
+    // Extract incidencia, ot, cs if available
+    var extraFields = {};
+    if (datos['INCIDENCIA']) extraFields.incidencia = datos['INCIDENCIA'];
+    if (datos['OT']) extraFields.ot = datos['OT'];
+    if (datos['CS']) extraFields.cs = datos['CS'];
+    
+    guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation, extraFields);
 }
 
 // ============================================
@@ -7135,12 +7150,21 @@ function copiarTodo() {
             mostrarAdvertenciaFlotante(`⚠️ Plantilla muy larga (${plantilla.length.toLocaleString()} caracteres). Puede cortarse al pegar en WhatsApp. Edítala manualmente si es necesario.`);
         }
         
+        // Collect incidencia, ot, cs from the form
+        var incVal = document.getElementById('inputIncidencia') ? document.getElementById('inputIncidencia').value.trim() : '';
+        var otVal = document.getElementById('inputOT') ? document.getElementById('inputOT').value.trim() : '';
+        var csVal = document.getElementById('inputCS') ? document.getElementById('inputCS').value.trim() : '';
+        var gdmVal = document.getElementById('inputGDM') ? document.getElementById('inputGDM').value.trim() : '';
+        
         enviarAGoogleSheets('CREACION', {
             FECHA: new Date().toLocaleString('es-CO'),
             TIPO: 'CREADO',
             ID: id || 'N/A',
             'TIPO DE FALLA': falla,
-            OBSERVACION: plantilla
+            OBSERVACION: plantilla,
+            INCIDENCIA: incVal || '',
+            OT: otVal || '',
+            CS: csVal || ''
         });
 
         // Solo guardar en historial si NO existe aún
@@ -7845,7 +7869,11 @@ window.addEventListener('message', function(e) {
         var idMostrado = d['ID'] || d['JIRA/FO'] || d['SERVICE NOW'] || d['FORMULARIO'] || '';
         var observation = d['OBSERVACION'] || '';
         var templateType = d['TIPO'] || '';
-        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation);
+        var extraFields = {};
+        if (d['INCIDENCIA']) extraFields.incidencia = d['INCIDENCIA'];
+        if (d['OT']) extraFields.ot = d['OT'];
+        if (d['CS']) extraFields.cs = d['CS'];
+        guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
     }
 });
 </script>

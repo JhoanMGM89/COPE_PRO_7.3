@@ -78,33 +78,42 @@ export type Database = {
         Row: {
           agent_id: string
           created_at: string | null
+          cs: string | null
           data: Json | null
           id: string
           id_mostrado: string | null
+          incidencia: string | null
           module: string
           observation: string | null
+          ot: string | null
           template_type: string | null
           tipo_falla: string | null
         }
         Insert: {
           agent_id: string
           created_at?: string | null
+          cs?: string | null
           data?: Json | null
           id?: string
           id_mostrado?: string | null
+          incidencia?: string | null
           module: string
           observation?: string | null
+          ot?: string | null
           template_type?: string | null
           tipo_falla?: string | null
         }
         Update: {
           agent_id?: string
           created_at?: string | null
+          cs?: string | null
           data?: Json | null
           id?: string
           id_mostrado?: string | null
+          incidencia?: string | null
           module?: string
           observation?: string | null
+          ot?: string | null
           template_type?: string | null
           tipo_falla?: string | null
         }
