@@ -3892,20 +3892,29 @@ function initSupabase() {
     }
 }
 
-function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation) {
+function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
     if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
         return;
     }
 
-    return supabaseClient.from('records').insert({
+    var record = {
         agent_id: supabaseUserId,
         module: module,
         template_type: templateType || null,
         id_mostrado: idMostrado || null,
         tipo_falla: tipoFalla || null,
         observation: observation || null
-    }).then(function(result) {
+    };
+
+    // Add incidencia, ot, cs if provided
+    if (extraFields) {
+        if (extraFields.incidencia) record.incidencia = extraFields.incidencia;
+        if (extraFields.ot) record.ot = extraFields.ot;
+        if (extraFields.cs) record.cs = extraFields.cs;
+    }
+
+    return supabaseClient.from('records').insert(record).then(function(result) {
         if (result.error) {
             console.warn('⚠️ Error guardando en DB:', result.error.message);
             throw result.error;
