@@ -3889,7 +3889,32 @@ function initSupabase() {
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
         supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
+        // Cargar base de IPs desde la base de datos para mantener sincronización
+        cargarIPsDesdeDB();
     }
+}
+
+function cargarIPsDesdeDB() {
+    if (!supabaseClient) return;
+    supabaseClient.from('ip_base').select('*').then(function(result) {
+        if (result.error) {
+            console.warn('⚠️ Error cargando IPs desde DB, usando base local');
+            return;
+        }
+        if (result.data && result.data.length > 0) {
+            result.data.forEach(function(row) {
+                baseIP[row.ip] = {
+                    olt: row.olt || '',
+                    localidad: row.localidad || '',
+                    coinv: row.coinversor || '',
+                    tecno: row.tecnologia || '',
+                    grupoTrabajo: row.grupo_trabajo || '',
+                    articulo: row.articulo_config || ''
+                };
+            });
+            console.log('✅ Base de IPs sincronizada desde DB:', result.data.length, 'registros');
+        }
+    });
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
@@ -3928,7 +3953,8 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
 function obtenerSesionModulo() {
     return {
         type: 'SET_SESSION',
-        nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase()
+        nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase(),
+        userId: supabaseUserId || ''
     };
 }
 
@@ -3992,8 +4018,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('contadorTotalGlobal').textContent = contadorTotalGlobal;
     }
     
-    // Cargar historial
-    const historialGuardado = localStorage.getItem('historialDatos');
+    // Cargar historial (namespaced by userId to isolate per agent)
+    var historialKey = supabaseUserId ? 'historialDatos_' + supabaseUserId : 'historialDatos';
+    const historialGuardado = localStorage.getItem(historialKey);
     if (historialGuardado) {
         historialDatos = JSON.parse(historialGuardado);
         historialDatos.forEach(caso => {
@@ -5778,7 +5805,14 @@ function copiarPlantillaRechazo(id, event) {
                 rechazoModule = 'RECHAZO_GDM';
                 rechazoId = document.getElementById('inputGDM').value.trim();
             }
-            guardarEnSupabase(rechazoModule, template.tag, rechazoId, document.getElementById('selectFalla').value || 'RECHAZO', finalText);
+            var extraFieldsRechazo = {};
+            var incValR = document.getElementById('inputIncidencia') ? document.getElementById('inputIncidencia').value.trim() : '';
+            var otValR = document.getElementById('inputOT') ? document.getElementById('inputOT').value.trim() : '';
+            var csValR = document.getElementById('inputCS') ? document.getElementById('inputCS').value.trim() : '';
+            if (incValR) extraFieldsRechazo.incidencia = incValR;
+            if (otValR) extraFieldsRechazo.ot = otValR;
+            if (csValR) extraFieldsRechazo.cs = csValR;
+            guardarEnSupabase(rechazoModule, template.tag, rechazoId, document.getElementById('selectFalla').value || 'RECHAZO', finalText, extraFieldsRechazo);
             
             // Issue 1 & 6: Limpiar inputs del rechazo y deshabilitar inputs del módulo creación
             limpiarYDeshabilitarTrasRechazo();
@@ -6338,8 +6372,13 @@ function guardarGDMEnHistorial(textoFinal) {
         guardarEnHistorial(caso);
         casosGuardadosEnHistorial.add(claveUnica);
         
-        // Guardar en Supabase
-        guardarEnSupabase('RECHAZO_GDM', 'RECHAZO GDM', gdm, falla, textoFinal);
+        // Guardar en Supabase con extraFields
+        var extraFieldsGDM = {};
+        var incValGDM = document.getElementById('inputIncidencia') ? document.getElementById('inputIncidencia').value.trim() : '';
+        var otValGDM = document.getElementById('inputOT') ? document.getElementById('inputOT').value.trim() : '';
+        if (incValGDM) extraFieldsGDM.incidencia = incValGDM;
+        if (otValGDM) extraFieldsGDM.ot = otValGDM;
+        guardarEnSupabase('RECHAZO_GDM', 'RECHAZO GDM', gdm, falla, textoFinal, extraFieldsGDM);
         
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
@@ -6650,9 +6689,13 @@ function limpiarHistorial() {
 
 function exportarHistorial() {
     // Recopilar datos de todos los módulos
-    const historialAverias = JSON.parse(localStorage.getItem('historialAverias') || '[]');
-    const historialATP = JSON.parse(localStorage.getItem('historialATPATC') || '[]');
-    const historialSN = JSON.parse(localStorage.getItem('historialServiceNow') || '[]');
+    // Load historial from agent-namespaced keys (fallback to global)
+    var histAveriasKey = supabaseUserId ? 'historialAverias_' + supabaseUserId : 'historialAverias';
+    var histATPKey = supabaseUserId ? 'historialATPATC_' + supabaseUserId : 'historialATPATC';
+    var histSNKey = supabaseUserId ? 'historialServiceNow_' + supabaseUserId : 'historialServiceNow';
+    const historialAverias = JSON.parse(localStorage.getItem(histAveriasKey) || localStorage.getItem('historialAverias') || '[]');
+    const historialATP = JSON.parse(localStorage.getItem(histATPKey) || localStorage.getItem('historialATPATC') || '[]');
+    const historialSN = JSON.parse(localStorage.getItem(histSNKey) || localStorage.getItem('historialServiceNow') || '[]');
     
     const totalRegistros = historialDatos.length + historialAverias.length + historialATP.length + historialSN.length;
     
@@ -6751,7 +6794,8 @@ function guardarEnHistorial(caso) {
         historialDatos = historialDatos.slice(0, 100);
     }
     
-    localStorage.setItem('historialDatos', JSON.stringify(historialDatos));
+    var historialKey = supabaseUserId ? 'historialDatos_' + supabaseUserId : 'historialDatos';
+    localStorage.setItem(historialKey, JSON.stringify(historialDatos));
 }
 
 // ============================================
