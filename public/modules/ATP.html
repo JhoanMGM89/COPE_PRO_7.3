@@ -1426,8 +1426,10 @@ function enviarAGoogleSheets(hoja, datos) {
     }
 }
 
-let nombreAgente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
-let historial = JSON.parse(localStorage.getItem('historialATPATC')) || [];
+let currentUserId = '';
+let historial = [];
+function getHistorialKey() { return currentUserId ? 'historialATPATC_' + currentUserId : 'historialATPATC'; }
+function loadHistorial() { historial = JSON.parse(localStorage.getItem(getHistorialKey()) || '[]'); }
 let contadores = JSON.parse(localStorage.getItem('contadoresATPATC')) || {
     CIERRE: 0,
     VALIDACION: 0,
@@ -2391,6 +2393,8 @@ window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'SET_SESSION') {
         nombreAgente = (event.data.nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
         localStorage.setItem('nombreAgente', nombreAgente);
+        if (event.data.userId) { currentUserId = event.data.userId; }
+        loadHistorial();
         return;
     }
     if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
