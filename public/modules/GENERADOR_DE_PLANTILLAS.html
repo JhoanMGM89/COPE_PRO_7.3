@@ -3889,7 +3889,32 @@ function initSupabase() {
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
         supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
+        // Cargar base de IPs desde la base de datos para mantener sincronización
+        cargarIPsDesdeDB();
     }
+}
+
+function cargarIPsDesdeDB() {
+    if (!supabaseClient) return;
+    supabaseClient.from('ip_base').select('*').then(function(result) {
+        if (result.error) {
+            console.warn('⚠️ Error cargando IPs desde DB, usando base local');
+            return;
+        }
+        if (result.data && result.data.length > 0) {
+            result.data.forEach(function(row) {
+                baseIP[row.ip] = {
+                    olt: row.olt || '',
+                    localidad: row.localidad || '',
+                    coinv: row.coinversor || '',
+                    tecno: row.tecnologia || '',
+                    grupoTrabajo: row.grupo_trabajo || '',
+                    articulo: row.articulo_config || ''
+                };
+            });
+            console.log('✅ Base de IPs sincronizada desde DB:', result.data.length, 'registros');
+        }
+    });
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
