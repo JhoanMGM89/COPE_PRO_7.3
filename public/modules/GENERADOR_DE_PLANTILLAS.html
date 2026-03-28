@@ -6688,9 +6688,13 @@ function limpiarHistorial() {
 
 function exportarHistorial() {
     // Recopilar datos de todos los módulos
-    const historialAverias = JSON.parse(localStorage.getItem('historialAverias') || '[]');
-    const historialATP = JSON.parse(localStorage.getItem('historialATPATC') || '[]');
-    const historialSN = JSON.parse(localStorage.getItem('historialServiceNow') || '[]');
+    // Load historial from agent-namespaced keys (fallback to global)
+    var histAveriasKey = supabaseUserId ? 'historialAverias_' + supabaseUserId : 'historialAverias';
+    var histATPKey = supabaseUserId ? 'historialATPATC_' + supabaseUserId : 'historialATPATC';
+    var histSNKey = supabaseUserId ? 'historialServiceNow_' + supabaseUserId : 'historialServiceNow';
+    const historialAverias = JSON.parse(localStorage.getItem(histAveriasKey) || localStorage.getItem('historialAverias') || '[]');
+    const historialATP = JSON.parse(localStorage.getItem(histATPKey) || localStorage.getItem('historialATPATC') || '[]');
+    const historialSN = JSON.parse(localStorage.getItem(histSNKey) || localStorage.getItem('historialServiceNow') || '[]');
     
     const totalRegistros = historialDatos.length + historialAverias.length + historialATP.length + historialSN.length;
     
