@@ -3953,7 +3953,8 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
 function obtenerSesionModulo() {
     return {
         type: 'SET_SESSION',
-        nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase()
+        nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase(),
+        userId: supabaseUserId || ''
     };
 }
 
