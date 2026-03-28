@@ -1285,10 +1285,12 @@ function enviarAGoogleSheets(hoja, datos) {
     }
 }
 
+let agente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
 let currentUserId = '';
 let historial = [];
 function getHistorialKey() { return currentUserId ? 'historialServiceNow_' + currentUserId : 'historialServiceNow'; }
 function loadHistorial() { historial = JSON.parse(localStorage.getItem(getHistorialKey()) || '[]'); }
+loadHistorial();
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
     SOLICITUD: 0,
