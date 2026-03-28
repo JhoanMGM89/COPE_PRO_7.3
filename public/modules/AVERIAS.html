@@ -1825,7 +1825,7 @@
                 formulario: formularioNum, contenido: contenido, agente: nombreAgente
             };
             historialAverias.unshift(entry);
-            localStorage.setItem('historialAverias', JSON.stringify(historialAverias));
+            localStorage.setItem(getHistorialAveriasKey(), JSON.stringify(historialAverias));
         }
 
         function abrirHistorialAverias() {
@@ -1914,7 +1914,7 @@
         function limpiarHistorialAverias() {
             if (confirm('¿Está seguro que desea limpiar todo el historial?')) {
                 historialAverias = [];
-                localStorage.setItem('historialAverias', JSON.stringify(historialAverias));
+                localStorage.setItem(getHistorialAveriasKey(), JSON.stringify(historialAverias));
                 renderHistorialAverias();
             }
         }
