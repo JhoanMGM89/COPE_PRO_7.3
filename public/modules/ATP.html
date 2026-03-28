@@ -2314,7 +2314,7 @@ function registrarCaso(contenido) {
 }
 
 function guardarDatos() {
-    localStorage.setItem('historialATPATC', JSON.stringify(historial));
+    localStorage.setItem(getHistorialKey(), JSON.stringify(historial));
     localStorage.setItem('contadoresATPATC', JSON.stringify(contadores));
 }
 
