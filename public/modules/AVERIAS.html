@@ -1269,7 +1269,9 @@
         }
 
         let nombreAgente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
-        let historialAverias = JSON.parse(localStorage.getItem('historialAverias')) || [];
+        let currentUserId = '';
+        function getHistorialAveriasKey() { return currentUserId ? 'historialAverias_' + currentUserId : 'historialAverias'; }
+        let historialAverias = JSON.parse(localStorage.getItem('historialAverias') || '[]');
         let formularioNum = '';
         
         // Contadores Aprobados/Rechazados
@@ -1958,6 +1960,7 @@
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'SET_SESSION') {
                 sincronizarNombreAgente(event.data.nombreAgente);
+                if (event.data.userId) { currentUserId = event.data.userId; historialAverias = JSON.parse(localStorage.getItem(getHistorialAveriasKey()) || '[]'); }
                 renderTemplates();
                 return;
             }
