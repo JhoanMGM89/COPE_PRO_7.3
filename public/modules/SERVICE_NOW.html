@@ -1285,8 +1285,10 @@ function enviarAGoogleSheets(hoja, datos) {
     }
 }
 
-let agente = (localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
-let historial = JSON.parse(localStorage.getItem('historialServiceNow')) || [];
+let currentUserId = '';
+let historial = [];
+function getHistorialKey() { return currentUserId ? 'historialServiceNow_' + currentUserId : 'historialServiceNow'; }
+function loadHistorial() { historial = JSON.parse(localStorage.getItem(getHistorialKey()) || '[]'); }
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
     SOLICITUD: 0,
@@ -2009,7 +2011,7 @@ function registrarCaso(contenido) {
 }
 
 function guardarDatos() {
-    localStorage.setItem('historialServiceNow', JSON.stringify(historial));
+    localStorage.setItem(getHistorialKey(), JSON.stringify(historial));
     localStorage.setItem('contadoresServiceNow', JSON.stringify(contadores));
 }
 
@@ -2046,6 +2048,8 @@ window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'SET_SESSION') {
         agente = (event.data.nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase();
         localStorage.setItem('nombreAgente', agente);
+        if (event.data.userId) { currentUserId = event.data.userId; }
+        loadHistorial();
         return;
     }
     if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
