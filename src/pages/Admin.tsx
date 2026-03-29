@@ -41,8 +41,8 @@ interface IpEntry {
 
 const PROTECTED_NITS = ["admincope", "1143330990"];
 
-const scrollClass = "overflow-y-auto overflow-x-auto";
-const scrollStyle: React.CSSProperties = { maxHeight: "calc(100vh - 280px)", scrollbarWidth: "thin" as any };
+const scrollClass = "overflow-x-auto";
+const scrollStyle: React.CSSProperties = {};
 
 const Admin = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -277,7 +277,8 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-6">
+    <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6" style={{ scrollbarWidth: "thin" as any }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -555,6 +556,7 @@ const Admin = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Observation Modal */}
