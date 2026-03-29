@@ -41,8 +41,8 @@ interface IpEntry {
 
 const PROTECTED_NITS = ["admincope", "1143330990"];
 
-const scrollClass = "overflow-y-auto overflow-x-auto";
-const scrollStyle: React.CSSProperties = { maxHeight: "calc(100vh - 280px)", scrollbarWidth: "thin" as any };
+const scrollClass = "overflow-x-auto";
+const scrollStyle: React.CSSProperties = {};
 
 const Admin = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
