@@ -557,6 +557,7 @@ const Admin = () => {
           </div>
         )}
       </div>
+      </div>
 
       {/* Observation Modal */}
       {viewingObs && (
