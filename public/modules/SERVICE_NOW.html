@@ -1910,7 +1910,16 @@ function copiar() {
         mostrarToast(textoFormateado);
         // Notificar al padre para contador total (con clave para dedup)
         var plantillaActual = document.getElementById('tipoPlantilla').value;
-        var snVal = document.getElementById('snSolo')?.value?.trim() || document.getElementById('sn_flex')?.value?.trim() || '';
+        var snVal = '';
+        if (plantillaActual === 'CIERRE') {
+            snVal = document.getElementById('sn')?.value?.trim() || '';
+        } else if (plantillaActual === 'ACEPTA_PDR') {
+            snVal = document.getElementById('snAcepta')?.value?.trim() || '';
+        } else if (plantillaActual === 'SEGUIMIENTO' || plantillaActual === 'CIERRE_ADMIN') {
+            snVal = document.getElementById('snSeguimiento')?.value?.trim() || '';
+        } else {
+            snVal = document.getElementById('snSolo')?.value?.trim() || '';
+        }
         var contentKey = 'SN_' + plantillaActual + '_' + snVal;
         if (window.parent !== window) {
             window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
