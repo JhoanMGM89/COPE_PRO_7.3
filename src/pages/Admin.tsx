@@ -187,6 +187,42 @@ const Admin = () => {
     setRecords(prev => prev.filter(r => !ids.includes(r.id)));
   };
 
+  const broadcastAdminCommand = async (commandType: string, payload: Record<string, unknown> = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sesión no válida");
+      return false;
+    }
+
+    const { error } = await supabase.from("admin_sync_commands").insert({
+      command_type: commandType,
+      payload,
+      created_by: session.user.id,
+      is_active: true,
+    });
+
+    if (error) {
+      toast.error("No fue posible enviar el comando");
+      return false;
+    }
+
+    return true;
+  };
+
+  const syncAgentHistories = async () => {
+    const ok = await broadcastAdminCommand("sync_histories", { requested_at: new Date().toISOString() });
+    if (!ok) return;
+    toast.success("Sincronización enviada a las sesiones activas");
+    setTimeout(() => loadRecords(), 1500);
+  };
+
+  const clearAgentHistories = async () => {
+    if (!confirm("¿Borrar el historial local de plantillas de todos los agentes con sesión iniciada?")) return;
+    const ok = await broadcastAdminCommand("clear_histories", { requested_at: new Date().toISOString() });
+    if (!ok) return;
+    toast.success("Orden de limpieza enviada a las sesiones activas");
+  };
+
   const exportExcel = () => {
     if (filteredRecords.length === 0) { toast.error("No hay registros"); return; }
     const esc = (t: string | null | undefined) => {
@@ -405,6 +441,8 @@ const Admin = () => {
                 <div className="flex items-end gap-2">
                   <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700 text-white text-sm">Buscar</Button>
                   <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white text-sm">Exportar</Button>
+                  <Button onClick={syncAgentHistories} className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm">Sincronizar</Button>
+                  <Button onClick={clearAgentHistories} className="bg-red-600 hover:bg-red-700 text-white text-sm">Borrar Historial</Button>
                 </div>
               </div>
             </div>
