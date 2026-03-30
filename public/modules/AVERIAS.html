@@ -1964,6 +1964,12 @@
                 renderTemplates();
                 return;
             }
+            if (event.data && event.data.type === 'CLEAR_LOCAL_HISTORIES') {
+                historialAverias = [];
+                localStorage.setItem(getHistorialAveriasKey(), JSON.stringify(historialAverias));
+                renderHistorialAverias();
+                return;
+            }
             if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
                 clearAll();
             }

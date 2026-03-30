@@ -3855,6 +3855,7 @@ const FALLAS_GDM_CAZAMASIVOS = [
 let nombreAgente = "";
 let supabaseUserId = "";
 let supabaseClient = null;
+let syncIntervalId = null;
 let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
@@ -3869,6 +3870,115 @@ let plantillaActualEnViewer = ''; // Plantilla actual mostrada en el viewer
 let casosGuardadosEnHistorial = new Set(); // Set para tracking de casos únicos guardados
 let esIPespecialATP = false; // Flag para IP 10.37.60.146 con puertos específicos (comportamiento ATP)
 let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
+
+function getSyncQueueKey() {
+    return supabaseUserId ? 'syncQueue_' + supabaseUserId : 'syncQueue';
+}
+
+function cargarColaSync() {
+    try {
+        return JSON.parse(localStorage.getItem(getSyncQueueKey()) || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function guardarColaSync(queue) {
+    localStorage.setItem(getSyncQueueKey(), JSON.stringify(queue));
+}
+
+function construirSyncKey(record) {
+    return [
+        supabaseUserId || '',
+        record.module || '',
+        record.template_type || '',
+        record.id_mostrado || '',
+        record.tipo_falla || '',
+        record.incidencia || '',
+        record.ot || '',
+        record.cs || ''
+    ].join('|').toUpperCase();
+}
+
+function limpiarHistorialesLocales() {
+    var suffix = supabaseUserId ? '_' + supabaseUserId : '';
+    [
+        'historialDatos' + suffix,
+        'historialServiceNow' + suffix,
+        'historialATPATC' + suffix,
+        'historialAverias' + suffix,
+        getSyncQueueKey()
+    ].forEach(function(key) { localStorage.removeItem(key); });
+    historialDatos = [];
+    casosGuardadosEnHistorial.clear();
+    var historialKey = supabaseUserId ? 'historialDatos_' + supabaseUserId : 'historialDatos';
+    localStorage.setItem(historialKey, JSON.stringify([]));
+    try {
+        var iframe = document.getElementById('moduleIframe');
+        if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'CLEAR_LOCAL_HISTORIES' }, '*');
+        var nestedIframe = document.getElementById('nestedModuleIframe');
+        if (nestedIframe && nestedIframe.contentWindow) nestedIframe.contentWindow.postMessage({ type: 'CLEAR_LOCAL_HISTORIES' }, '*');
+    } catch (e) {}
+}
+
+function procesarComandosAdmin() {
+    if (!supabaseClient || !supabaseUserId) return;
+    var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
+    var lastSeen = localStorage.getItem(markerKey) || '';
+    supabaseClient
+        .from('admin_sync_commands')
+        .select('id, command_type, payload, created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .then(function(result) {
+            if (result.error || !result.data) return;
+            result.data.forEach(function(cmd) {
+                if (lastSeen && cmd.created_at <= lastSeen) return;
+                if (cmd.command_type === 'sync_histories') {
+                    flushSyncQueue();
+                }
+                if (cmd.command_type === 'clear_histories') {
+                    limpiarHistorialesLocales();
+                }
+                lastSeen = cmd.created_at;
+            });
+            if (lastSeen) localStorage.setItem(markerKey, lastSeen);
+        });
+}
+
+function flushSyncQueue() {
+    if (!supabaseClient || !supabaseUserId) return Promise.resolve();
+    var queue = cargarColaSync();
+    if (!queue.length) return Promise.resolve();
+
+    var current = queue[0];
+    return supabaseClient.from('records').insert(current).then(function(result) {
+        if (!result.error) {
+            queue.shift();
+            guardarColaSync(queue);
+            return flushSyncQueue();
+        }
+        var duplicate = result.error.code === '23505' || /duplicate/i.test(result.error.message || '');
+        if (duplicate) {
+            queue.shift();
+            guardarColaSync(queue);
+            return flushSyncQueue();
+        }
+        console.warn('⚠️ Sync pendiente:', result.error.message);
+    });
+}
+
+function iniciarAutomatizacionSync() {
+    if (syncIntervalId) clearInterval(syncIntervalId);
+    syncIntervalId = setInterval(function() {
+        if (navigator.onLine) flushSyncQueue();
+        procesarComandosAdmin();
+    }, 30000);
+    window.addEventListener('online', function() {
+        flushSyncQueue();
+        procesarComandosAdmin();
+    });
+}
 
 // ============================================
 // SUPABASE INITIALIZATION
@@ -3939,15 +4049,16 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
         if (extraFields.cs) record.cs = extraFields.cs;
     }
 
-    return supabaseClient.from('records').insert(record).then(function(result) {
-        if (result.error) {
-            console.warn('⚠️ Error guardando en DB:', result.error.message);
-            throw result.error;
-        } else {
-            console.log('✅ Registro guardado en base de datos:', module);
-        }
-        return result;
-    });
+    record.sync_key = construirSyncKey(record);
+    var queue = cargarColaSync();
+    if (!queue.some(function(item) { return item.sync_key === record.sync_key; })) {
+        queue.push(record);
+        guardarColaSync(queue);
+    }
+    if (navigator.onLine) {
+        return flushSyncQueue();
+    }
+    return Promise.resolve();
 }
 
 function obtenerSesionModulo() {
@@ -4039,6 +4150,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicializar estado
     inicializarFormulario();
+    iniciarAutomatizacionSync();
+    procesarComandosAdmin();
+    if (navigator.onLine) flushSyncQueue();
 });
 
 // ============================================
@@ -7918,6 +8032,12 @@ window.addEventListener('message', function(e) {
         if (d['OT']) extraFields.ot = d['OT'];
         if (d['CS']) extraFields.cs = d['CS'];
         guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
+    }
+    if (e.data && e.data.type === 'SYNC_PENDING_RECORDS') {
+        flushSyncQueue();
+    }
+    if (e.data && e.data.type === 'CLEAR_LOCAL_HISTORIES') {
+        limpiarHistorialesLocales();
     }
 });
 </script>
