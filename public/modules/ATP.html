@@ -2402,6 +2402,12 @@ window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'LIMPIAR_FORMULARIO_NUEVO_CASO') {
         limpiarFormularioCompleto();
     }
+    if (event.data && event.data.type === 'CLEAR_LOCAL_HISTORIES') {
+        historial = [];
+        guardarDatos();
+        actualizarEstadisticas();
+        if (document.getElementById('modalHistorial').classList.contains('active')) renderHistorial();
+    }
 });
 </script>
 
