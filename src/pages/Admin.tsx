@@ -194,12 +194,12 @@ const Admin = () => {
       return false;
     }
 
-    const { error } = await supabase.from("admin_sync_commands").insert({
+    const { error } = await (supabase.from("admin_sync_commands" as never) as any).insert([{ 
       command_type: commandType,
       payload,
       created_by: session.user.id,
       is_active: true,
-    });
+    }]);
 
     if (error) {
       toast.error("No fue posible enviar el comando");
