@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sync_commands: {
+        Row: {
+          command_type: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          payload: Json
+        }
+        Insert: {
+          command_type: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          payload?: Json
+        }
+        Update: {
+          command_type?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          payload?: Json
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           created_at: string | null
@@ -86,6 +113,7 @@ export type Database = {
           module: string
           observation: string | null
           ot: string | null
+          sync_key: string | null
           template_type: string | null
           tipo_falla: string | null
         }
@@ -100,6 +128,7 @@ export type Database = {
           module: string
           observation?: string | null
           ot?: string | null
+          sync_key?: string | null
           template_type?: string | null
           tipo_falla?: string | null
         }
@@ -114,6 +143,7 @@ export type Database = {
           module?: string
           observation?: string | null
           ot?: string | null
+          sync_key?: string | null
           template_type?: string | null
           tipo_falla?: string | null
         }
