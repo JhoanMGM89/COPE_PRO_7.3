@@ -445,8 +445,6 @@ const Admin = () => {
                 <div className="flex items-end gap-2">
                   <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700 text-white text-sm">Buscar</Button>
                   <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white text-sm">Exportar</Button>
-                  <Button onClick={syncAgentHistories} className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm">Sincronizar</Button>
-                  <Button onClick={clearAgentHistories} className="bg-red-600 hover:bg-red-700 text-white text-sm">Borrar Historial</Button>
                 </div>
               </div>
             </div>
