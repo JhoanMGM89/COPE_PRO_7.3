@@ -331,10 +331,14 @@ const Admin = () => {
           <Button onClick={() => setTab("records")} className="bg-green-600 text-white hover:bg-green-700">Registros / Exportar</Button>
           <Button onClick={() => setTab("ips")} className="bg-yellow-500 text-white hover:bg-yellow-600">Base de IPs</Button>
           {tab === "records" && (
-            <Button onClick={() => setDeleteMode(!deleteMode)}
-              className={`${deleteMode ? "bg-red-800" : "bg-red-600"} text-white hover:bg-red-700`}>
-              {deleteMode ? "Desactivar Eliminación" : "Eliminar Registros"}
-            </Button>
+            <>
+              <Button onClick={() => setDeleteMode(!deleteMode)}
+                className={`${deleteMode ? "bg-red-800" : "bg-red-600"} text-white hover:bg-red-700`}>
+                {deleteMode ? "Desactivar Eliminación" : "Eliminar Registros"}
+              </Button>
+              <Button onClick={syncAgentHistories} className="bg-yellow-500 hover:bg-yellow-600 text-white">Sincronizar</Button>
+              <Button onClick={clearAgentHistories} className="bg-purple-600 hover:bg-purple-700 text-white">Borrar Historial de Agentes</Button>
+            </>
           )}
         </div>
 
@@ -441,8 +445,6 @@ const Admin = () => {
                 <div className="flex items-end gap-2">
                   <Button onClick={loadRecords} className="bg-blue-600 hover:bg-blue-700 text-white text-sm">Buscar</Button>
                   <Button onClick={exportExcel} className="bg-green-600 hover:bg-green-700 text-white text-sm">Exportar</Button>
-                  <Button onClick={syncAgentHistories} className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm">Sincronizar</Button>
-                  <Button onClick={clearAgentHistories} className="bg-red-600 hover:bg-red-700 text-white text-sm">Borrar Historial</Button>
                 </div>
               </div>
             </div>
