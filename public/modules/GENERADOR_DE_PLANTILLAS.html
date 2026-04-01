@@ -2541,10 +2541,10 @@ input:checked + .slider:before {
    ============================================ */
 .module-overlay {
     position: fixed;
-    top: 0;
+    top: var(--topbar-height, 0px);
     left: 0;
     width: 100%;
-    height: 100%;
+    height: calc(100% - var(--topbar-height, 0px));
     background: rgba(0, 0, 0, 0.05);
     display: none;
     z-index: 5000;
