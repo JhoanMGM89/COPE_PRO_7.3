@@ -35,7 +35,8 @@ const AppWrapper = () => {
   // Build the iframe URL with agent info as query params
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const iframeSrc = `/modules/GENERADOR_DE_PLANTILLAS.html?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
+  const modulePath = `${window.location.protocol === "file:" ? "modules" : "/modules"}/GENERADOR_DE_PLANTILLAS.html`;
+  const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
 
   return (
     <div className="h-screen flex flex-col bg-black">
