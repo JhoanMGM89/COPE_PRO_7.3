@@ -3990,6 +3990,13 @@ function initSupabase() {
     var sbUrl = params.get('supabaseUrl');
     var sbKey = params.get('supabaseKey');
 
+    if (!sbUrl && window.location.protocol === 'file:') {
+        sbUrl = 'https://ufrmotkqquwbujppgjlp.supabase.co';
+    }
+    if (!sbKey && window.location.protocol === 'file:') {
+        sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcm1vdGtxcXV3YnVqcHBnamxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODk5NzYsImV4cCI6MjA4OTM2NTk3Nn0.OWpONCrfufT937Gh3fgx-iM8i5Ax28ZTWgngOT9Ya7I';
+    }
+
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
         supabaseUserId = userId || '';
