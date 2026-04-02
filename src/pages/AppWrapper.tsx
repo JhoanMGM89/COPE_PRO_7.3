@@ -2,45 +2,59 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 
 const AppWrapper = () => {
   const [agentName, setAgentName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState("");
   const navigate = useNavigate();
+  const { isReady, session } = useAuthReady();
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/"); return; }
+    if (!isReady) return;
+    if (!session) {
+      navigate("/");
+      return;
+    }
 
+    const init = async () => {
       setUserId(session.user.id);
 
-      // Get agent name
-      const { data: agent } = await supabase.from("agents").select("name").eq("id", session.user.id).maybeSingle();
-      if (agent) setAgentName(agent.name);
+      const [{ data: agent }, { data: role }] = await Promise.all([
+        supabase.from("agents").select("name").eq("id", session.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").maybeSingle(),
+      ]);
 
-      // Check if admin
-      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").maybeSingle();
-      if (role) setIsAdmin(true);
+      if (!agent) {
+        await supabase.auth.signOut();
+        navigate("/");
+        return;
+      }
+
+      setAgentName(agent.name);
+      setIsAdmin(Boolean(role));
     };
+
     init();
-  }, [navigate]);
+  }, [isReady, session, navigate]);
 
   const logout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  // Build the iframe URL with agent info as query params
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const modulePath = `${window.location.protocol === "file:" ? "modules" : "/modules"}/GENERADOR_DE_PLANTILLAS.html`;
   const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
 
+  if (!isReady) {
+    return <div className="h-screen bg-black" />;
+  }
+
   return (
     <div className="h-screen flex flex-col bg-black">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0">
         <div className="flex items-center gap-3">
           <span className="text-white font-semibold text-sm">👤 {agentName || "Agente"}</span>
@@ -57,7 +71,6 @@ const AppWrapper = () => {
         </div>
       </div>
 
-      {/* Iframe */}
       {agentName && (
         <iframe
           src={iframeSrc}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 
 const Login = () => {
   const [nit, setNit] = useState("");
@@ -12,9 +13,9 @@ const Login = () => {
   const [btnText, setBtnText] = useState("Ingresar");
   const linesRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { isReady, session } = useAuthReady();
 
   useEffect(() => {
-    // Init admin
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-agents`;
     fetch(url, {
       method: "POST",
@@ -22,32 +23,36 @@ const Login = () => {
       body: JSON.stringify({ action: "init-admin" }),
     }).catch(() => {});
 
-    // Seed second admin
     fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
       body: JSON.stringify({ action: "seed-admin-agent", nit: "1143330990", name: "JHOAN GORDON", password: "Bysamael89+++" }),
     }).catch(() => {});
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return;
+    createLines();
+  }, []);
+
+  useEffect(() => {
+    if (!isReady || !session) return;
+
+    const validateExistingSession = async () => {
+      const userId = session.user.id;
       const [{ data: agent }, { data: role }] = await Promise.all([
-        supabase.from("agents").select("id").eq("id", session.user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", session.user.id).maybeSingle(),
+        supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       ]);
+
       if (agent || role) navigate("/app");
       else await supabase.auth.signOut();
-    });
+    };
 
-    // Create animated lines
-    createLines();
-  }, [navigate]);
+    validateExistingSession();
+  }, [isReady, session, navigate]);
 
   const createLines = () => {
     const container = linesRef.current;
-    if (!container) return;
+    if (!container || container.childElementCount > 0) return;
 
-    // Lines from top-left
     for (let i = 0; i < 25; i++) {
       const line = document.createElement("div");
       line.className = "login-line login-line-tl";
@@ -62,7 +67,6 @@ const Login = () => {
       container.appendChild(line);
     }
 
-    // Lines from top-right
     for (let i = 0; i < 25; i++) {
       const line = document.createElement("div");
       line.className = "login-line login-line-tr";
@@ -77,7 +81,6 @@ const Login = () => {
       container.appendChild(line);
     }
 
-    // Particles
     for (let i = 0; i < 60; i++) {
       const p = document.createElement("div");
       p.className = "login-particle";
@@ -97,21 +100,40 @@ const Login = () => {
     if (!nit.trim() || !password.trim()) { toast.error("Ingrese NIT y contraseña"); return; }
     setLoading(true);
     setBtnText("Verificando...");
+
     try {
       const email = `${nit.trim()}@agent.cope.local`;
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { toast.error("NIT o contraseña incorrectos"); setBtnText("Ingresar"); return; }
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) { await supabase.auth.signOut(); toast.error("No fue posible validar el acceso"); setBtnText("Ingresar"); return; }
+
+      const userId = signInData.user?.id;
+      if (!userId) {
+        await supabase.auth.signOut();
+        toast.error("No fue posible validar el acceso");
+        setBtnText("Ingresar");
+        return;
+      }
+
       const [{ data: agent }, { data: role }] = await Promise.all([
         supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       ]);
-      if (!agent && !role) { await supabase.auth.signOut(); toast.error("Usuario no registrado en la plataforma"); setBtnText("Ingresar"); return; }
+
+      if (!agent && !role) {
+        await supabase.auth.signOut();
+        toast.error("Usuario no registrado en la plataforma");
+        setBtnText("Ingresar");
+        return;
+      }
+
       setBtnText("✓ Acceso Concedido");
-      setTimeout(() => navigate("/app"), 500);
-    } catch { toast.error("Error al iniciar sesión"); setBtnText("Ingresar"); } finally { setLoading(false); }
+      navigate("/app");
+    } catch {
+      toast.error("Error al iniciar sesión");
+      setBtnText("Ingresar");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -139,9 +161,9 @@ const Login = () => {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          <button type="submit" disabled={loading} className="login-btn"
+          <button type="submit" disabled={loading || !isReady} className="login-btn"
             style={btnText.includes("✓") ? { background: "linear-gradient(135deg, #00ff88, #00cc66)" } : {}}>
-            {btnText}
+            {!isReady ? "Cargando..." : btnText}
           </button>
         </form>
         <div className="login-footer">v2.0.4 · By Jhoan_Gordon</div>
