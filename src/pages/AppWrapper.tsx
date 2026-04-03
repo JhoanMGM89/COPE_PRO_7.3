@@ -46,7 +46,7 @@ const AppWrapper = () => {
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const modulePath = `${window.location.protocol === "file:" ? "modules" : "/modules"}/GENERADOR_DE_PLANTILLAS.html`;
+  const modulePath = `${import.meta.env.BASE_URL}modules/GENERADOR_DE_PLANTILLAS.html`;
   const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
 
   if (!isReady) {
