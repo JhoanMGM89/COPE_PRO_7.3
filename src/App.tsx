@@ -10,7 +10,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter;
+const isPortableRuntime = window.location.protocol === "file:" || window.location.hostname.endsWith("github.io");
+const Router = isPortableRuntime ? HashRouter : BrowserRouter;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
