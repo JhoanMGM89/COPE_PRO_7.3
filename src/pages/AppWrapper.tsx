@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuthReady } from "@/hooks/use-auth-ready";
-import { clearSessionBackup } from "@/lib/auth-session";
+import { clearAgentIdentity, clearSessionBackup, saveAgentIdentity } from "@/lib/auth-session";
 
 const AppWrapper = () => {
   const [agentName, setAgentName] = useState("");
@@ -15,11 +15,17 @@ const AppWrapper = () => {
   useEffect(() => {
     if (!isReady) return;
     if (!session) {
-      navigate("/");
+      setAgentName("");
+      setIsAdmin(false);
+      setUserId("");
+      clearAgentIdentity();
+      navigate("/", { replace: true });
       return;
     }
 
     const init = async () => {
+      setAgentName("");
+      setIsAdmin(false);
       setUserId(session.user.id);
 
       const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
@@ -30,23 +36,29 @@ const AppWrapper = () => {
       if (agentError || roleError) return;
 
       if (!agent) {
+        clearAgentIdentity();
         clearSessionBackup();
-        await supabase.auth.signOut();
-        navigate("/");
+        await supabase.auth.signOut({ scope: "local" });
+        navigate("/", { replace: true });
         return;
       }
 
       setAgentName(agent.name);
       setIsAdmin(Boolean(role));
+      saveAgentIdentity(agent.name);
     };
 
     init();
   }, [isReady, session, navigate]);
 
   const logout = async () => {
+    setAgentName("");
+    setIsAdmin(false);
+    setUserId("");
+    clearAgentIdentity();
     clearSessionBackup();
-    await supabase.auth.signOut();
-    navigate("/");
+    await supabase.auth.signOut({ scope: "local" });
+    navigate("/", { replace: true });
   };
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
