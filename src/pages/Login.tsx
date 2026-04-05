@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuthReady } from "@/hooks/use-auth-ready";
-import { clearSessionBackup, saveSessionBackup } from "@/lib/auth-session";
+import { clearAgentIdentity, clearSessionBackup, saveAgentIdentity, saveSessionBackup } from "@/lib/auth-session";
 
 const Login = () => {
   const [nit, setNit] = useState("");
@@ -53,6 +53,15 @@ const Login = () => {
 
     validateExistingSession();
   }, [isReady, session, navigate]);
+
+  const clearPreviousStandaloneSession = async () => {
+    clearAgentIdentity();
+    clearSessionBackup();
+
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {}
+  };
 
   const createLines = () => {
     const container = linesRef.current;
@@ -107,6 +116,8 @@ const Login = () => {
     setBtnText("Verificando...");
 
     try {
+      await clearPreviousStandaloneSession();
+
       const email = `${nit.trim()}@agent.cope.local`;
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { toast.error("NIT o contraseña incorrectos"); setBtnText("Ingresar"); return; }
@@ -122,7 +133,7 @@ const Login = () => {
       }
 
       const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
-        supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
+        supabase.from("agents").select("id, name").eq("id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       ]);
 
@@ -133,16 +144,20 @@ const Login = () => {
       }
 
       if (!agent && !role) {
+        clearAgentIdentity();
         clearSessionBackup();
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "local" });
         toast.error("Usuario no registrado en la plataforma");
         setBtnText("Ingresar");
         return;
       }
 
+      if (agent?.name) saveAgentIdentity(agent.name);
+
       setBtnText("✓ Acceso Concedido");
       navigate("/app");
     } catch {
+      clearAgentIdentity();
       toast.error("Error al iniciar sesión");
       setBtnText("Ingresar");
     } finally {

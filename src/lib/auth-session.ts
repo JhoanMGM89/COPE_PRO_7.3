@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 
 const AUTH_SESSION_BACKUP_KEY = "cope_auth_backup_v1";
+const STANDALONE_AGENT_NAME_KEY = "nombreAgente";
 
 type SessionBackup = {
   access_token: string;
@@ -39,7 +40,41 @@ const getSafeStorage = () => {
   return createMemoryStorage();
 };
 
+const getBrowserStorages = () => {
+  if (typeof window === "undefined") return [];
+
+  const storages: Array<Pick<Storage, "getItem" | "setItem" | "removeItem">> = [];
+
+  try {
+    storages.push(window.localStorage);
+  } catch {}
+
+  try {
+    storages.push(window.sessionStorage);
+  } catch {}
+
+  return storages;
+};
+
 export const getAuthSessionBackupKey = () => AUTH_SESSION_BACKUP_KEY;
+
+export const saveAgentIdentity = (agentName: string | null | undefined) => {
+  if (!agentName) return;
+
+  for (const storage of getBrowserStorages()) {
+    try {
+      storage.setItem(STANDALONE_AGENT_NAME_KEY, agentName);
+    } catch {}
+  }
+};
+
+export const clearAgentIdentity = () => {
+  for (const storage of getBrowserStorages()) {
+    try {
+      storage.removeItem(STANDALONE_AGENT_NAME_KEY);
+    } catch {}
+  }
+};
 
 export const saveSessionBackup = (session: Session | null | undefined) => {
   if (!session?.access_token || !session?.refresh_token) return;
