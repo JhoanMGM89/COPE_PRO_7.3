@@ -2635,6 +2635,9 @@ input:checked + .slider:before {
             </div>
             <div class="modal-header-bottom">
                 <button class="btn-header-historial" onclick="verHistorial()">HISTORIAL</button>
+                <button class="btn-header-historial" onclick="sincronizarTodosHistoriales()" title="Sincronizar todos los historiales al panel de administración" style="display:inline-flex;align-items:center;gap:4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                </button>
                 <button class="btn-header-historial" onclick="verConsulta()">CONSULTA</button>
                 <div class="contador-section">
                     <div class="contador-box">
@@ -3012,6 +3015,9 @@ input:checked + .slider:before {
                 <div class="subtitle">Centro de Gestión de Cancelaciones</div>
                 <div class="rechazos-header-buttons" style="margin-top: 8px;">
                     <button class="btn-header-historial" onclick="verHistorialRechazos()">HISTORIAL</button>
+                    <button class="btn-header-historial" onclick="sincronizarTodosHistoriales()" title="Sincronizar todos los historiales" style="display:inline-flex;align-items:center;gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                    </button>
                 </div>
             </div>
             <div style="width: 80px;"></div> <!-- Spacer para centrar -->
@@ -4032,6 +4038,56 @@ function cargarIPsDesdeDB() {
             console.log('✅ Base de IPs sincronizada desde DB:', result.data.length, 'registros');
         }
     });
+}
+
+function sincronizarTodosHistoriales() {
+    if (!supabaseClient || !supabaseUserId) {
+        mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
+        return;
+    }
+    
+    var suffix = supabaseUserId ? '_' + supabaseUserId : '';
+    
+    // 1. Creación
+    var histCreacion = historialDatos || [];
+    histCreacion.forEach(function(caso) {
+        guardarEnSupabase('CREACION', caso.tipo || '', caso.idMostrado || caso.id || '', caso.falla || '', caso.plantilla || caso.observacion || '', {
+            incidencia: caso.incidencia || '',
+            ot: caso.ot || '',
+            cs: caso.cs || ''
+        });
+    });
+    
+    // 2. Averías
+    var histAveriasKey = supabaseUserId ? 'historialAverias_' + supabaseUserId : 'historialAverias';
+    var histAverias = JSON.parse(localStorage.getItem(histAveriasKey) || localStorage.getItem('historialAverias') || '[]');
+    histAverias.forEach(function(h) {
+        guardarEnSupabase('AVERIAS', h.platform || '', h.formulario || '', h.category || '', h.contenido || '', {});
+    });
+    
+    // 3. ATP
+    var histATPKey = supabaseUserId ? 'historialATPATC_' + supabaseUserId : 'historialATPATC';
+    var histATP = JSON.parse(localStorage.getItem(histATPKey) || localStorage.getItem('historialATPATC') || '[]');
+    histATP.forEach(function(h) {
+        guardarEnSupabase('ATP', h.tipo || '', h.jira || '', '', h.contenido || '', {
+            incidencia: h.inc || '',
+            ot: h.ot || ''
+        });
+    });
+    
+    // 4. Service Now
+    var histSNKey = supabaseUserId ? 'historialServiceNow_' + supabaseUserId : 'historialServiceNow';
+    var histSN = JSON.parse(localStorage.getItem(histSNKey) || localStorage.getItem('historialServiceNow') || '[]');
+    histSN.forEach(function(h) {
+        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
+    });
+    
+    var total = histCreacion.length + histAverias.length + histATP.length + histSN.length;
+    if (total === 0) {
+        mostrarToast('No hay registros en el historial para sincronizar', 'alerta');
+    } else {
+        mostrarToast('Sincronizando ' + total + ' registros de todos los módulos...', 'exito');
+    }
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
