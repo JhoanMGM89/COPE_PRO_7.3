@@ -4040,6 +4040,56 @@ function cargarIPsDesdeDB() {
     });
 }
 
+function sincronizarTodosHistoriales() {
+    if (!supabaseClient || !supabaseUserId) {
+        mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
+        return;
+    }
+    
+    var suffix = supabaseUserId ? '_' + supabaseUserId : '';
+    
+    // 1. Creación
+    var histCreacion = historialDatos || [];
+    histCreacion.forEach(function(caso) {
+        guardarEnSupabase('CREACION', caso.tipo || '', caso.idMostrado || caso.id || '', caso.falla || '', caso.plantilla || caso.observacion || '', {
+            incidencia: caso.incidencia || '',
+            ot: caso.ot || '',
+            cs: caso.cs || ''
+        });
+    });
+    
+    // 2. Averías
+    var histAveriasKey = supabaseUserId ? 'historialAverias_' + supabaseUserId : 'historialAverias';
+    var histAverias = JSON.parse(localStorage.getItem(histAveriasKey) || localStorage.getItem('historialAverias') || '[]');
+    histAverias.forEach(function(h) {
+        guardarEnSupabase('AVERIAS', h.platform || '', h.formulario || '', h.category || '', h.contenido || '', {});
+    });
+    
+    // 3. ATP
+    var histATPKey = supabaseUserId ? 'historialATPATC_' + supabaseUserId : 'historialATPATC';
+    var histATP = JSON.parse(localStorage.getItem(histATPKey) || localStorage.getItem('historialATPATC') || '[]');
+    histATP.forEach(function(h) {
+        guardarEnSupabase('ATP', h.tipo || '', h.jira || '', '', h.contenido || '', {
+            incidencia: h.inc || '',
+            ot: h.ot || ''
+        });
+    });
+    
+    // 4. Service Now
+    var histSNKey = supabaseUserId ? 'historialServiceNow_' + supabaseUserId : 'historialServiceNow';
+    var histSN = JSON.parse(localStorage.getItem(histSNKey) || localStorage.getItem('historialServiceNow') || '[]');
+    histSN.forEach(function(h) {
+        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
+    });
+    
+    var total = histCreacion.length + histAverias.length + histATP.length + histSN.length;
+    if (total === 0) {
+        mostrarToast('No hay registros en el historial para sincronizar', 'alerta');
+    } else {
+        mostrarToast('Sincronizando ' + total + ' registros de todos los módulos...', 'exito');
+    }
+}
+
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
     if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
