@@ -63,6 +63,8 @@ const AppWrapper = () => {
   }, [isReady, session, navigate]);
 
   const logout = async () => {
+    hasEverLoggedIn.current = false;
+    lastSessionUserId.current = null;
     setAgentName("");
     setIsAdmin(false);
     setUserId("");
