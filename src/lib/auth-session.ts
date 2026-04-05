@@ -73,8 +73,12 @@ export const readSessionBackup = (): SessionBackup | null => {
 };
 
 export const clearSessionBackup = () => {
-  const storage = getSafeStorage();
   try {
+    // Signal standalone bootstrap to allow real removal
+    if (typeof window !== "undefined" && (window as any).__clearStandaloneAuthBackup) {
+      (window as any).__clearStandaloneAuthBackup();
+    }
+    const storage = getSafeStorage();
     storage.removeItem(AUTH_SESSION_BACKUP_KEY);
   } catch {}
 };
