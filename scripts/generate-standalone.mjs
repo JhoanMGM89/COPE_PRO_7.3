@@ -7,10 +7,11 @@ const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
 const modulesDir = path.join(rootDir, "public", "modules");
 const outputDir = "/mnt/documents";
-const outputName = "COPE_PRO_Standalone_v10.html";
+const outputName = "COPE_PRO_Standalone_v11.html";
 const outputPath = path.join(outputDir, outputName);
 const authStorageKey = "sb-ufrmotkqquwbujppgjlp-auth-token";
 const authBackupKey = "cope_auth_backup_v1";
+const standaloneAuthCacheKey = "cope_standalone_auth_cache_v1";
 
 const inlineLocalAssets = async (html) => {
   let nextHtml = html.replace(/<link rel="modulepreload"[^>]*>/g, "");
@@ -58,17 +59,18 @@ const standaloneBootstrap = (embeddedModules) => `<script>
 (function() {
   var AUTH_KEY = ${JSON.stringify(authStorageKey)};
   var BACKUP_KEY = ${JSON.stringify(authBackupKey)};
+  var CACHE_KEY = ${JSON.stringify(standaloneAuthCacheKey)};
 
   function syncAuthBackup() {
     try {
       var current = window.localStorage.getItem(AUTH_KEY);
-      var backup = window.localStorage.getItem(BACKUP_KEY);
+      var cached = window.localStorage.getItem(CACHE_KEY);
       if (current) {
-        window.localStorage.setItem(BACKUP_KEY, current);
+        window.localStorage.setItem(CACHE_KEY, current);
         return;
       }
-      if (!current && backup) {
-        window.localStorage.setItem(AUTH_KEY, backup);
+      if (!current && cached) {
+        window.localStorage.setItem(AUTH_KEY, cached);
       }
     } catch (error) {}
   }
@@ -77,6 +79,7 @@ const standaloneBootstrap = (embeddedModules) => `<script>
   window.__clearStandaloneAuthBackup = function() {
     __backupCleared = true;
     try { window.localStorage.removeItem(BACKUP_KEY); } catch (error) {}
+    try { window.localStorage.removeItem(CACHE_KEY); } catch (error) {}
   };
 
   try {
@@ -88,7 +91,7 @@ const standaloneBootstrap = (embeddedModules) => `<script>
       localStorageProto.setItem = function(key, value) {
         originalSetItem.call(this, key, value);
         if (key === AUTH_KEY && value) {
-          try { originalSetItem.call(this, BACKUP_KEY, value); } catch (error) {}
+          try { originalSetItem.call(this, CACHE_KEY, value); } catch (error) {}
         }
       };
 
@@ -96,13 +99,14 @@ const standaloneBootstrap = (embeddedModules) => `<script>
         if (key === AUTH_KEY) {
           if (__backupCleared) {
             originalRemoveItem.call(this, key);
+            try { originalRemoveItem.call(this, CACHE_KEY); } catch (error) {}
             __backupCleared = false;
             return;
           }
-          var backup = null;
-          try { backup = this.getItem(BACKUP_KEY); } catch (error) {}
-          if (backup) {
-            originalSetItem.call(this, AUTH_KEY, backup);
+          var cached = null;
+          try { cached = this.getItem(CACHE_KEY); } catch (error) {}
+          if (cached) {
+            originalSetItem.call(this, AUTH_KEY, cached);
             return;
           }
         }
