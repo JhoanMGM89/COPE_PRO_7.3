@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuthReady } from "@/hooks/use-auth-ready";
+import { clearSessionBackup } from "@/lib/auth-session";
 
 const AppWrapper = () => {
   const [agentName, setAgentName] = useState("");
@@ -21,12 +22,15 @@ const AppWrapper = () => {
     const init = async () => {
       setUserId(session.user.id);
 
-      const [{ data: agent }, { data: role }] = await Promise.all([
+      const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
         supabase.from("agents").select("name").eq("id", session.user.id).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin").maybeSingle(),
       ]);
 
+      if (agentError || roleError) return;
+
       if (!agent) {
+        clearSessionBackup();
         await supabase.auth.signOut();
         navigate("/");
         return;
@@ -40,6 +44,7 @@ const AppWrapper = () => {
   }, [isReady, session, navigate]);
 
   const logout = async () => {
+    clearSessionBackup();
     await supabase.auth.signOut();
     navigate("/");
   };
