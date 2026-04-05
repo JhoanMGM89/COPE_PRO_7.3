@@ -73,12 +73,34 @@ export const useAuthReady = () => {
       if (!sessionRef.current) void restoreFromBackup();
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      // Tab became visible again — ensure session is still alive
+      supabase.auth.getSession().then(({ data: { session: current } }) => {
+        if (!mounted) return;
+        if (current) {
+          saveSessionBackup(current);
+          applySession(current);
+        } else if (!sessionRef.current) {
+          // Only restore from backup if we don't already have a session in state
+          void restoreFromBackup();
+        } else {
+          // We had a session in state but Supabase lost it — restore from backup
+          void restoreFromBackup();
+        }
+      }).catch(() => {
+        // Network error — keep current session, don't blank out
+      });
+    };
+
     void initializeSession();
     window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       mounted = false;
       window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       subscription.unsubscribe();
     };
   }, []);
