@@ -35,7 +35,7 @@ const inlineLocalAssets = async (html) => {
     const jsBase64 = Buffer.from(js, "utf8").toString("base64");
     nextHtml = nextHtml.replace(
       match[0],
-      `<script type="module">\nconst __standaloneJsBytes = Uint8Array.from(atob(${JSON.stringify(jsBase64)}), c => c.charCodeAt(0));\nconst __standaloneJsBlob = new Blob([__standaloneJsBytes], { type: "text/javascript;charset=utf-8" });\nconst __standaloneJsUrl = URL.createObjectURL(__standaloneJsBlob);\nimport(__standaloneJsUrl).finally(() => setTimeout(() => URL.revokeObjectURL(__standaloneJsUrl), 30000));\n</script>`
+      `<script type="module">\nconst __standaloneJsBytes = Uint8Array.from(atob(${JSON.stringify(jsBase64)}), c => c.charCodeAt(0));\nconst __standaloneJsBlob = new Blob([__standaloneJsBytes], { type: "text/javascript;charset=utf-8" });\nconst __standaloneJsUrl = URL.createObjectURL(__standaloneJsBlob);\nimport(__standaloneJsUrl);\n</script>`
     );
   }
 
