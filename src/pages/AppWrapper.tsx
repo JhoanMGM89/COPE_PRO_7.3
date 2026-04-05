@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,21 +11,30 @@ const AppWrapper = () => {
   const [userId, setUserId] = useState("");
   const navigate = useNavigate();
   const { isReady, session } = useAuthReady();
+  const hasEverLoggedIn = useRef(false);
+  const lastSessionUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isReady) return;
     if (!session) {
-      setAgentName("");
-      setIsAdmin(false);
-      setUserId("");
-      clearAgentIdentity();
-      navigate("/", { replace: true });
+      // Only redirect to login if we never had a session or user explicitly logged out
+      // Don't redirect on transient null (tab switch, network hiccup)
+      if (!hasEverLoggedIn.current) {
+        setAgentName("");
+        setIsAdmin(false);
+        setUserId("");
+        clearAgentIdentity();
+        navigate("/", { replace: true });
+      }
       return;
     }
 
+    // If same user session, don't re-fetch
+    if (lastSessionUserId.current === session.user.id && agentName) return;
+
     const init = async () => {
-      setAgentName("");
-      setIsAdmin(false);
+      hasEverLoggedIn.current = true;
+      lastSessionUserId.current = session.user.id;
       setUserId(session.user.id);
 
       const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
@@ -36,6 +45,8 @@ const AppWrapper = () => {
       if (agentError || roleError) return;
 
       if (!agent) {
+        hasEverLoggedIn.current = false;
+        lastSessionUserId.current = null;
         clearAgentIdentity();
         clearSessionBackup();
         await supabase.auth.signOut({ scope: "local" });
@@ -52,6 +63,8 @@ const AppWrapper = () => {
   }, [isReady, session, navigate]);
 
   const logout = async () => {
+    hasEverLoggedIn.current = false;
+    lastSessionUserId.current = null;
     setAgentName("");
     setIsAdmin(false);
     setUserId("");

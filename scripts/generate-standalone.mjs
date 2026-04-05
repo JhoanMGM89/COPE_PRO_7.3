@@ -7,7 +7,7 @@ const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
 const modulesDir = path.join(rootDir, "public", "modules");
 const outputDir = "/mnt/documents";
-const outputName = "COPE_PRO_Standalone_v11.html";
+const outputName = "COPE_PRO_Standalone_v12.html";
 const outputPath = path.join(outputDir, outputName);
 const authStorageKey = "sb-ufrmotkqquwbujppgjlp-auth-token";
 const authBackupKey = "cope_auth_backup_v1";
@@ -35,7 +35,7 @@ const inlineLocalAssets = async (html) => {
     const jsBase64 = Buffer.from(js, "utf8").toString("base64");
     nextHtml = nextHtml.replace(
       match[0],
-      `<script type="module">\nconst __standaloneJsBytes = Uint8Array.from(atob(${JSON.stringify(jsBase64)}), c => c.charCodeAt(0));\nconst __standaloneJsBlob = new Blob([__standaloneJsBytes], { type: "text/javascript;charset=utf-8" });\nconst __standaloneJsUrl = URL.createObjectURL(__standaloneJsBlob);\nimport(__standaloneJsUrl).finally(() => setTimeout(() => URL.revokeObjectURL(__standaloneJsUrl), 30000));\n</script>`
+      `<script type="module">\nconst __standaloneJsBytes = Uint8Array.from(atob(${JSON.stringify(jsBase64)}), c => c.charCodeAt(0));\nconst __standaloneJsBlob = new Blob([__standaloneJsBytes], { type: "text/javascript;charset=utf-8" });\nconst __standaloneJsUrl = URL.createObjectURL(__standaloneJsBlob);\nimport(__standaloneJsUrl);\n</script>`
     );
   }
 
