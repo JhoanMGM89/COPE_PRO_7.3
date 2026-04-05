@@ -7,7 +7,7 @@ const rootDir = path.resolve(__dirname, "..");
 const distDir = path.join(rootDir, "dist");
 const modulesDir = path.join(rootDir, "public", "modules");
 const outputDir = "/mnt/documents";
-const outputName = "COPE_PRO_Standalone_v9.html";
+const outputName = "COPE_PRO_Standalone_v10.html";
 const outputPath = path.join(outputDir, outputName);
 const authStorageKey = "sb-ufrmotkqquwbujppgjlp-auth-token";
 const authBackupKey = "cope_auth_backup_v1";
@@ -21,7 +21,8 @@ const inlineLocalAssets = async (html) => {
     if (/^(https?:)?\/\//i.test(href)) continue;
     const assetPath = path.join(distDir, href.replace(/^\.\//, "").replace(/^\//, ""));
     const css = await fs.readFile(assetPath, "utf8");
-    nextHtml = nextHtml.replace(match[0], `<style>\n${css}\n</style>`);
+    const safeCss = css.replace(/<\/style/gi, "<\\/style");
+    nextHtml = nextHtml.replace(match[0], `<style>\n${safeCss}\n</style>`);
   }
 
   const scriptMatches = [...nextHtml.matchAll(/<script([^>]*?)type="module"([^>]*?)src="([^"]+)"([^>]*)><\/script>/g)];
@@ -30,7 +31,11 @@ const inlineLocalAssets = async (html) => {
     if (/^(https?:)?\/\//i.test(src)) continue;
     const assetPath = path.join(distDir, src.replace(/^\.\//, "").replace(/^\//, ""));
     const js = await fs.readFile(assetPath, "utf8");
-    nextHtml = nextHtml.replace(match[0], `<script type="module">\n${js}\n</script>`);
+    const jsBase64 = Buffer.from(js, "utf8").toString("base64");
+    nextHtml = nextHtml.replace(
+      match[0],
+      `<script type="module">\nconst __standaloneJsBytes = Uint8Array.from(atob(${JSON.stringify(jsBase64)}), c => c.charCodeAt(0));\nconst __standaloneJsBlob = new Blob([__standaloneJsBytes], { type: "text/javascript;charset=utf-8" });\nconst __standaloneJsUrl = URL.createObjectURL(__standaloneJsBlob);\nimport(__standaloneJsUrl).finally(() => setTimeout(() => URL.revokeObjectURL(__standaloneJsUrl), 30000));\n</script>`
+    );
   }
 
   return nextHtml;
