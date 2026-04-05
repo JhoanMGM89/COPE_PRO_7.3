@@ -94,6 +94,11 @@ const standaloneBootstrap = (embeddedModules) => `<script>
 
       localStorageProto.removeItem = function(key) {
         if (key === AUTH_KEY) {
+          if (__backupCleared) {
+            originalRemoveItem.call(this, key);
+            __backupCleared = false;
+            return;
+          }
           var backup = null;
           try { backup = this.getItem(BACKUP_KEY); } catch (error) {}
           if (backup) {
