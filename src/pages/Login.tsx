@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuthReady } from "@/hooks/use-auth-ready";
+import { clearSessionBackup, saveSessionBackup } from "@/lib/auth-session";
 
 const Login = () => {
   const [nit, setNit] = useState("");
@@ -37,13 +38,17 @@ const Login = () => {
 
     const validateExistingSession = async () => {
       const userId = session.user.id;
-      const [{ data: agent }, { data: role }] = await Promise.all([
+      const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
         supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       ]);
 
+      if (agentError || roleError) return;
       if (agent || role) navigate("/app");
-      else await supabase.auth.signOut();
+      else {
+        clearSessionBackup();
+        await supabase.auth.signOut();
+      }
     };
 
     validateExistingSession();
@@ -105,21 +110,30 @@ const Login = () => {
       const email = `${nit.trim()}@agent.cope.local`;
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { toast.error("NIT o contraseña incorrectos"); setBtnText("Ingresar"); return; }
+      saveSessionBackup(signInData.session);
 
       const userId = signInData.user?.id;
       if (!userId) {
+        clearSessionBackup();
         await supabase.auth.signOut();
         toast.error("No fue posible validar el acceso");
         setBtnText("Ingresar");
         return;
       }
 
-      const [{ data: agent }, { data: role }] = await Promise.all([
+      const [{ data: agent, error: agentError }, { data: role, error: roleError }] = await Promise.all([
         supabase.from("agents").select("id").eq("id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       ]);
 
+      if (agentError || roleError) {
+        setBtnText("✓ Acceso Concedido");
+        navigate("/app");
+        return;
+      }
+
       if (!agent && !role) {
+        clearSessionBackup();
         await supabase.auth.signOut();
         toast.error("Usuario no registrado en la plataforma");
         setBtnText("Ingresar");

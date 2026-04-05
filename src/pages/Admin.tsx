@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, X, Trash2, Search } from "lucide-react";
+import { clearSessionBackup } from "@/lib/auth-session";
 
 interface Agent {
   id: string;
@@ -301,7 +302,7 @@ const Admin = () => {
     loadIps();
   };
 
-  const logout = async () => { await supabase.auth.signOut(); navigate("/"); };
+  const logout = async () => { clearSessionBackup(); await supabase.auth.signOut(); navigate("/"); };
 
   const moduleColor = (mod: string) => {
     if (mod === "CREACION") return "bg-green-600/20 text-green-400";
