@@ -73,7 +73,9 @@ const standaloneBootstrap = (embeddedModules) => `<script>
     } catch (error) {}
   }
 
+  var __backupCleared = false;
   window.__clearStandaloneAuthBackup = function() {
+    __backupCleared = true;
     try { window.localStorage.removeItem(BACKUP_KEY); } catch (error) {}
   };
 
