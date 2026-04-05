@@ -1831,6 +1831,28 @@
             localStorage.setItem(getHistorialAveriasKey(), JSON.stringify(historialAverias));
         }
 
+        function sincronizarAlPadre() {
+            if (historialAverias.length === 0) {
+                showToast('No hay registros en el historial para sincronizar');
+                return;
+            }
+            var enviados = 0;
+            historialAverias.forEach(function(h) {
+                window.parent.postMessage({
+                    type: 'GUARDAR_REGISTRO',
+                    module: 'AVERIAS',
+                    datos: {
+                        'TIPO': h.platform || '',
+                        'CATEGORIA': h.category || '',
+                        'FORMULARIO': h.formulario || '',
+                        'OBSERVACION': h.contenido || ''
+                    }
+                }, '*');
+                enviados++;
+            });
+            showToast('Sincronizados ' + enviados + ' registros de Averías');
+        }
+
         function abrirHistorialAverias() {
             renderHistorialAverias();
             document.getElementById('modalHistorialAverias').classList.add('active');

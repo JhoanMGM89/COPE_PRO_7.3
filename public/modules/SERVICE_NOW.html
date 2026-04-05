@@ -1427,6 +1427,27 @@ function limpiarFormularioCompleto() {
     actualizarCampos();
 }
 
+function sincronizarAlPadre() {
+    if (historial.length === 0) {
+        mostrarToast('No hay registros en el historial para sincronizar');
+        return;
+    }
+    var enviados = 0;
+    historial.forEach(function(h) {
+        window.parent.postMessage({
+            type: 'GUARDAR_REGISTRO',
+            module: 'SERVICE_NOW',
+            datos: {
+                'TIPO': h.tipo || '',
+                'SERVICE NOW': h.sn || '',
+                'OBSERVACION': h.contenido || ''
+            }
+        }, '*');
+        enviados++;
+    });
+    mostrarToast('Sincronizados ' + enviados + ' registros de Service Now');
+}
+
 function abrirHistorial() {
     renderizarTablaHistorial();
     document.getElementById('modalHistorial').classList.add('active');

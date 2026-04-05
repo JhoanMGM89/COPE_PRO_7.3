@@ -1564,6 +1564,29 @@ function limpiarFormularioCompleto() {
     actualizarCampos();
 }
 
+function sincronizarAlPadre() {
+    if (historial.length === 0) {
+        mostrarToast('No hay registros en el historial para sincronizar');
+        return;
+    }
+    var enviados = 0;
+    historial.forEach(function(h) {
+        window.parent.postMessage({
+            type: 'GUARDAR_REGISTRO',
+            module: 'ATP',
+            datos: {
+                'TIPO': h.tipo || '',
+                'JIRA/FO': h.jira || '',
+                'INCIDENCIA': h.inc || '',
+                'OT': h.ot || '',
+                'OBSERVACION': h.contenido || ''
+            }
+        }, '*');
+        enviados++;
+    });
+    mostrarToast('Sincronizados ' + enviados + ' registros de ATP');
+}
+
 function abrirHistorial() {
     renderizarTablaHistorial();
     document.getElementById('modalHistorial').classList.add('active');
