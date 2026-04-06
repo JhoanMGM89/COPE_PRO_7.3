@@ -2541,10 +2541,10 @@ input:checked + .slider:before {
    ============================================ */
 .module-overlay {
     position: fixed;
-    top: var(--topbar-height, 0px);
+    top: 0;
     left: 0;
     width: 100%;
-    height: calc(100% - var(--topbar-height, 0px));
+    height: 100%;
     background: rgba(0, 0, 0, 0.05);
     display: none;
     z-index: 5000;
@@ -2635,9 +2635,6 @@ input:checked + .slider:before {
             </div>
             <div class="modal-header-bottom">
                 <button class="btn-header-historial" onclick="verHistorial()">HISTORIAL</button>
-                <button class="btn-header-historial" onclick="sincronizarTodosHistoriales()" title="Sincronizar todos los historiales al panel de administración" style="display:inline-flex;align-items:center;gap:4px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                </button>
                 <button class="btn-header-historial" onclick="verConsulta()">CONSULTA</button>
                 <div class="contador-section">
                     <div class="contador-box">
@@ -3015,9 +3012,6 @@ input:checked + .slider:before {
                 <div class="subtitle">Centro de Gestión de Cancelaciones</div>
                 <div class="rechazos-header-buttons" style="margin-top: 8px;">
                     <button class="btn-header-historial" onclick="verHistorialRechazos()">HISTORIAL</button>
-                    <button class="btn-header-historial" onclick="sincronizarTodosHistoriales()" title="Sincronizar todos los historiales" style="display:inline-flex;align-items:center;gap:4px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                    </button>
                 </div>
             </div>
             <div style="width: 80px;"></div> <!-- Spacer para centrar -->
@@ -3861,14 +3855,6 @@ const FALLAS_GDM_CAZAMASIVOS = [
 let nombreAgente = "";
 let supabaseUserId = "";
 let supabaseClient = null;
-let supabaseAccessToken = "";
-let supabaseRefreshToken = "";
-let supabaseUrlActual = "";
-let supabaseKeyActual = "";
-let syncIntervalId = null;
-let authRestorePromise = null;
-let syncListenersAttached = false;
-let isFlushingSyncQueue = false;
 let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
@@ -3883,517 +3869,16 @@ let plantillaActualEnViewer = ''; // Plantilla actual mostrada en el viewer
 let casosGuardadosEnHistorial = new Set(); // Set para tracking de casos únicos guardados
 let esIPespecialATP = false; // Flag para IP 10.37.60.146 con puertos específicos (comportamiento ATP)
 let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
-const AUTH_SESSION_BACKUP_KEY = 'cope_auth_backup_v1';
-const AUTH_STORAGE_KEY = 'sb-ufrmotkqquwbujppgjlp-auth-token';
-const AUTH_BRIDGE_KEY = '__COPE_SESSION_BRIDGE__';
-
-function decodificarJwtPayload(token) {
-    if (!token || typeof token !== 'string') return null;
-    try {
-        var parts = token.split('.');
-        if (parts.length < 2) return null;
-        var base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) base64 += '=';
-        var binary = atob(base64);
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        return JSON.parse(new TextDecoder('utf-8').decode(bytes));
-    } catch (e) {
-        return null;
-    }
-}
-
-function actualizarCredencialesSesion(sessionLike) {
-    if (!sessionLike || typeof sessionLike !== 'object') return;
-
-    if (sessionLike.access_token) {
-        supabaseAccessToken = sessionLike.access_token;
-        if (!supabaseUserId) {
-            var payload = decodificarJwtPayload(sessionLike.access_token);
-            if (payload && payload.sub) {
-                supabaseUserId = payload.sub;
-            }
-        }
-    }
-
-    if (sessionLike.refresh_token) {
-        supabaseRefreshToken = sessionLike.refresh_token;
-    }
-}
-
-function construirOpcionesSupabase() {
-    var options = {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true
-        }
-    };
-
-    if (supabaseAccessToken) {
-        options.global = {
-            headers: {
-                Authorization: 'Bearer ' + supabaseAccessToken
-            }
-        };
-    }
-
-    return options;
-}
-
-function recrearClienteSupabaseSiEsPosible() {
-    if (!supabaseUrlActual || !supabaseKeyActual || typeof window.supabase === 'undefined') return;
-    supabaseClient = window.supabase.createClient(supabaseUrlActual, supabaseKeyActual, construirOpcionesSupabase());
-}
-
-function tieneCredencialesSincronizacion() {
-    return Boolean(supabaseClient && supabaseUserId && supabaseAccessToken);
-}
-
-function leerPuenteSesion() {
-    var bridges = [];
-
-    try { if (window[AUTH_BRIDGE_KEY]) bridges.push(window[AUTH_BRIDGE_KEY]); } catch (e) {}
-    try {
-        if (window.parent && window.parent !== window && window.parent[AUTH_BRIDGE_KEY]) {
-            bridges.push(window.parent[AUTH_BRIDGE_KEY]);
-        }
-    } catch (e) {}
-    try {
-        if (window.top && window.top !== window && window.top[AUTH_BRIDGE_KEY]) {
-            bridges.push(window.top[AUTH_BRIDGE_KEY]);
-        }
-    } catch (e) {}
-
-    for (var i = 0; i < bridges.length; i++) {
-        var bridge = bridges[i];
-        if (!bridge || typeof bridge !== 'object') continue;
-
-        if (bridge.agentName) {
-            nombreAgente = String(bridge.agentName).toUpperCase();
-            try { localStorage.setItem('nombreAgente', nombreAgente); } catch (e) {}
-        }
-
-        if (bridge.userId) {
-            supabaseUserId = bridge.userId;
-        }
-
-        var sessionBackup = bridge.sessionBackup;
-        if (sessionBackup && sessionBackup.access_token && sessionBackup.refresh_token) {
-            actualizarCredencialesSesion(sessionBackup);
-            return {
-                access_token: sessionBackup.access_token,
-                refresh_token: sessionBackup.refresh_token
-            };
-        }
-    }
-
-    return null;
-}
-
-function actualizarPuenteSesion(session) {
-    var currentName = nombreAgente || '';
-    if (!currentName) {
-        try { currentName = localStorage.getItem('nombreAgente') || ''; } catch (e) {}
-    }
-
-    var bridge = {
-        agentName: (currentName || 'GESTOR').toUpperCase(),
-        userId: supabaseUserId || '',
-        sessionBackup: session && session.access_token && session.refresh_token
-            ? { access_token: session.access_token, refresh_token: session.refresh_token }
-            : null
-    };
-
-    [window, window.parent, window.top].forEach(function(target) {
-        try {
-            if (target) target[AUTH_BRIDGE_KEY] = bridge;
-        } catch (e) {}
-    });
-}
-
-function obtenerStoragesSesion() {
-    var storages = [];
-    try { storages.push(window.localStorage); } catch (e) {}
-    try { storages.push(window.sessionStorage); } catch (e) {}
-    try {
-        if (window.parent && window.parent !== window && window.parent.localStorage) {
-            storages.push(window.parent.localStorage);
-        }
-    } catch (e) {}
-    try {
-        if (window.parent && window.parent !== window && window.parent.sessionStorage) {
-            storages.push(window.parent.sessionStorage);
-        }
-    } catch (e) {}
-    try {
-        if (window.top && window.top !== window && window.top.localStorage) {
-            storages.push(window.top.localStorage);
-        }
-    } catch (e) {}
-    try {
-        if (window.top && window.top !== window && window.top.sessionStorage) {
-            storages.push(window.top.sessionStorage);
-        }
-    } catch (e) {}
-    return storages.filter(function(storage, index, arr) {
-        return storage && arr.indexOf(storage) === index;
-    });
-}
-
-function leerValorSesion(key) {
-    var storages = obtenerStoragesSesion();
-    for (var i = 0; i < storages.length; i++) {
-        try {
-            var raw = storages[i].getItem(key);
-            if (raw) return raw;
-        } catch (e) {}
-    }
-    return null;
-}
-
-function guardarBackupSesion(session) {
-    if (!session || !session.access_token || !session.refresh_token) return;
-    actualizarCredencialesSesion(session);
-    var backup = JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token
-    });
-    actualizarPuenteSesion(session);
-    obtenerStoragesSesion().forEach(function(storage) {
-        try {
-            storage.setItem(AUTH_SESSION_BACKUP_KEY, backup);
-        } catch (e) {}
-    });
-}
-
-function leerBackupSesion() {
-    var bridgeBackup = leerPuenteSesion();
-    if (bridgeBackup) return bridgeBackup;
-
-    var rawBackup = leerValorSesion(AUTH_SESSION_BACKUP_KEY);
-    if (rawBackup) {
-        try {
-            var parsedBackup = JSON.parse(rawBackup);
-            if (parsedBackup && parsedBackup.access_token && parsedBackup.refresh_token) {
-                actualizarCredencialesSesion(parsedBackup);
-                return {
-                    access_token: parsedBackup.access_token,
-                    refresh_token: parsedBackup.refresh_token
-                };
-            }
-        } catch (e) {}
-    }
-
-    var rawAuth = leerValorSesion(AUTH_STORAGE_KEY);
-    if (!rawAuth) return null;
-
-    try {
-        var parsedAuth = JSON.parse(rawAuth);
-        var session = parsedAuth && parsedAuth.currentSession ? parsedAuth.currentSession : (parsedAuth && parsedAuth.session ? parsedAuth.session : null);
-        if (session && session.access_token && session.refresh_token) {
-            actualizarCredencialesSesion(session);
-            return {
-                access_token: session.access_token,
-                refresh_token: session.refresh_token
-            };
-        }
-    } catch (e) {}
-
-    return null;
-}
-
-function aplicarSesionRecibida(sessionBackup) {
-    if (!sessionBackup || !sessionBackup.access_token || !sessionBackup.refresh_token) {
-        return Promise.resolve(false);
-    }
-
-    actualizarCredencialesSesion(sessionBackup);
-    guardarBackupSesion(sessionBackup);
-    recrearClienteSupabaseSiEsPosible();
-
-    if (!supabaseClient) {
-        return Promise.resolve(Boolean(supabaseUserId && supabaseAccessToken));
-    }
-
-    return supabaseClient.auth.setSession({
-        access_token: sessionBackup.access_token,
-        refresh_token: sessionBackup.refresh_token
-    }).then(function(result) {
-        var restored = result && result.data ? result.data.session : null;
-        if (restored && restored.user) {
-            supabaseUserId = restored.user.id;
-            guardarBackupSesion(restored);
-            console.log('✅ Sesión aplicada desde la ventana principal, uid:', supabaseUserId);
-            return true;
-        }
-        return false;
-    }).catch(function(error) {
-        console.warn('⚠️ No fue posible aplicar la sesión recibida en auth, usando token directo:', error && error.message ? error.message : error);
-        recrearClienteSupabaseSiEsPosible();
-        return Boolean(supabaseUserId && supabaseAccessToken);
-    });
-}
-
-function asegurarSesionSupabase() {
-    if (!supabaseClient) return Promise.resolve(false);
-    leerPuenteSesion();
-    var backupSesion = leerBackupSesion();
-    if (backupSesion) actualizarCredencialesSesion(backupSesion);
-    if (tieneCredencialesSincronizacion()) {
-        recrearClienteSupabaseSiEsPosible();
-        return Promise.resolve(true);
-    }
-    if (authRestorePromise) return authRestorePromise;
-
-    authRestorePromise = supabaseClient.auth.getSession().then(function(result) {
-        var session = result && result.data ? result.data.session : null;
-        if (session && session.user) {
-            supabaseUserId = session.user.id;
-            guardarBackupSesion(session);
-            return true;
-        }
-
-        var backup = leerBackupSesion();
-        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
-
-        return aplicarSesionRecibida(backup).then(function(ok) {
-            if (ok) {
-                console.log('✅ Credenciales restauradas desde backup para sincronización, uid:', supabaseUserId);
-                return true;
-            }
-            return Boolean(supabaseUserId && supabaseAccessToken);
-        });
-    }).catch(function() {
-        var backup = leerBackupSesion();
-        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
-
-        return aplicarSesionRecibida(backup).then(function(ok) {
-            if (ok) {
-                console.log('✅ Credenciales recuperadas tras error de auth, uid:', supabaseUserId);
-                return true;
-            }
-            return Boolean(supabaseUserId && supabaseAccessToken);
-        });
-    });
-
-    authRestorePromise = authRestorePromise.then(function(ok) {
-        authRestorePromise = null;
-        return ok;
-    }, function() {
-        authRestorePromise = null;
-        return false;
-    });
-
-    return authRestorePromise;
-}
-
-function getSyncQueueKey() {
-    return supabaseUserId ? 'syncQueue_' + supabaseUserId : 'syncQueue';
-}
-
-function cargarColaSync() {
-    try {
-        return JSON.parse(localStorage.getItem(getSyncQueueKey()) || '[]');
-    } catch (e) {
-        return [];
-    }
-}
-
-function guardarColaSync(queue) {
-    localStorage.setItem(getSyncQueueKey(), JSON.stringify(queue));
-}
-
-function leerHistorialLocal(keyBase) {
-    var keys = [];
-    var merged = [];
-    var seen = {};
-    if (supabaseUserId) keys.push(keyBase + '_' + supabaseUserId);
-    keys.push(keyBase);
-
-    for (var i = 0; i < keys.length; i++) {
-        try {
-            var parsed = JSON.parse(localStorage.getItem(keys[i]) || '[]');
-            if (!Array.isArray(parsed)) continue;
-            parsed.forEach(function(item) {
-                var fingerprint = '';
-                try {
-                    fingerprint = JSON.stringify(item);
-                } catch (e) {
-                    fingerprint = String(item && (item.idMostrado || item.id || item.sn || item.jira || item.formulario || item.contenido || ''));
-                }
-
-                if (!seen[fingerprint]) {
-                    seen[fingerprint] = true;
-                    merged.push(item);
-                }
-            });
-        } catch (e) {}
-    }
-
-    return merged;
-}
-
-function construirSyncKey(record) {
-    return [
-        supabaseUserId || '',
-        record.module || '',
-        record.template_type || '',
-        record.id_mostrado || '',
-        record.tipo_falla || '',
-        record.incidencia || '',
-        record.ot || '',
-        record.cs || ''
-    ].join('|').toUpperCase();
-}
-
-function limpiarHistorialesLocales() {
-    var suffix = supabaseUserId ? '_' + supabaseUserId : '';
-    [
-        'historialDatos' + suffix,
-        'historialServiceNow' + suffix,
-        'historialATPATC' + suffix,
-        'historialAverias' + suffix,
-        getSyncQueueKey()
-    ].forEach(function(key) { localStorage.removeItem(key); });
-    historialDatos = [];
-    casosGuardadosEnHistorial.clear();
-    var historialKey = supabaseUserId ? 'historialDatos_' + supabaseUserId : 'historialDatos';
-    localStorage.setItem(historialKey, JSON.stringify([]));
-    try {
-        var iframe = document.getElementById('moduleIframe');
-        if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'CLEAR_LOCAL_HISTORIES' }, '*');
-        var nestedIframe = document.getElementById('nestedModuleIframe');
-        if (nestedIframe && nestedIframe.contentWindow) nestedIframe.contentWindow.postMessage({ type: 'CLEAR_LOCAL_HISTORIES' }, '*');
-    } catch (e) {}
-}
-
-function procesarComandosAdmin() {
-    if (!supabaseClient) return;
-    asegurarSesionSupabase().then(function(authOk) {
-        if (!authOk || !supabaseUserId) return;
-        var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
-        var lastSeen = localStorage.getItem(markerKey) || '';
-        supabaseClient
-            .from('admin_sync_commands')
-            .select('id, command_type, payload, created_at')
-            .eq('is_active', true)
-            .order('created_at', { ascending: true })
-            .then(function(result) {
-                if (result.error || !result.data) return;
-                result.data.forEach(function(cmd) {
-                    if (lastSeen && cmd.created_at <= lastSeen) return;
-                    if (cmd.command_type === 'sync_histories') {
-                        sincronizarTodosHistoriales();
-                    }
-                    if (cmd.command_type === 'clear_histories') {
-                        limpiarHistorialesLocales();
-                    }
-                    lastSeen = cmd.created_at;
-                });
-                if (lastSeen) localStorage.setItem(markerKey, lastSeen);
-            });
-    });
-}
-
-function flushSyncQueue() {
-    if (!supabaseClient || isFlushingSyncQueue) return Promise.resolve();
-    leerPuenteSesion();
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) return Promise.resolve();
-            return flushSyncQueue();
-        });
-    }
-
-    var ejecutar = function() {
-        var queue = cargarColaSync();
-        if (!queue.length) return Promise.resolve();
-
-        var current = queue[0];
-        return supabaseClient.from('records').insert(current).then(function(result) {
-            if (!result.error) {
-                queue.shift();
-                guardarColaSync(queue);
-                return ejecutar();
-            }
-            var duplicate = result.error.code === '23505' || /duplicate/i.test(result.error.message || '');
-            if (duplicate) {
-                queue.shift();
-                guardarColaSync(queue);
-                return ejecutar();
-            }
-            console.warn('⚠️ Sync pendiente:', result.error.message);
-            return Promise.resolve();
-        }).catch(function(error) {
-            console.warn('⚠️ Sync pendiente:', error && error.message ? error.message : error);
-            return Promise.resolve();
-        });
-    };
-
-    isFlushingSyncQueue = true;
-    return ejecutar().then(function(result) {
-        isFlushingSyncQueue = false;
-        return result;
-    }, function(error) {
-        isFlushingSyncQueue = false;
-        return Promise.reject(error);
-    });
-}
-
-function iniciarAutomatizacionSync() {
-    if (syncIntervalId) clearInterval(syncIntervalId);
-
-    var ejecutarCicloSync = function() {
-        leerPuenteSesion();
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk) return;
-            flushSyncQueue();
-            procesarComandosAdmin();
-        });
-    };
-
-    syncIntervalId = setInterval(function() {
-        ejecutarCicloSync();
-    }, 30000);
-
-    if (syncListenersAttached) return;
-
-    window.addEventListener('online', function() {
-        ejecutarCicloSync();
-    });
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            ejecutarCicloSync();
-        }
-    });
-    syncListenersAttached = true;
-}
 
 // ============================================
 // SUPABASE INITIALIZATION
 // ============================================
 function initSupabase() {
-    leerPuenteSesion();
     var params = new URLSearchParams(window.location.search);
     var agentName = params.get('agentName');
     var userId = params.get('userId');
     var sbUrl = params.get('supabaseUrl');
     var sbKey = params.get('supabaseKey');
-
-    if (!agentName && nombreAgente) agentName = nombreAgente;
-    if (!userId && supabaseUserId) userId = supabaseUserId;
-
-    if (!sbUrl && window.location.protocol === 'file:') {
-        sbUrl = 'https://ufrmotkqquwbujppgjlp.supabase.co';
-    }
-    if (!sbKey && window.location.protocol === 'file:') {
-        sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcm1vdGtxcXV3YnVqcHBnamxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODk5NzYsImV4cCI6MjA4OTM2NTk3Nn0.OWpONCrfufT937Gh3fgx-iM8i5Ax28ZTWgngOT9Ya7I';
-    }
-
-    supabaseUrlActual = sbUrl || supabaseUrlActual;
-    supabaseKeyActual = sbKey || supabaseKeyActual;
-    var backup = leerBackupSesion();
-    if (backup) actualizarCredencialesSesion(backup);
 
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
@@ -4402,18 +3887,9 @@ function initSupabase() {
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
-        recrearClienteSupabaseSiEsPosible();
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
-        iniciarAutomatizacionSync();
-        asegurarSesionSupabase().then(function(authOk) {
-            if (authOk && supabaseUserId) {
-                console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
-                flushSyncQueue();
-                procesarComandosAdmin();
-            } else if (userId) {
-                console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
-            }
-        });
+        // Cargar base de IPs desde la base de datos para mantener sincronización
         cargarIPsDesdeDB();
     }
 }
@@ -4441,82 +3917,10 @@ function cargarIPsDesdeDB() {
     });
 }
 
-function sincronizarTodosHistoriales() {
-    leerPuenteSesion();
-    if (!supabaseClient) {
-        mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
-        return;
-    }
-
-    if (!supabaseUserId) {
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
-                return;
-            }
-            sincronizarTodosHistoriales();
-        });
-        return;
-    }
-    
-    // 1. Creación
-    var histCreacion = leerHistorialLocal('historialDatos');
-    if (!histCreacion.length && Array.isArray(historialDatos) && historialDatos.length) {
-        histCreacion = historialDatos.slice();
-    }
-    histCreacion.forEach(function(caso) {
-        guardarEnSupabase('CREACION', caso.tipo || '', caso.idMostrado || caso.id || '', caso.falla || '', caso.plantilla || caso.observacion || '', {
-            incidencia: caso.incidencia || '',
-            ot: caso.ot || '',
-            cs: caso.cs || ''
-        });
-    });
-    
-    // 2. Averías
-    var histAverias = leerHistorialLocal('historialAverias');
-    histAverias.forEach(function(h) {
-        guardarEnSupabase('AVERIAS', h.platform || '', h.formulario || '', h.category || '', h.contenido || '', {});
-    });
-    
-    // 3. ATP
-    var histATP = leerHistorialLocal('historialATPATC');
-    histATP.forEach(function(h) {
-        guardarEnSupabase('ATP', h.tipo || '', h.jira || '', '', h.contenido || '', {
-            incidencia: h.inc || '',
-            ot: h.ot || ''
-        });
-    });
-    
-    // 4. Service Now
-    var histSN = leerHistorialLocal('historialServiceNow');
-    histSN.forEach(function(h) {
-        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
-    });
-    
-    var total = histCreacion.length + histAverias.length + histATP.length + histSN.length;
-    if (total === 0) {
-        mostrarToast('No hay registros en el historial para sincronizar', 'alerta');
-    } else {
-        mostrarToast('Sincronizando ' + total + ' registros de todos los módulos...', 'exito');
-        flushSyncQueue();
-    }
-}
-
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
-    leerPuenteSesion();
-    if (!supabaseClient) {
+    if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
-        return Promise.resolve();
-    }
-
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                console.warn('⚠️ Sin sesión activa para sincronizar, registro queda en cola local');
-                return Promise.resolve();
-            }
-            return guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields);
-        });
+        return;
     }
 
     var record = {
@@ -4535,56 +3939,28 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
         if (extraFields.cs) record.cs = extraFields.cs;
     }
 
-    record.sync_key = construirSyncKey(record);
-    var queue = cargarColaSync();
-    if (!queue.some(function(item) { return item.sync_key === record.sync_key; })) {
-        queue.push(record);
-        guardarColaSync(queue);
-    }
-    return flushSyncQueue();
+    return supabaseClient.from('records').insert(record).then(function(result) {
+        if (result.error) {
+            console.warn('⚠️ Error guardando en DB:', result.error.message);
+            throw result.error;
+        } else {
+            console.log('✅ Registro guardado en base de datos:', module);
+        }
+        return result;
+    });
 }
 
 function obtenerSesionModulo() {
     return {
         type: 'SET_SESSION',
         nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase(),
-        userId: supabaseUserId || '',
-        sessionBackup: leerBackupSesion()
+        userId: supabaseUserId || ''
     };
 }
 
 function enviarSesionAlIframe(targetWindow) {
     if (!targetWindow) return;
     targetWindow.postMessage(obtenerSesionModulo(), '*');
-}
-
-function obtenerQueryActual() {
-    try {
-        if (typeof window.__STANDALONE_QUERY === 'string' && window.__STANDALONE_QUERY) {
-            return window.__STANDALONE_QUERY;
-        }
-    } catch (e) {}
-    return window.location.search || '';
-}
-
-function mostrarPantallaBienvenida(nombre) {
-    var nombreFinal = String(nombre || nombreAgente || localStorage.getItem('nombreAgente') || '').trim().toUpperCase();
-    var bienvenida = document.getElementById('pantallaBienvenida');
-    var textoBienvenida = document.getElementById('textoBienvenida');
-    var pantallaLogin = document.getElementById('pantallaLogin');
-
-    if (!bienvenida || !nombreFinal) return false;
-
-    nombreAgente = nombreFinal;
-    try { localStorage.setItem('nombreAgente', nombreAgente); } catch (e) {}
-
-    if (pantallaLogin) pantallaLogin.style.display = 'none';
-    bienvenida.style.display = 'block';
-    if (textoBienvenida) {
-        textoBienvenida.textContent = 'BIENVENIDO, ' + nombreAgente;
-    }
-
-    return true;
 }
 
 // ============================================
@@ -4595,19 +3971,24 @@ document.addEventListener('DOMContentLoaded', () => {
     initSupabase();
 
     // Check if coming from React app (URL params)
-    var params = new URLSearchParams(obtenerQueryActual());
+    var params = new URLSearchParams(window.location.search);
     var agentFromUrl = params.get('agentName');
-    var restoredName = agentFromUrl || nombreAgente || localStorage.getItem('nombreAgente') || '';
     
-    if (restoredName) {
-        mostrarPantallaBienvenida(decodeURIComponent(restoredName));
-    }
-
-    window.setTimeout(function() {
-        if (!document.getElementById('pantallaBienvenida')?.style.display) {
-            mostrarPantallaBienvenida(nombreAgente || localStorage.getItem('nombreAgente') || params.get('agentName') || '');
+    if (agentFromUrl && supabaseUserId) {
+        // Coming from React login - skip internal login
+        nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
+        localStorage.setItem('nombreAgente', nombreAgente);
+        document.getElementById('pantallaBienvenida').style.display = 'block';
+        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
+    } else {
+        // Try from localStorage as fallback
+        var savedName = localStorage.getItem('nombreAgente');
+        if (savedName) {
+            nombreAgente = savedName.toUpperCase();
+            document.getElementById('pantallaBienvenida').style.display = 'block';
+            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
         }
-    }, 150);
+    }
     
     // Cargar fondo guardado
     const fondoGuardado = localStorage.getItem('fondoPersonalizado');
@@ -6487,9 +5868,6 @@ function guardarRechazoEnHistorial(template, textoFinal) {
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
-        
-        // Incrementar contador total global
-        incrementarContadorTotal('RECHAZO_' + claveUnica);
     }
 }
 
@@ -7005,9 +6383,6 @@ function guardarGDMEnHistorial(textoFinal) {
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
-        
-        // Incrementar contador total global
-        incrementarContadorTotal('RECHAZO_GDM_' + claveUnica);
     }
 }
 
@@ -8558,26 +7933,6 @@ function cerrarModuloAnidado() {
 
 // Listen for messages from child iframes
 window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'SET_SESSION') {
-        if (e.data.nombreAgente) {
-            nombreAgente = String(e.data.nombreAgente).toUpperCase();
-            localStorage.setItem('nombreAgente', nombreAgente);
-            mostrarPantallaBienvenida(nombreAgente);
-        }
-        if (e.data.userId) {
-            supabaseUserId = e.data.userId;
-        }
-        actualizarPuenteSesion(e.data.sessionBackup || leerBackupSesion());
-        if (e.data.sessionBackup) {
-            aplicarSesionRecibida(e.data.sessionBackup).then(function(ok) {
-                if (ok) {
-                    flushSyncQueue();
-                    procesarComandosAdmin();
-                }
-            });
-        }
-        return;
-    }
     if (e.data === 'cerrarModulo') {
         cerrarModulo();
     }
@@ -8609,15 +7964,135 @@ window.addEventListener('message', function(e) {
         if (d['CS']) extraFields.cs = d['CS'];
         guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
     }
-    if (e.data && e.data.type === 'SYNC_ALL_HISTORIES') {
-        sincronizarTodosHistoriales();
+});
+</script>
+
+
+<!-- STANDALONE LOGIN SYSTEM -->
+<div id="standaloneLogin" style="display:none; position:fixed; inset:0; z-index:99999; background:#000; display:flex; justify-content:center; align-items:center;">
+  <div style="background:rgba(0,0,0,0.8); border:1px solid rgba(0,200,255,0.3); border-radius:16px; padding:40px; width:380px; text-align:center; box-shadow:0 0 60px rgba(0,200,255,0.15);">
+    <h1 style="font-size:1.6rem; margin-bottom:8px; color:#fff; font-weight:700;">Generador de Plantilla</h1>
+    <p style="color:rgba(0,200,255,0.6); margin-bottom:24px; font-size:0.9rem;">Sistema de Acceso</p>
+    <input id="loginNit" type="text" placeholder="NIT / Usuario" style="width:100%; padding:12px 16px; margin-bottom:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(0,200,255,0.2); border-radius:8px; color:#fff; font-size:1rem; outline:none;" autofocus>
+    <div style="position:relative;">
+      <input id="loginPass" type="password" placeholder="Contraseña" style="width:100%; padding:12px 16px; padding-right:48px; margin-bottom:16px; background:rgba(255,255,255,0.05); border:1px solid rgba(0,200,255,0.2); border-radius:8px; color:#fff; font-size:1rem; outline:none;">
+      <button onclick="var p=document.getElementById('loginPass'); p.type=p.type==='password'?'text':'password';" style="position:absolute; right:12px; top:12px; background:none; border:none; color:rgba(0,200,255,0.6); cursor:pointer; font-size:1.2rem;">👁</button>
+    </div>
+    <button id="loginBtn" onclick="standaloneDoLogin()" style="width:100%; padding:14px; background:linear-gradient(135deg,#00c8ff,#0080ff); border:none; border-radius:8px; color:#fff; font-size:1rem; font-weight:600; cursor:pointer; letter-spacing:0.5px;">Ingresar</button>
+    <p id="loginError" style="color:#f44; margin-top:12px; font-size:0.85rem; display:none;"></p>
+    <div style="color:rgba(255,255,255,0.3); margin-top:20px; font-size:0.75rem;">v3.0 · Standalone · By Jhoan_Gordon</div>
+  </div>
+</div>
+<script>
+var STANDALONE_SUPABASE_URL = "https://ufrmotkqquwbujppgjlp.supabase.co";
+var STANDALONE_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcm1vdGtxcXV3YnVqcHBnamxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODk5NzYsImV4cCI6MjA4OTM2NTk3Nn0.OWpONCrfufT937Gh3fgx-iM8i5Ax28ZTWgngOT9Ya7I";
+var standaloneSupaClient = null;
+
+function initStandaloneLogin() {
+    if (typeof window.supabase !== 'undefined') {
+        standaloneSupaClient = window.supabase.createClient(STANDALONE_SUPABASE_URL, STANDALONE_SUPABASE_KEY);
     }
-    if (e.data && e.data.type === 'SYNC_PENDING_RECORDS') {
-        flushSyncQueue();
+    // Check if already logged in
+    if (standaloneSupaClient) {
+        standaloneSupaClient.auth.getSession().then(function(result) {
+            if (result.data && result.data.session) {
+                var userId = result.data.session.user.id;
+                standaloneSupaClient.from('agents').select('name').eq('id', userId).maybeSingle().then(function(agentResult) {
+                    if (agentResult.data) {
+                        standaloneLoginSuccess(agentResult.data.name, userId);
+                    } else {
+                        showStandaloneLogin();
+                    }
+                });
+            } else {
+                showStandaloneLogin();
+            }
+        });
+    } else {
+        showStandaloneLogin();
     }
-    if (e.data && e.data.type === 'CLEAR_LOCAL_HISTORIES') {
-        limpiarHistorialesLocales();
+}
+
+function showStandaloneLogin() {
+    document.getElementById('standaloneLogin').style.display = 'flex';
+    document.getElementById('pantallaBienvenida').style.display = 'none';
+}
+
+function standaloneDoLogin() {
+    var nit = document.getElementById('loginNit').value.trim();
+    var pass = document.getElementById('loginPass').value;
+    var errEl = document.getElementById('loginError');
+    var btn = document.getElementById('loginBtn');
+    
+    if (!nit || !pass) { errEl.textContent = 'Ingrese NIT y contraseña'; errEl.style.display = 'block'; return; }
+    
+    btn.textContent = 'Verificando...';
+    btn.disabled = true;
+    errEl.style.display = 'none';
+    
+    var email = nit.toLowerCase() + '@agent.cope.local';
+    standaloneSupaClient.auth.signInWithPassword({ email: email, password: pass }).then(function(result) {
+        if (result.error) {
+            errEl.textContent = 'NIT o contraseña incorrectos';
+            errEl.style.display = 'block';
+            btn.textContent = 'Ingresar';
+            btn.disabled = false;
+            return;
+        }
+        var userId = result.data.session.user.id;
+        standaloneSupaClient.from('agents').select('name').eq('id', userId).maybeSingle().then(function(agentResult) {
+            if (agentResult.data) {
+                standaloneLoginSuccess(agentResult.data.name, userId);
+            } else {
+                errEl.textContent = 'Usuario no registrado en la plataforma';
+                errEl.style.display = 'block';
+                btn.textContent = 'Ingresar';
+                btn.disabled = false;
+                standaloneSupaClient.auth.signOut();
+            }
+        });
+    });
+    
+    // Enter key support
+    document.getElementById('loginPass').onkeydown = function(e) { if (e.key === 'Enter') standaloneDoLogin(); };
+    document.getElementById('loginNit').onkeydown = function(e) { if (e.key === 'Enter') document.getElementById('loginPass').focus(); };
+}
+
+function standaloneLoginSuccess(name, userId) {
+    document.getElementById('standaloneLogin').style.display = 'none';
+    nombreAgente = name.toUpperCase();
+    supabaseUserId = userId;
+    supabaseClient = standaloneSupaClient;
+    localStorage.setItem('nombreAgente', nombreAgente);
+    
+    document.getElementById('pantallaBienvenida').style.display = 'block';
+    document.getElementById('textoBienvenida').textContent = 'BIENVENIDO, ' + nombreAgente;
+    
+    // Load IP base from DB
+    cargarIPsDesdeDB();
+    
+    // Load user-specific historial
+    var historialKey = 'historialDatos_' + supabaseUserId;
+    var historialGuardado = localStorage.getItem(historialKey);
+    if (historialGuardado) {
+        historialDatos = JSON.parse(historialGuardado);
+        historialDatos.forEach(function(caso) {
+            if (caso.claveUnica) casosGuardadosEnHistorial.add(caso.claveUnica);
+        });
     }
+}
+
+// Override DOMContentLoaded init to add standalone login
+var _originalInit = null;
+document.addEventListener('DOMContentLoaded', function() {
+    // Init standalone login after a small delay to let original init run
+    setTimeout(function() {
+        var params = new URLSearchParams(window.location.search);
+        if (!params.get('agentName')) {
+            // Not coming from React app - show standalone login
+            initStandaloneLogin();
+        }
+    }, 100);
 });
 </script>
 
