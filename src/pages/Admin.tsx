@@ -41,6 +41,29 @@ interface IpEntry {
 }
 
 const PROTECTED_NITS = ["admincope", "1143330990"];
+const INVALID_SERVICE_NOW_VALUES = new Set(["", "-", "N/A", "S/N", "SIN DATO", "NULL", "UNDEFINED"]);
+
+const isServiceNowModule = (module: string | null | undefined) => {
+  const normalized = String(module || "").trim().toUpperCase();
+  return normalized === "SERVICE NOW" || normalized === "SERVICE_NOW";
+};
+
+const normalizeServiceNowValue = (value: string | null | undefined) => {
+  const cleaned = String(value || "").trim();
+  return INVALID_SERVICE_NOW_VALUES.has(cleaned.toUpperCase()) ? "" : cleaned;
+};
+
+const extractServiceNowFromObservation = (observation: string | null | undefined) => {
+  const match = String(observation || "").match(/SERVICE NOW\s*:\s*([^\n\r]+)/i);
+  return normalizeServiceNowValue(match?.[1] || "");
+};
+
+const getEffectiveCs = (record: Pick<RecordRow, "module" | "cs" | "id_mostrado" | "observation">) => {
+  const direct = normalizeServiceNowValue(record.cs);
+  if (direct) return direct;
+  if (!isServiceNowModule(record.module)) return "";
+  return normalizeServiceNowValue(record.id_mostrado) || extractServiceNowFromObservation(record.observation);
+};
 
 const scrollClass = "overflow-x-auto";
 const scrollStyle: React.CSSProperties = {};
@@ -126,7 +149,7 @@ const Admin = () => {
   const filteredRecords = records.filter(r => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    const effectiveCs = r.cs || (r.module === "SERVICE_NOW" ? r.id_mostrado : "") || "";
+    const effectiveCs = getEffectiveCs(r);
     return (r.incidencia || "").toLowerCase().includes(q) ||
            (r.ot || "").toLowerCase().includes(q) ||
            effectiveCs.toLowerCase().includes(q) ||
@@ -247,7 +270,7 @@ const Admin = () => {
 <Cell><Data ss:Type="String">${esc(r.id_mostrado)}</Data></Cell>
 <Cell><Data ss:Type="String">${esc(r.incidencia)}</Data></Cell>
 <Cell><Data ss:Type="String">${esc(r.ot)}</Data></Cell>
-<Cell><Data ss:Type="String">${esc(r.cs)}</Data></Cell>
+<Cell><Data ss:Type="String">${esc(getEffectiveCs(r))}</Data></Cell>
 <Cell><Data ss:Type="String">${esc(r.tipo_falla)}</Data></Cell>
 <Cell><Data ss:Type="String">${esc(r.observation)}</Data></Cell>
 </Row>`;
@@ -309,7 +332,7 @@ const Admin = () => {
     if (mod === "CREACION") return "bg-green-600/20 text-green-400";
     if (mod === "AVERIA") return "bg-orange-600/20 text-orange-400";
     if (mod === "ATP") return "bg-yellow-600/20 text-yellow-400";
-    if (mod === "SERVICE NOW") return "bg-blue-600/20 text-blue-400";
+    if (mod === "SERVICE NOW" || mod === "SERVICE_NOW") return "bg-blue-600/20 text-blue-400";
     if (mod.includes("RECHAZO")) return "bg-red-600/20 text-red-400";
     return "bg-zinc-600/20 text-zinc-400";
   };
@@ -494,7 +517,7 @@ const Admin = () => {
                         <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
-                        <td className="p-2 text-xs font-mono text-cyan-400">{r.cs || (r.module === "SERVICE_NOW" ? r.id_mostrado : null) || "—"}</td>
+                        <td className="p-2 text-xs font-mono text-cyan-400">{getEffectiveCs(r) || "—"}</td>
                         <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
                         <td className="p-2 flex items-center gap-1">
                           {r.observation ? (

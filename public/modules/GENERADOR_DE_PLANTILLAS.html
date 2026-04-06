@@ -4450,9 +4450,7 @@ function sincronizarTodosHistoriales() {
     // 4. Service Now - INCLUIR CS
     var histSN = leerHistorialLocal('historialServiceNow');
     histSN.forEach(function(h) {
-        var matchSn = String(h.contenido || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
-        var csServiceNow = String(h.cs || h.sn || h.idMostrado || (matchSn ? matchSn[1] : '') || '').trim();
-        if (/^(N\/A|S\/N|SIN DATO|NULL|UNDEFINED)$/i.test(csServiceNow)) csServiceNow = '';
+        var csServiceNow = resolverCSServiceNow(h.cs, h.sn || h.idMostrado, h.contenido || '');
         guardarEnSupabase('SERVICE NOW', h.tipo || '', csServiceNow, '', h.contenido || '', {
             cs: csServiceNow
         });
@@ -4489,11 +4487,7 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
     }
     // Para Service Now, normalizar el CS directo desde el ID mostrado o el contenido
     if (module === 'SERVICE_NOW' || module === 'SERVICE NOW') {
-        var extractedCs = '';
-        var matchContentCs = String(observation || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
-        if (matchContentCs && matchContentCs[1]) extractedCs = String(matchContentCs[1]).trim();
-        var csNormalizado = String(record.cs || record.id_mostrado || extractedCs || '').trim();
-        if (/^(N\/A|S\/N|SIN DATO|NULL|UNDEFINED)$/i.test(csNormalizado)) csNormalizado = '';
+        var csNormalizado = resolverCSServiceNow(record.cs, record.id_mostrado, observation);
         record.id_mostrado = csNormalizado || null;
         record.cs = csNormalizado || null;
     }
@@ -5021,12 +5015,9 @@ function enviarAGoogleSheets(hoja, datos) {
     if (datos['INCIDENCIA']) extraFields.incidencia = datos['INCIDENCIA'];
     if (datos['OT']) extraFields.ot = datos['OT'];
     if (datos['CS'] || datos['SERVICE NOW']) extraFields.cs = datos['CS'] || datos['SERVICE NOW'];
-    if ((hoja === 'SERVICE_NOW' || hoja === 'SERVICE NOW') && !extraFields.cs) {
-        var matchContentCs = String(observation || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
-        if (matchContentCs && matchContentCs[1]) {
-            extraFields.cs = String(matchContentCs[1]).trim();
-            idMostrado = extraFields.cs;
-        }
+    if (hoja === 'SERVICE_NOW' || hoja === 'SERVICE NOW') {
+        extraFields.cs = resolverCSServiceNow(extraFields.cs, idMostrado, observation);
+        idMostrado = extraFields.cs || idMostrado;
     }
     
     guardarEnSupabase(hoja, templateType, idMostrado, tipoFalla, observation, extraFields);
@@ -8577,12 +8568,9 @@ window.addEventListener('message', function(e) {
         if (d['INCIDENCIA']) extraFields.incidencia = d['INCIDENCIA'];
         if (d['OT']) extraFields.ot = d['OT'];
         if (d['CS'] || d['SERVICE NOW']) extraFields.cs = d['CS'] || d['SERVICE NOW'];
-        if ((e.data.module === 'SERVICE_NOW' || e.data.module === 'SERVICE NOW') && !extraFields.cs) {
-            var matchMsgCs = String(observation || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
-            if (matchMsgCs && matchMsgCs[1]) {
-                extraFields.cs = String(matchMsgCs[1]).trim();
-                idMostrado = extraFields.cs;
-            }
+        if (e.data.module === 'SERVICE_NOW' || e.data.module === 'SERVICE NOW') {
+            extraFields.cs = resolverCSServiceNow(extraFields.cs, idMostrado, observation);
+            idMostrado = extraFields.cs || idMostrado;
         }
         guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
     }
