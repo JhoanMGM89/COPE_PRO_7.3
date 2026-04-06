@@ -3941,7 +3941,7 @@ function procesarComandosAdmin() {
             result.data.forEach(function(cmd) {
                 if (lastSeen && cmd.created_at <= lastSeen) return;
                 if (cmd.command_type === 'sync_histories') {
-                    flushSyncQueue();
+                    sincronizarTodosHistoriales();
                 }
                 if (cmd.command_type === 'clear_histories') {
                     limpiarHistorialesLocales();
@@ -4012,7 +4012,29 @@ function initSupabase() {
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
         supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
-        // Cargar base de IPs desde la base de datos para mantener sincronización
+        // Restore auth session so auth.uid() works for RLS
+        supabaseClient.auth.getSession().then(function(res) {
+            var s = res.data && res.data.session;
+            if (s && s.user) {
+                supabaseUserId = s.user.id;
+                console.log('✅ Auth session restored, uid:', supabaseUserId);
+                iniciarAutomatizacionSync();
+                flushSyncQueue();
+            } else if (userId) {
+                // Try to refresh or use stored token
+                supabaseClient.auth.refreshSession().then(function(ref) {
+                    var rs = ref.data && ref.data.session;
+                    if (rs && rs.user) {
+                        supabaseUserId = rs.user.id;
+                        console.log('✅ Auth session refreshed, uid:', supabaseUserId);
+                        iniciarAutomatizacionSync();
+                        flushSyncQueue();
+                    } else {
+                        console.warn('⚠️ No auth session available, sync will be local only');
+                    }
+                });
+            }
+        });
         cargarIPsDesdeDB();
     }
 }
@@ -6045,6 +6067,9 @@ function guardarRechazoEnHistorial(template, textoFinal) {
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
+        
+        // Incrementar contador total global
+        incrementarContadorTotal('RECHAZO_' + claveUnica);
     }
 }
 
@@ -6560,6 +6585,9 @@ function guardarGDMEnHistorial(textoFinal) {
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
+        
+        // Incrementar contador total global
+        incrementarContadorTotal('RECHAZO_GDM_' + claveUnica);
     }
 }
 
