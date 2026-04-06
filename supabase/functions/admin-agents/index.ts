@@ -5,6 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const INVALID_SERVICE_NOW_VALUES = new Set(["", "-", "N/A", "S/N", "SIN DATO", "NULL", "UNDEFINED"]);
+
+const isServiceNowModule = (module?: string | null) => {
+  const normalized = String(module || "").trim().toUpperCase();
+  return normalized === "SERVICE NOW" || normalized === "SERVICE_NOW";
+};
+
+const normalizeServiceNowValue = (value?: string | null) => {
+  const cleaned = String(value || "").trim();
+  return INVALID_SERVICE_NOW_VALUES.has(cleaned.toUpperCase()) ? "" : cleaned;
+};
+
+const extractServiceNowFromObservation = (observation?: string | null) => {
+  const match = String(observation || "").match(/SERVICE NOW\s*:\s*([^\n\r]+)/i);
+  return normalizeServiceNowValue(match?.[1] || "");
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -242,10 +259,22 @@ Deno.serve(async (req) => {
         agentMap = new Map((agentsData || []).map((agent) => [agent.id, { name: agent.name, nit: agent.nit }]));
       }
 
-      const records = (rawRecords || []).map((record) => ({
-        ...record,
-        agents: agentMap.get(record.agent_id) || null,
-      }));
+      const records = (rawRecords || []).map((record) => {
+        const normalizedCs = isServiceNowModule(record.module)
+          ? normalizeServiceNowValue(record.cs) || normalizeServiceNowValue(record.id_mostrado) || extractServiceNowFromObservation(record.observation)
+          : record.cs;
+
+        const normalizedId = isServiceNowModule(record.module)
+          ? normalizeServiceNowValue(record.id_mostrado) || normalizedCs || null
+          : record.id_mostrado;
+
+        return {
+          ...record,
+          id_mostrado: normalizedId,
+          cs: normalizedCs || null,
+          agents: agentMap.get(record.agent_id) || null,
+        };
+      });
 
       return new Response(JSON.stringify({ records }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
