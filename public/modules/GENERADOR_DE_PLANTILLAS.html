@@ -8296,6 +8296,46 @@ document.getElementById('consultaOverlay').addEventListener('click', function(e)
 // ============================================
 // MÓDULOS IFRAME OVERLAY
 // ============================================
+function obtenerModulosEmbebidos() {
+    try {
+        if (typeof __modulosEmbebidos !== 'undefined' && __modulosEmbebidos) return __modulosEmbebidos;
+    } catch (e) {}
+    try {
+        if (window.__EMBEDDED_MODULES) return window.__EMBEDDED_MODULES;
+    } catch (e) {}
+    try {
+        if (window.parent && window.parent !== window && window.parent.__EMBEDDED_MODULES) return window.parent.__EMBEDDED_MODULES;
+    } catch (e) {}
+    try {
+        if (window.top && window.top !== window && window.top.__EMBEDDED_MODULES) return window.top.__EMBEDDED_MODULES;
+    } catch (e) {}
+    return null;
+}
+
+function cargarModuloEnIframe(iframeRef, modulo) {
+    if (!iframeRef || !modulo) return false;
+
+    var modulosEmbebidos = obtenerModulosEmbebidos();
+    if (!modulosEmbebidos) return false;
+
+    var claveModulo = String(modulo).split('/').pop();
+    var contenido = modulosEmbebidos[modulo] || modulosEmbebidos[claveModulo];
+    if (!contenido) return false;
+
+    try {
+        var html = contenido;
+        if (typeof contenido === 'string' && contenido.indexOf('<!DOCTYPE') !== 0 && contenido.indexOf('<html') === -1) {
+            var decoded = atob(contenido);
+            html = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, function(c) { return c.charCodeAt(0); }));
+        }
+        iframeRef.srcdoc = html;
+        return true;
+    } catch (e) {
+        console.error('Error loading embedded module:', modulo, e);
+        return false;
+    }
+}
+
 let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
 var __moduleCache = {}; // Cache iframes to avoid reloading
 
@@ -8336,7 +8376,9 @@ function abrirModulo(modulo, params) {
             };
         }
         
-        nestedIframe.src = modulo;
+        if (!cargarModuloEnIframe(nestedIframe, modulo)) {
+            nestedIframe.src = modulo;
+        }
         nestedOverlay.classList.add('activo');
         return;
     }
@@ -8370,13 +8412,17 @@ function abrirModulo(modulo, params) {
             }
             enviarSesionAlIframe(iframe.contentWindow);
         };
-        iframe.src = modulo;
+        if (!cargarModuloEnIframe(iframe, modulo)) {
+            iframe.src = modulo;
+        }
         iframe.setAttribute('data-module', modulo);
     } else {
         // Module is cached - instant switch without reload
         var currentSrc = iframe.getAttribute('data-module') || '';
         if (currentSrc !== modulo) {
-            iframe.src = modulo;
+            if (!cargarModuloEnIframe(iframe, modulo)) {
+                iframe.src = modulo;
+            }
             iframe.setAttribute('data-module', modulo);
         }
         
