@@ -3954,6 +3954,35 @@ function leerBackupSesion() {
     return null;
 }
 
+function aplicarSesionRecibida(sessionBackup) {
+    if (!sessionBackup || !sessionBackup.access_token || !sessionBackup.refresh_token) {
+        return Promise.resolve(false);
+    }
+
+    guardarBackupSesion(sessionBackup);
+
+    if (!supabaseClient) {
+        return Promise.resolve(false);
+    }
+
+    return supabaseClient.auth.setSession({
+        access_token: sessionBackup.access_token,
+        refresh_token: sessionBackup.refresh_token
+    }).then(function(result) {
+        var restored = result && result.data ? result.data.session : null;
+        if (restored && restored.user) {
+            supabaseUserId = restored.user.id;
+            guardarBackupSesion(restored);
+            console.log('✅ Sesión aplicada desde la ventana principal, uid:', supabaseUserId);
+            return true;
+        }
+        return false;
+    }).catch(function(error) {
+        console.warn('⚠️ No fue posible aplicar la sesión recibida:', error && error.message ? error.message : error);
+        return false;
+    });
+}
+
 function asegurarSesionSupabase() {
     if (!supabaseClient) return Promise.resolve(false);
     if (authRestorePromise) return authRestorePromise;
@@ -4025,6 +4054,21 @@ function cargarColaSync() {
 
 function guardarColaSync(queue) {
     localStorage.setItem(getSyncQueueKey(), JSON.stringify(queue));
+}
+
+function leerHistorialLocal(keyBase) {
+    var keys = [];
+    if (supabaseUserId) keys.push(keyBase + '_' + supabaseUserId);
+    keys.push(keyBase);
+
+    for (var i = 0; i < keys.length; i++) {
+        try {
+            var parsed = JSON.parse(localStorage.getItem(keys[i]) || '[]');
+            if (Array.isArray(parsed) && parsed.length) return parsed;
+        } catch (e) {}
+    }
+
+    return [];
 }
 
 function construirSyncKey(record) {
@@ -4230,10 +4274,11 @@ function sincronizarTodosHistoriales() {
         return;
     }
     
-    var suffix = supabaseUserId ? '_' + supabaseUserId : '';
-    
     // 1. Creación
-    var histCreacion = historialDatos || [];
+    var histCreacion = leerHistorialLocal('historialDatos');
+    if (!histCreacion.length && Array.isArray(historialDatos) && historialDatos.length) {
+        histCreacion = historialDatos.slice();
+    }
     histCreacion.forEach(function(caso) {
         guardarEnSupabase('CREACION', caso.tipo || '', caso.idMostrado || caso.id || '', caso.falla || '', caso.plantilla || caso.observacion || '', {
             incidencia: caso.incidencia || '',
@@ -4243,15 +4288,13 @@ function sincronizarTodosHistoriales() {
     });
     
     // 2. Averías
-    var histAveriasKey = supabaseUserId ? 'historialAverias_' + supabaseUserId : 'historialAverias';
-    var histAverias = JSON.parse(localStorage.getItem(histAveriasKey) || localStorage.getItem('historialAverias') || '[]');
+    var histAverias = leerHistorialLocal('historialAverias');
     histAverias.forEach(function(h) {
         guardarEnSupabase('AVERIAS', h.platform || '', h.formulario || '', h.category || '', h.contenido || '', {});
     });
     
     // 3. ATP
-    var histATPKey = supabaseUserId ? 'historialATPATC_' + supabaseUserId : 'historialATPATC';
-    var histATP = JSON.parse(localStorage.getItem(histATPKey) || localStorage.getItem('historialATPATC') || '[]');
+    var histATP = leerHistorialLocal('historialATPATC');
     histATP.forEach(function(h) {
         guardarEnSupabase('ATP', h.tipo || '', h.jira || '', '', h.contenido || '', {
             incidencia: h.inc || '',
@@ -4260,8 +4303,7 @@ function sincronizarTodosHistoriales() {
     });
     
     // 4. Service Now
-    var histSNKey = supabaseUserId ? 'historialServiceNow_' + supabaseUserId : 'historialServiceNow';
-    var histSN = JSON.parse(localStorage.getItem(histSNKey) || localStorage.getItem('historialServiceNow') || '[]');
+    var histSN = leerHistorialLocal('historialServiceNow');
     histSN.forEach(function(h) {
         guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
     });
@@ -4322,7 +4364,8 @@ function obtenerSesionModulo() {
     return {
         type: 'SET_SESSION',
         nombreAgente: (nombreAgente || localStorage.getItem('nombreAgente') || 'GESTOR').toUpperCase(),
-        userId: supabaseUserId || ''
+        userId: supabaseUserId || '',
+        sessionBackup: leerBackupSesion()
     };
 }
 
@@ -8262,6 +8305,26 @@ function cerrarModuloAnidado() {
 
 // Listen for messages from child iframes
 window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'SET_SESSION') {
+        if (e.data.nombreAgente) {
+            nombreAgente = String(e.data.nombreAgente).toUpperCase();
+            localStorage.setItem('nombreAgente', nombreAgente);
+            var welcomeText = document.getElementById('textoBienvenida');
+            if (welcomeText) welcomeText.textContent = `BIENVENIDO, ${nombreAgente}`;
+        }
+        if (e.data.userId) {
+            supabaseUserId = e.data.userId;
+        }
+        if (e.data.sessionBackup) {
+            aplicarSesionRecibida(e.data.sessionBackup).then(function(ok) {
+                if (ok) {
+                    flushSyncQueue();
+                    procesarComandosAdmin();
+                }
+            });
+        }
+        return;
+    }
     if (e.data === 'cerrarModulo') {
         cerrarModulo();
     }
@@ -8292,6 +8355,9 @@ window.addEventListener('message', function(e) {
         if (d['OT']) extraFields.ot = d['OT'];
         if (d['CS']) extraFields.cs = d['CS'];
         guardarEnSupabase(e.data.module, templateType, idMostrado, tipoFalla, observation, extraFields);
+    }
+    if (e.data && e.data.type === 'SYNC_ALL_HISTORIES') {
+        sincronizarTodosHistoriales();
     }
     if (e.data && e.data.type === 'SYNC_PENDING_RECORDS') {
         flushSyncQueue();

@@ -1428,10 +1428,17 @@ function limpiarFormularioCompleto() {
 }
 
 function sincronizarAlPadre() {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'SYNC_ALL_HISTORIES' }, '*');
+        mostrarToast('Sincronizando registros de todos los módulos...');
+        return;
+    }
+
     if (historial.length === 0) {
         mostrarToast('No hay registros en el historial para sincronizar');
         return;
     }
+
     var enviados = 0;
     historial.forEach(function(h) {
         window.parent.postMessage({

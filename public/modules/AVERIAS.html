@@ -1832,6 +1832,12 @@
         }
 
         function sincronizarAlPadre() {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'SYNC_ALL_HISTORIES' }, '*');
+                showToast('Sincronizando registros de todos los módulos');
+                return;
+            }
+
             if (historialAverias.length === 0) {
                 showToast('No hay registros en el historial para sincronizar');
                 return;

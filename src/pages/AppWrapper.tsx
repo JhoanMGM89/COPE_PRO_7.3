@@ -13,6 +13,7 @@ const AppWrapper = () => {
   const { isReady, session } = useAuthReady();
   const hasEverLoggedIn = useRef(false);
   const lastSessionUserId = useRef<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     if (!isReady) return;
@@ -78,6 +79,39 @@ const AppWrapper = () => {
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const modulePath = `${import.meta.env.BASE_URL}modules/GENERADOR_DE_PLANTILLAS.html`;
   const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
+  const sessionBackup = session?.access_token && session?.refresh_token
+    ? { access_token: session.access_token, refresh_token: session.refresh_token }
+    : null;
+
+  const enviarSesionAlModulo = () => {
+    if (!iframeRef.current?.contentWindow || !agentName || !userId) return;
+
+    iframeRef.current.contentWindow.postMessage({
+      type: "SET_SESSION",
+      nombreAgente: agentName,
+      userId,
+      sessionBackup,
+    }, "*");
+  };
+
+  useEffect(() => {
+    if (!agentName || !userId || !sessionBackup) return;
+
+    const syncSession = () => enviarSesionAlModulo();
+    const timeoutId = window.setTimeout(syncSession, 150);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") syncSession();
+    };
+
+    window.addEventListener("focus", syncSession);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("focus", syncSession);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [agentName, userId, sessionBackup]);
 
   if (!isReady) {
     return <div className="h-screen bg-black" />;
@@ -103,7 +137,9 @@ const AppWrapper = () => {
 
       {agentName && (
         <iframe
+          ref={iframeRef}
           src={iframeSrc}
+          onLoad={enviarSesionAlModulo}
           title="Generador de Plantillas"
           className="flex-1 w-full border-none"
         />
