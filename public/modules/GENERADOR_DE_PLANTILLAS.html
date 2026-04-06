@@ -4509,27 +4509,9 @@ function sincronizarTodosHistoriales() {
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
-    leerPuenteSesion();
-    var backup = leerBackupSesion();
-    if (backup) {
-        actualizarCredencialesSesion(backup);
-    }
-    if (!supabaseClient) {
-        recrearClienteSupabaseSiEsPosible();
-    }
-    if (!supabaseClient) {
+    if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
-        return Promise.resolve();
-    }
-
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                console.warn('⚠️ Sin sesión activa para sincronizar, registro queda en cola local');
-                return Promise.resolve();
-            }
-            return guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields);
-        });
+        return;
     }
 
     var record = {
@@ -4541,7 +4523,6 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
         observation: observation || null
     };
 
-    // Add incidencia, ot, cs if provided
     if (extraFields) {
         if (extraFields.incidencia) record.incidencia = extraFields.incidencia;
         if (extraFields.ot) record.ot = extraFields.ot;
