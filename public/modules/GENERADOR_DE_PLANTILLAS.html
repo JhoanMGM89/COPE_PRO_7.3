@@ -4375,15 +4375,12 @@ function iniciarAutomatizacionSync() {
 // SUPABASE INITIALIZATION
 // ============================================
 function initSupabase() {
-    leerPuenteSesion();
-    var params = new URLSearchParams(window.location.search);
-    var agentName = params.get('agentName');
-    var userId = params.get('userId');
-    var sbUrl = params.get('supabaseUrl');
-    var sbKey = params.get('supabaseKey');
-
-    if (!agentName && nombreAgente) agentName = nombreAgente;
-    if (!userId && supabaseUserId) userId = supabaseUserId;
+    var params = obtenerQueryActual();
+    var urlParams = new URLSearchParams(params);
+    var agentName = urlParams.get('agentName');
+    var userId = urlParams.get('userId');
+    var sbUrl = urlParams.get('supabaseUrl');
+    var sbKey = urlParams.get('supabaseKey');
 
     if (!sbUrl && window.location.protocol === 'file:') {
         sbUrl = 'https://ufrmotkqquwbujppgjlp.supabase.co';
@@ -4394,8 +4391,6 @@ function initSupabase() {
 
     supabaseUrlActual = sbUrl || supabaseUrlActual;
     supabaseKeyActual = sbKey || supabaseKeyActual;
-    var backup = leerBackupSesion();
-    if (backup) actualizarCredencialesSesion(backup);
 
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
@@ -4404,31 +4399,12 @@ function initSupabase() {
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
-        recrearClienteSupabaseSiEsPosible();
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
         iniciarAutomatizacionSync();
-        if (backup && backup.access_token && backup.refresh_token) {
-            aplicarSesionRecibida(backup).then(function(authOk) {
-                if (authOk && supabaseUserId) {
-                    console.log('✅ Sesión restaurada para sincronización, uid:', supabaseUserId);
-                    flushSyncQueue();
-                    procesarComandosAdmin();
-                }
-            });
-        } else if (supabaseUserId) {
-            console.log('✅ Sesión operativa para sincronización, uid:', supabaseUserId);
+        if (supabaseUserId) {
             flushSyncQueue();
             procesarComandosAdmin();
-        } else {
-            asegurarSesionSupabase().then(function(authOk) {
-                if (authOk && supabaseUserId) {
-                    console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
-                    flushSyncQueue();
-                    procesarComandosAdmin();
-                } else if (userId) {
-                    console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
-                }
-            });
         }
         cargarIPsDesdeDB();
     }
