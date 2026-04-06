@@ -4458,27 +4458,8 @@ function cargarIPsDesdeDB() {
 }
 
 function sincronizarTodosHistoriales() {
-    leerPuenteSesion();
-    var backup = leerBackupSesion();
-    if (backup) {
-        actualizarCredencialesSesion(backup);
-    }
-    if (!supabaseClient) {
-        recrearClienteSupabaseSiEsPosible();
-    }
-    if (!supabaseClient) {
+    if (!supabaseClient || !supabaseUserId) {
         mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
-        return;
-    }
-
-    if (!supabaseUserId) {
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                mostrarToast('No se pudo recuperar la sesión para sincronizar', 'error');
-                return;
-            }
-            sincronizarTodosHistoriales();
-        });
         return;
     }
     
@@ -4510,10 +4491,12 @@ function sincronizarTodosHistoriales() {
         });
     });
     
-    // 4. Service Now
+    // 4. Service Now - INCLUIR CS
     var histSN = leerHistorialLocal('historialServiceNow');
     histSN.forEach(function(h) {
-        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
+        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {
+            cs: h.sn || ''
+        });
     });
     
     var total = histCreacion.length + histAverias.length + histATP.length + histSN.length;
