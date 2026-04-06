@@ -6585,6 +6585,9 @@ function guardarGDMEnHistorial(textoFinal) {
         contadorRechazados++;
         localStorage.setItem('contadorRechazados', contadorRechazados);
         document.getElementById('contadorRechazados').textContent = contadorRechazados;
+        
+        // Incrementar contador total global
+        incrementarContadorTotal('RECHAZO_GDM_' + claveUnica);
     }
 }
 
