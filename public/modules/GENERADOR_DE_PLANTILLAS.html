@@ -3862,6 +3862,8 @@ let nombreAgente = "";
 let supabaseUserId = "";
 let supabaseClient = null;
 let syncIntervalId = null;
+let authRestorePromise = null;
+let syncListenersAttached = false;
 let contadorIPs = 0;
 let procesadoOrganizador = 0;
 let contadorCreaciones = 0;
@@ -3876,6 +3878,138 @@ let plantillaActualEnViewer = ''; // Plantilla actual mostrada en el viewer
 let casosGuardadosEnHistorial = new Set(); // Set para tracking de casos únicos guardados
 let esIPespecialATP = false; // Flag para IP 10.37.60.146 con puertos específicos (comportamiento ATP)
 let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
+const AUTH_SESSION_BACKUP_KEY = 'cope_auth_backup_v1';
+const AUTH_STORAGE_KEY = 'sb-ufrmotkqquwbujppgjlp-auth-token';
+
+function obtenerStoragesSesion() {
+    var storages = [];
+    try { storages.push(window.localStorage); } catch (e) {}
+    try {
+        if (window.parent && window.parent !== window && window.parent.localStorage) {
+            storages.push(window.parent.localStorage);
+        }
+    } catch (e) {}
+    try {
+        if (window.top && window.top !== window && window.top.localStorage) {
+            storages.push(window.top.localStorage);
+        }
+    } catch (e) {}
+    return storages.filter(function(storage, index, arr) {
+        return storage && arr.indexOf(storage) === index;
+    });
+}
+
+function leerValorSesion(key) {
+    var storages = obtenerStoragesSesion();
+    for (var i = 0; i < storages.length; i++) {
+        try {
+            var raw = storages[i].getItem(key);
+            if (raw) return raw;
+        } catch (e) {}
+    }
+    return null;
+}
+
+function guardarBackupSesion(session) {
+    if (!session || !session.access_token || !session.refresh_token) return;
+    var backup = JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+    });
+    obtenerStoragesSesion().forEach(function(storage) {
+        try {
+            storage.setItem(AUTH_SESSION_BACKUP_KEY, backup);
+        } catch (e) {}
+    });
+}
+
+function leerBackupSesion() {
+    var rawBackup = leerValorSesion(AUTH_SESSION_BACKUP_KEY);
+    if (rawBackup) {
+        try {
+            var parsedBackup = JSON.parse(rawBackup);
+            if (parsedBackup && parsedBackup.access_token && parsedBackup.refresh_token) {
+                return {
+                    access_token: parsedBackup.access_token,
+                    refresh_token: parsedBackup.refresh_token
+                };
+            }
+        } catch (e) {}
+    }
+
+    var rawAuth = leerValorSesion(AUTH_STORAGE_KEY);
+    if (!rawAuth) return null;
+
+    try {
+        var parsedAuth = JSON.parse(rawAuth);
+        var session = parsedAuth && parsedAuth.currentSession ? parsedAuth.currentSession : (parsedAuth && parsedAuth.session ? parsedAuth.session : null);
+        if (session && session.access_token && session.refresh_token) {
+            return {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token
+            };
+        }
+    } catch (e) {}
+
+    return null;
+}
+
+function asegurarSesionSupabase() {
+    if (!supabaseClient) return Promise.resolve(false);
+    if (authRestorePromise) return authRestorePromise;
+
+    authRestorePromise = supabaseClient.auth.getSession().then(function(result) {
+        var session = result && result.data ? result.data.session : null;
+        if (session && session.user) {
+            supabaseUserId = session.user.id;
+            guardarBackupSesion(session);
+            return true;
+        }
+
+        var backup = leerBackupSesion();
+        if (!backup) return false;
+
+        return supabaseClient.auth.setSession(backup).then(function(restoredResult) {
+            var restored = restoredResult && restoredResult.data ? restoredResult.data.session : null;
+            if (restored && restored.user) {
+                supabaseUserId = restored.user.id;
+                guardarBackupSesion(restored);
+                console.log('✅ Auth session restaurada desde backup, uid:', supabaseUserId);
+                return true;
+            }
+            return false;
+        }).catch(function(error) {
+            console.warn('⚠️ No fue posible restaurar la sesión:', error && error.message ? error.message : error);
+            return false;
+        });
+    }).catch(function() {
+        var backup = leerBackupSesion();
+        if (!backup) return false;
+
+        return supabaseClient.auth.setSession(backup).then(function(restoredResult) {
+            var restored = restoredResult && restoredResult.data ? restoredResult.data.session : null;
+            if (restored && restored.user) {
+                supabaseUserId = restored.user.id;
+                guardarBackupSesion(restored);
+                console.log('✅ Auth session recuperada tras error de lectura, uid:', supabaseUserId);
+                return true;
+            }
+            return false;
+        }).catch(function() {
+            return false;
+        });
+    });
+
+    authRestorePromise = authRestorePromise.then(function(ok) {
+        authRestorePromise = null;
+        return ok;
+    }, function() {
+        authRestorePromise = null;
+        return false;
+    });
+
+    return authRestorePromise;
+}
 
 function getSyncQueueKey() {
     return supabaseUserId ? 'syncQueue_' + supabaseUserId : 'syncQueue';
@@ -3928,32 +4062,41 @@ function limpiarHistorialesLocales() {
 }
 
 function procesarComandosAdmin() {
-    if (!supabaseClient || !supabaseUserId) return;
-    var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
-    var lastSeen = localStorage.getItem(markerKey) || '';
-    supabaseClient
-        .from('admin_sync_commands')
-        .select('id, command_type, payload, created_at')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .then(function(result) {
-            if (result.error || !result.data) return;
-            result.data.forEach(function(cmd) {
-                if (lastSeen && cmd.created_at <= lastSeen) return;
-                if (cmd.command_type === 'sync_histories') {
-                    sincronizarTodosHistoriales();
-                }
-                if (cmd.command_type === 'clear_histories') {
-                    limpiarHistorialesLocales();
-                }
-                lastSeen = cmd.created_at;
+    if (!supabaseClient) return;
+    asegurarSesionSupabase().then(function(authOk) {
+        if (!authOk || !supabaseUserId) return;
+        var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
+        var lastSeen = localStorage.getItem(markerKey) || '';
+        supabaseClient
+            .from('admin_sync_commands')
+            .select('id, command_type, payload, created_at')
+            .eq('is_active', true)
+            .order('created_at', { ascending: true })
+            .then(function(result) {
+                if (result.error || !result.data) return;
+                result.data.forEach(function(cmd) {
+                    if (lastSeen && cmd.created_at <= lastSeen) return;
+                    if (cmd.command_type === 'sync_histories') {
+                        sincronizarTodosHistoriales();
+                    }
+                    if (cmd.command_type === 'clear_histories') {
+                        limpiarHistorialesLocales();
+                    }
+                    lastSeen = cmd.created_at;
+                });
+                if (lastSeen) localStorage.setItem(markerKey, lastSeen);
             });
-            if (lastSeen) localStorage.setItem(markerKey, lastSeen);
-        });
+    });
 }
 
 function flushSyncQueue() {
-    if (!supabaseClient || !supabaseUserId) return Promise.resolve();
+    if (!supabaseClient) return Promise.resolve();
+    if (!supabaseUserId) {
+        return asegurarSesionSupabase().then(function(authOk) {
+            if (!authOk || !supabaseUserId) return Promise.resolve();
+            return flushSyncQueue();
+        });
+    }
     var queue = cargarColaSync();
     if (!queue.length) return Promise.resolve();
 
@@ -3976,14 +4119,30 @@ function flushSyncQueue() {
 
 function iniciarAutomatizacionSync() {
     if (syncIntervalId) clearInterval(syncIntervalId);
+
+    var ejecutarCicloSync = function() {
+        asegurarSesionSupabase().then(function(authOk) {
+            if (!authOk) return;
+            if (navigator.onLine) flushSyncQueue();
+            procesarComandosAdmin();
+        });
+    };
+
     syncIntervalId = setInterval(function() {
-        if (navigator.onLine) flushSyncQueue();
-        procesarComandosAdmin();
+        ejecutarCicloSync();
     }, 30000);
+
+    if (syncListenersAttached) return;
+
     window.addEventListener('online', function() {
-        flushSyncQueue();
-        procesarComandosAdmin();
+        ejecutarCicloSync();
     });
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            ejecutarCicloSync();
+        }
+    });
+    syncListenersAttached = true;
 }
 
 // ============================================
@@ -4010,29 +4169,21 @@ function initSupabase() {
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
-        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true
+            }
+        });
         console.log('✅ Supabase client initialized');
-        // Restore auth session so auth.uid() works for RLS
-        supabaseClient.auth.getSession().then(function(res) {
-            var s = res.data && res.data.session;
-            if (s && s.user) {
-                supabaseUserId = s.user.id;
-                console.log('✅ Auth session restored, uid:', supabaseUserId);
-                iniciarAutomatizacionSync();
+        iniciarAutomatizacionSync();
+        asegurarSesionSupabase().then(function(authOk) {
+            if (authOk && supabaseUserId) {
+                console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
                 flushSyncQueue();
+                procesarComandosAdmin();
             } else if (userId) {
-                // Try to refresh or use stored token
-                supabaseClient.auth.refreshSession().then(function(ref) {
-                    var rs = ref.data && ref.data.session;
-                    if (rs && rs.user) {
-                        supabaseUserId = rs.user.id;
-                        console.log('✅ Auth session refreshed, uid:', supabaseUserId);
-                        iniciarAutomatizacionSync();
-                        flushSyncQueue();
-                    } else {
-                        console.warn('⚠️ No auth session available, sync will be local only');
-                    }
-                });
+                console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
             }
         });
         cargarIPsDesdeDB();
@@ -4063,8 +4214,19 @@ function cargarIPsDesdeDB() {
 }
 
 function sincronizarTodosHistoriales() {
-    if (!supabaseClient || !supabaseUserId) {
+    if (!supabaseClient) {
         mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
+        return;
+    }
+
+    if (!supabaseUserId) {
+        asegurarSesionSupabase().then(function(authOk) {
+            if (!authOk || !supabaseUserId) {
+                mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
+                return;
+            }
+            sincronizarTodosHistoriales();
+        });
         return;
     }
     
@@ -4113,9 +4275,19 @@ function sincronizarTodosHistoriales() {
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
-    if (!supabaseClient || !supabaseUserId) {
+    if (!supabaseClient) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
-        return;
+        return Promise.resolve();
+    }
+
+    if (!supabaseUserId) {
+        return asegurarSesionSupabase().then(function(authOk) {
+            if (!authOk || !supabaseUserId) {
+                console.warn('⚠️ Sin sesión activa para sincronizar, registro queda en cola local');
+                return Promise.resolve();
+            }
+            return guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields);
+        });
     }
 
     var record = {
@@ -4235,9 +4407,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicializar estado
     inicializarFormulario();
-    iniciarAutomatizacionSync();
-    procesarComandosAdmin();
-    if (navigator.onLine) flushSyncQueue();
 });
 
 // ============================================
