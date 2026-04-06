@@ -4490,6 +4490,35 @@ function enviarSesionAlIframe(targetWindow) {
     targetWindow.postMessage(obtenerSesionModulo(), '*');
 }
 
+function obtenerQueryActual() {
+    try {
+        if (typeof window.__STANDALONE_QUERY === 'string' && window.__STANDALONE_QUERY) {
+            return window.__STANDALONE_QUERY;
+        }
+    } catch (e) {}
+    return window.location.search || '';
+}
+
+function mostrarPantallaBienvenida(nombre) {
+    var nombreFinal = String(nombre || nombreAgente || localStorage.getItem('nombreAgente') || '').trim().toUpperCase();
+    var bienvenida = document.getElementById('pantallaBienvenida');
+    var textoBienvenida = document.getElementById('textoBienvenida');
+    var pantallaLogin = document.getElementById('pantallaLogin');
+
+    if (!bienvenida || !nombreFinal) return false;
+
+    nombreAgente = nombreFinal;
+    try { localStorage.setItem('nombreAgente', nombreAgente); } catch (e) {}
+
+    if (pantallaLogin) pantallaLogin.style.display = 'none';
+    bienvenida.style.display = 'block';
+    if (textoBienvenida) {
+        textoBienvenida.textContent = 'BIENVENIDO, ' + nombreAgente;
+    }
+
+    return true;
+}
+
 // ============================================
 // INICIALIZACIÓN
 // ============================================
@@ -4498,24 +4527,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initSupabase();
 
     // Check if coming from React app (URL params)
-    var params = new URLSearchParams(window.location.search);
+    var params = new URLSearchParams(obtenerQueryActual());
     var agentFromUrl = params.get('agentName');
+    var restoredName = agentFromUrl || nombreAgente || localStorage.getItem('nombreAgente') || '';
     
-    if (agentFromUrl && supabaseUserId) {
-        // Coming from React login - skip internal login
-        nombreAgente = decodeURIComponent(agentFromUrl).toUpperCase();
-        localStorage.setItem('nombreAgente', nombreAgente);
-        document.getElementById('pantallaBienvenida').style.display = 'block';
-        document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
-    } else {
-        // Try from localStorage as fallback
-        var savedName = localStorage.getItem('nombreAgente');
-        if (savedName) {
-            nombreAgente = savedName.toUpperCase();
-            document.getElementById('pantallaBienvenida').style.display = 'block';
-            document.getElementById('textoBienvenida').textContent = `BIENVENIDO, ${nombreAgente}`;
-        }
+    if (restoredName) {
+        mostrarPantallaBienvenida(decodeURIComponent(restoredName));
     }
+
+    window.setTimeout(function() {
+        if (!document.getElementById('pantallaBienvenida')?.style.display) {
+            mostrarPantallaBienvenida(nombreAgente || localStorage.getItem('nombreAgente') || params.get('agentName') || '');
+        }
+    }, 150);
     
     // Cargar fondo guardado
     const fondoGuardado = localStorage.getItem('fondoPersonalizado');
@@ -8470,8 +8494,7 @@ window.addEventListener('message', function(e) {
         if (e.data.nombreAgente) {
             nombreAgente = String(e.data.nombreAgente).toUpperCase();
             localStorage.setItem('nombreAgente', nombreAgente);
-            var welcomeText = document.getElementById('textoBienvenida');
-            if (welcomeText) welcomeText.textContent = `BIENVENIDO, ${nombreAgente}`;
+            mostrarPantallaBienvenida(nombreAgente);
         }
         if (e.data.userId) {
             supabaseUserId = e.data.userId;
