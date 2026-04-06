@@ -3946,7 +3946,7 @@ function recrearClienteSupabaseSiEsPosible() {
 }
 
 function tieneCredencialesSincronizacion() {
-    return Boolean(supabaseClient && supabaseUserId && supabaseAccessToken);
+    return Boolean(supabaseClient && supabaseUserId);
 }
 
 function leerPuenteSesion() {
@@ -4140,7 +4140,9 @@ function asegurarSesionSupabase() {
     var backupSesion = leerBackupSesion();
     if (backupSesion) actualizarCredencialesSesion(backupSesion);
     if (tieneCredencialesSincronizacion()) {
-        recrearClienteSupabaseSiEsPosible();
+        if (backupSesion && backupSesion.access_token) {
+            recrearClienteSupabaseSiEsPosible();
+        }
         return Promise.resolve(true);
     }
     if (authRestorePromise) return authRestorePromise;
@@ -4154,25 +4156,25 @@ function asegurarSesionSupabase() {
         }
 
         var backup = leerBackupSesion();
-        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
+        if (!backup) return Boolean(supabaseClient && supabaseUserId);
 
         return aplicarSesionRecibida(backup).then(function(ok) {
             if (ok) {
                 console.log('✅ Credenciales restauradas desde backup para sincronización, uid:', supabaseUserId);
                 return true;
             }
-            return Boolean(supabaseUserId && supabaseAccessToken);
+            return Boolean(supabaseClient && supabaseUserId);
         });
     }).catch(function() {
         var backup = leerBackupSesion();
-        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
+        if (!backup) return Boolean(supabaseClient && supabaseUserId);
 
         return aplicarSesionRecibida(backup).then(function(ok) {
             if (ok) {
                 console.log('✅ Credenciales recuperadas tras error de auth, uid:', supabaseUserId);
                 return true;
             }
-            return Boolean(supabaseUserId && supabaseAccessToken);
+            return Boolean(supabaseClient && supabaseUserId);
         });
     });
 
@@ -4405,15 +4407,29 @@ function initSupabase() {
         recrearClienteSupabaseSiEsPosible();
         console.log('✅ Supabase client initialized');
         iniciarAutomatizacionSync();
-        asegurarSesionSupabase().then(function(authOk) {
-            if (authOk && supabaseUserId) {
-                console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
-                flushSyncQueue();
-                procesarComandosAdmin();
-            } else if (userId) {
-                console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
-            }
-        });
+        if (backup && backup.access_token && backup.refresh_token) {
+            aplicarSesionRecibida(backup).then(function(authOk) {
+                if (authOk && supabaseUserId) {
+                    console.log('✅ Sesión restaurada para sincronización, uid:', supabaseUserId);
+                    flushSyncQueue();
+                    procesarComandosAdmin();
+                }
+            });
+        } else if (supabaseUserId) {
+            console.log('✅ Sesión operativa para sincronización, uid:', supabaseUserId);
+            flushSyncQueue();
+            procesarComandosAdmin();
+        } else {
+            asegurarSesionSupabase().then(function(authOk) {
+                if (authOk && supabaseUserId) {
+                    console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
+                    flushSyncQueue();
+                    procesarComandosAdmin();
+                } else if (userId) {
+                    console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
+                }
+            });
+        }
         cargarIPsDesdeDB();
     }
 }
@@ -4443,6 +4459,13 @@ function cargarIPsDesdeDB() {
 
 function sincronizarTodosHistoriales() {
     leerPuenteSesion();
+    var backup = leerBackupSesion();
+    if (backup) {
+        actualizarCredencialesSesion(backup);
+    }
+    if (!supabaseClient) {
+        recrearClienteSupabaseSiEsPosible();
+    }
     if (!supabaseClient) {
         mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
         return;
@@ -4451,7 +4474,7 @@ function sincronizarTodosHistoriales() {
     if (!supabaseUserId) {
         asegurarSesionSupabase().then(function(authOk) {
             if (!authOk || !supabaseUserId) {
-                mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
+                mostrarToast('No se pudo recuperar la sesión para sincronizar', 'error');
                 return;
             }
             sincronizarTodosHistoriales();
@@ -4504,6 +4527,13 @@ function sincronizarTodosHistoriales() {
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
     leerPuenteSesion();
+    var backup = leerBackupSesion();
+    if (backup) {
+        actualizarCredencialesSesion(backup);
+    }
+    if (!supabaseClient) {
+        recrearClienteSupabaseSiEsPosible();
+    }
     if (!supabaseClient) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
         return Promise.resolve();
