@@ -4480,9 +4480,13 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
     };
 
     if (extraFields) {
-        if (extraFields.incidencia) record.incidencia = extraFields.incidencia;
-        if (extraFields.ot) record.ot = extraFields.ot;
-        if (extraFields.cs) record.cs = extraFields.cs;
+        if (extraFields.incidencia != null && extraFields.incidencia !== '') record.incidencia = extraFields.incidencia;
+        if (extraFields.ot != null && extraFields.ot !== '') record.ot = extraFields.ot;
+        if (extraFields.cs != null) record.cs = extraFields.cs || null;
+    }
+    // Para SERVICE_NOW, forzar cs desde idMostrado si no viene en extraFields
+    if (module === 'SERVICE_NOW' && !record.cs && idMostrado) {
+        record.cs = idMostrado;
     }
 
     record.sync_key = construirSyncKey(record);
