@@ -3861,6 +3861,10 @@ const FALLAS_GDM_CAZAMASIVOS = [
 let nombreAgente = "";
 let supabaseUserId = "";
 let supabaseClient = null;
+let supabaseAccessToken = "";
+let supabaseRefreshToken = "";
+let supabaseUrlActual = "";
+let supabaseKeyActual = "";
 let syncIntervalId = null;
 let authRestorePromise = null;
 let syncListenersAttached = false;
@@ -3882,6 +3886,68 @@ let esIPonnetMaximo = false; // Flag para IP 10.37.2.10 con comportamiento ATP
 const AUTH_SESSION_BACKUP_KEY = 'cope_auth_backup_v1';
 const AUTH_STORAGE_KEY = 'sb-ufrmotkqquwbujppgjlp-auth-token';
 const AUTH_BRIDGE_KEY = '__COPE_SESSION_BRIDGE__';
+
+function decodificarJwtPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+    try {
+        var parts = token.split('.');
+        if (parts.length < 2) return null;
+        var base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    } catch (e) {
+        return null;
+    }
+}
+
+function actualizarCredencialesSesion(sessionLike) {
+    if (!sessionLike || typeof sessionLike !== 'object') return;
+
+    if (sessionLike.access_token) {
+        supabaseAccessToken = sessionLike.access_token;
+        if (!supabaseUserId) {
+            var payload = decodificarJwtPayload(sessionLike.access_token);
+            if (payload && payload.sub) {
+                supabaseUserId = payload.sub;
+            }
+        }
+    }
+
+    if (sessionLike.refresh_token) {
+        supabaseRefreshToken = sessionLike.refresh_token;
+    }
+}
+
+function construirOpcionesSupabase() {
+    var options = {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true
+        }
+    };
+
+    if (supabaseAccessToken) {
+        options.global = {
+            headers: {
+                Authorization: 'Bearer ' + supabaseAccessToken
+            }
+        };
+    }
+
+    return options;
+}
+
+function recrearClienteSupabaseSiEsPosible() {
+    if (!supabaseUrlActual || !supabaseKeyActual || typeof window.supabase === 'undefined') return;
+    supabaseClient = window.supabase.createClient(supabaseUrlActual, supabaseKeyActual, construirOpcionesSupabase());
+}
+
+function tieneCredencialesSincronizacion() {
+    return Boolean(supabaseClient && supabaseUserId && supabaseAccessToken);
+}
 
 function leerPuenteSesion() {
     var bridges = [];
@@ -3913,6 +3979,7 @@ function leerPuenteSesion() {
 
         var sessionBackup = bridge.sessionBackup;
         if (sessionBackup && sessionBackup.access_token && sessionBackup.refresh_token) {
+            actualizarCredencialesSesion(sessionBackup);
             return {
                 access_token: sessionBackup.access_token,
                 refresh_token: sessionBackup.refresh_token
@@ -3986,6 +4053,7 @@ function leerValorSesion(key) {
 
 function guardarBackupSesion(session) {
     if (!session || !session.access_token || !session.refresh_token) return;
+    actualizarCredencialesSesion(session);
     var backup = JSON.stringify({
         access_token: session.access_token,
         refresh_token: session.refresh_token
@@ -4007,6 +4075,7 @@ function leerBackupSesion() {
         try {
             var parsedBackup = JSON.parse(rawBackup);
             if (parsedBackup && parsedBackup.access_token && parsedBackup.refresh_token) {
+                actualizarCredencialesSesion(parsedBackup);
                 return {
                     access_token: parsedBackup.access_token,
                     refresh_token: parsedBackup.refresh_token
@@ -4022,6 +4091,7 @@ function leerBackupSesion() {
         var parsedAuth = JSON.parse(rawAuth);
         var session = parsedAuth && parsedAuth.currentSession ? parsedAuth.currentSession : (parsedAuth && parsedAuth.session ? parsedAuth.session : null);
         if (session && session.access_token && session.refresh_token) {
+            actualizarCredencialesSesion(session);
             return {
                 access_token: session.access_token,
                 refresh_token: session.refresh_token
@@ -4037,10 +4107,12 @@ function aplicarSesionRecibida(sessionBackup) {
         return Promise.resolve(false);
     }
 
+    actualizarCredencialesSesion(sessionBackup);
     guardarBackupSesion(sessionBackup);
+    recrearClienteSupabaseSiEsPosible();
 
     if (!supabaseClient) {
-        return Promise.resolve(false);
+        return Promise.resolve(Boolean(supabaseUserId && supabaseAccessToken));
     }
 
     return supabaseClient.auth.setSession({
@@ -4056,14 +4128,21 @@ function aplicarSesionRecibida(sessionBackup) {
         }
         return false;
     }).catch(function(error) {
-        console.warn('⚠️ No fue posible aplicar la sesión recibida:', error && error.message ? error.message : error);
-        return false;
+        console.warn('⚠️ No fue posible aplicar la sesión recibida en auth, usando token directo:', error && error.message ? error.message : error);
+        recrearClienteSupabaseSiEsPosible();
+        return Boolean(supabaseUserId && supabaseAccessToken);
     });
 }
 
 function asegurarSesionSupabase() {
     if (!supabaseClient) return Promise.resolve(false);
     leerPuenteSesion();
+    var backupSesion = leerBackupSesion();
+    if (backupSesion) actualizarCredencialesSesion(backupSesion);
+    if (tieneCredencialesSincronizacion()) {
+        recrearClienteSupabaseSiEsPosible();
+        return Promise.resolve(true);
+    }
     if (authRestorePromise) return authRestorePromise;
 
     authRestorePromise = supabaseClient.auth.getSession().then(function(result) {
@@ -4075,36 +4154,25 @@ function asegurarSesionSupabase() {
         }
 
         var backup = leerBackupSesion();
-        if (!backup) return false;
+        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
 
-        return supabaseClient.auth.setSession(backup).then(function(restoredResult) {
-            var restored = restoredResult && restoredResult.data ? restoredResult.data.session : null;
-            if (restored && restored.user) {
-                supabaseUserId = restored.user.id;
-                guardarBackupSesion(restored);
-                console.log('✅ Auth session restaurada desde backup, uid:', supabaseUserId);
+        return aplicarSesionRecibida(backup).then(function(ok) {
+            if (ok) {
+                console.log('✅ Credenciales restauradas desde backup para sincronización, uid:', supabaseUserId);
                 return true;
             }
-            return false;
-        }).catch(function(error) {
-            console.warn('⚠️ No fue posible restaurar la sesión:', error && error.message ? error.message : error);
-            return false;
+            return Boolean(supabaseUserId && supabaseAccessToken);
         });
     }).catch(function() {
         var backup = leerBackupSesion();
-        if (!backup) return false;
+        if (!backup) return Boolean(supabaseUserId && supabaseAccessToken);
 
-        return supabaseClient.auth.setSession(backup).then(function(restoredResult) {
-            var restored = restoredResult && restoredResult.data ? restoredResult.data.session : null;
-            if (restored && restored.user) {
-                supabaseUserId = restored.user.id;
-                guardarBackupSesion(restored);
-                console.log('✅ Auth session recuperada tras error de lectura, uid:', supabaseUserId);
+        return aplicarSesionRecibida(backup).then(function(ok) {
+            if (ok) {
+                console.log('✅ Credenciales recuperadas tras error de auth, uid:', supabaseUserId);
                 return true;
             }
-            return false;
-        }).catch(function() {
-            return false;
+            return Boolean(supabaseUserId && supabaseAccessToken);
         });
     });
 
@@ -4322,6 +4390,11 @@ function initSupabase() {
         sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcm1vdGtxcXV3YnVqcHBnamxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODk5NzYsImV4cCI6MjA4OTM2NTk3Nn0.OWpONCrfufT937Gh3fgx-iM8i5Ax28ZTWgngOT9Ya7I';
     }
 
+    supabaseUrlActual = sbUrl || supabaseUrlActual;
+    supabaseKeyActual = sbKey || supabaseKeyActual;
+    var backup = leerBackupSesion();
+    if (backup) actualizarCredencialesSesion(backup);
+
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
         supabaseUserId = userId || '';
@@ -4329,12 +4402,7 @@ function initSupabase() {
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
-        supabaseClient = window.supabase.createClient(sbUrl, sbKey, {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true
-            }
-        });
+        recrearClienteSupabaseSiEsPosible();
         console.log('✅ Supabase client initialized');
         iniciarAutomatizacionSync();
         asegurarSesionSupabase().then(function(authOk) {
