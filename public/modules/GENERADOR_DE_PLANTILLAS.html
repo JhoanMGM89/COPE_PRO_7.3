@@ -3941,7 +3941,7 @@ function procesarComandosAdmin() {
             result.data.forEach(function(cmd) {
                 if (lastSeen && cmd.created_at <= lastSeen) return;
                 if (cmd.command_type === 'sync_histories') {
-                    flushSyncQueue();
+                    sincronizarTodosHistoriales();
                 }
                 if (cmd.command_type === 'clear_histories') {
                     limpiarHistorialesLocales();
