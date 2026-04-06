@@ -4235,6 +4235,25 @@ function leerHistorialLocal(keyBase) {
     return merged;
 }
 
+function normalizarValorServiceNow(valor) {
+    var limpio = String(valor == null ? '' : valor).trim();
+    if (!limpio) return '';
+    var upper = limpio.toUpperCase();
+    if (upper === '-' || upper === 'N/A' || upper === 'S/N' || upper === 'SIN DATO' || upper === 'NULL' || upper === 'UNDEFINED') return '';
+    return limpio;
+}
+
+function extraerCSServiceNowDesdeTexto(texto) {
+    var match = String(texto || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
+    return normalizarValorServiceNow(match && match[1] ? match[1] : '');
+}
+
+function resolverCSServiceNow(cs, idMostrado, observation) {
+    return normalizarValorServiceNow(cs)
+        || normalizarValorServiceNow(idMostrado)
+        || extraerCSServiceNowDesdeTexto(observation);
+}
+
 function construirSyncKey(record) {
     return [
         supabaseUserId || '',
