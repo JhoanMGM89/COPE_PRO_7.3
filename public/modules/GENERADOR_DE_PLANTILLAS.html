@@ -4270,42 +4270,32 @@ function limpiarHistorialesLocales() {
 }
 
 function procesarComandosAdmin() {
-    if (!supabaseClient) return;
-    asegurarSesionSupabase().then(function(authOk) {
-        if (!authOk || !supabaseUserId) return;
-        var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
-        var lastSeen = localStorage.getItem(markerKey) || '';
-        supabaseClient
-            .from('admin_sync_commands')
-            .select('id, command_type, payload, created_at')
-            .eq('is_active', true)
-            .order('created_at', { ascending: true })
-            .then(function(result) {
-                if (result.error || !result.data) return;
-                result.data.forEach(function(cmd) {
-                    if (lastSeen && cmd.created_at <= lastSeen) return;
-                    if (cmd.command_type === 'sync_histories') {
-                        sincronizarTodosHistoriales();
-                    }
-                    if (cmd.command_type === 'clear_histories') {
-                        limpiarHistorialesLocales();
-                    }
-                    lastSeen = cmd.created_at;
-                });
-                if (lastSeen) localStorage.setItem(markerKey, lastSeen);
+    if (!supabaseClient || !supabaseUserId) return;
+    var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
+    var lastSeen = localStorage.getItem(markerKey) || '';
+    supabaseClient
+        .from('admin_sync_commands')
+        .select('id, command_type, payload, created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .then(function(result) {
+            if (result.error || !result.data) return;
+            result.data.forEach(function(cmd) {
+                if (lastSeen && cmd.created_at <= lastSeen) return;
+                if (cmd.command_type === 'sync_histories') {
+                    sincronizarTodosHistoriales();
+                }
+                if (cmd.command_type === 'clear_histories') {
+                    limpiarHistorialesLocales();
+                }
+                lastSeen = cmd.created_at;
             });
-    });
+            if (lastSeen) localStorage.setItem(markerKey, lastSeen);
+        });
 }
 
 function flushSyncQueue() {
-    if (!supabaseClient || isFlushingSyncQueue) return Promise.resolve();
-    leerPuenteSesion();
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) return Promise.resolve();
-            return flushSyncQueue();
-        });
-    }
+    if (!supabaseClient || !supabaseUserId || isFlushingSyncQueue) return Promise.resolve();
 
     var ejecutar = function() {
         var queue = cargarColaSync();
@@ -4346,27 +4336,17 @@ function iniciarAutomatizacionSync() {
     if (syncIntervalId) clearInterval(syncIntervalId);
 
     var ejecutarCicloSync = function() {
-        leerPuenteSesion();
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk) return;
-            flushSyncQueue();
-            procesarComandosAdmin();
-        });
+        if (!supabaseClient || !supabaseUserId) return;
+        flushSyncQueue();
+        procesarComandosAdmin();
     };
 
-    syncIntervalId = setInterval(function() {
-        ejecutarCicloSync();
-    }, 30000);
+    syncIntervalId = setInterval(ejecutarCicloSync, 30000);
 
     if (syncListenersAttached) return;
-
-    window.addEventListener('online', function() {
-        ejecutarCicloSync();
-    });
+    window.addEventListener('online', ejecutarCicloSync);
     document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            ejecutarCicloSync();
-        }
+        if (document.visibilityState === 'visible') ejecutarCicloSync();
     });
     syncListenersAttached = true;
 }
@@ -4375,15 +4355,12 @@ function iniciarAutomatizacionSync() {
 // SUPABASE INITIALIZATION
 // ============================================
 function initSupabase() {
-    leerPuenteSesion();
-    var params = new URLSearchParams(window.location.search);
-    var agentName = params.get('agentName');
-    var userId = params.get('userId');
-    var sbUrl = params.get('supabaseUrl');
-    var sbKey = params.get('supabaseKey');
-
-    if (!agentName && nombreAgente) agentName = nombreAgente;
-    if (!userId && supabaseUserId) userId = supabaseUserId;
+    var params = obtenerQueryActual();
+    var urlParams = new URLSearchParams(params);
+    var agentName = urlParams.get('agentName');
+    var userId = urlParams.get('userId');
+    var sbUrl = urlParams.get('supabaseUrl');
+    var sbKey = urlParams.get('supabaseKey');
 
     if (!sbUrl && window.location.protocol === 'file:') {
         sbUrl = 'https://ufrmotkqquwbujppgjlp.supabase.co';
@@ -4394,8 +4371,6 @@ function initSupabase() {
 
     supabaseUrlActual = sbUrl || supabaseUrlActual;
     supabaseKeyActual = sbKey || supabaseKeyActual;
-    var backup = leerBackupSesion();
-    if (backup) actualizarCredencialesSesion(backup);
 
     if (agentName && userId) {
         nombreAgente = decodeURIComponent(agentName).toUpperCase();
@@ -4404,31 +4379,12 @@ function initSupabase() {
     }
 
     if (sbUrl && sbKey && typeof window.supabase !== 'undefined') {
-        recrearClienteSupabaseSiEsPosible();
+        supabaseClient = window.supabase.createClient(sbUrl, sbKey);
         console.log('✅ Supabase client initialized');
         iniciarAutomatizacionSync();
-        if (backup && backup.access_token && backup.refresh_token) {
-            aplicarSesionRecibida(backup).then(function(authOk) {
-                if (authOk && supabaseUserId) {
-                    console.log('✅ Sesión restaurada para sincronización, uid:', supabaseUserId);
-                    flushSyncQueue();
-                    procesarComandosAdmin();
-                }
-            });
-        } else if (supabaseUserId) {
-            console.log('✅ Sesión operativa para sincronización, uid:', supabaseUserId);
+        if (supabaseUserId) {
             flushSyncQueue();
             procesarComandosAdmin();
-        } else {
-            asegurarSesionSupabase().then(function(authOk) {
-                if (authOk && supabaseUserId) {
-                    console.log('✅ Sesión lista para sincronización, uid:', supabaseUserId);
-                    flushSyncQueue();
-                    procesarComandosAdmin();
-                } else if (userId) {
-                    console.warn('⚠️ Sesión aún no disponible, se reintentará automáticamente');
-                }
-            });
         }
         cargarIPsDesdeDB();
     }
@@ -4458,27 +4414,8 @@ function cargarIPsDesdeDB() {
 }
 
 function sincronizarTodosHistoriales() {
-    leerPuenteSesion();
-    var backup = leerBackupSesion();
-    if (backup) {
-        actualizarCredencialesSesion(backup);
-    }
-    if (!supabaseClient) {
-        recrearClienteSupabaseSiEsPosible();
-    }
-    if (!supabaseClient) {
+    if (!supabaseClient || !supabaseUserId) {
         mostrarToast('No se puede sincronizar: sin conexión a la base de datos', 'error');
-        return;
-    }
-
-    if (!supabaseUserId) {
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                mostrarToast('No se pudo recuperar la sesión para sincronizar', 'error');
-                return;
-            }
-            sincronizarTodosHistoriales();
-        });
         return;
     }
     
@@ -4510,10 +4447,12 @@ function sincronizarTodosHistoriales() {
         });
     });
     
-    // 4. Service Now
+    // 4. Service Now - INCLUIR CS
     var histSN = leerHistorialLocal('historialServiceNow');
     histSN.forEach(function(h) {
-        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {});
+        guardarEnSupabase('SERVICE_NOW', h.tipo || '', h.sn || '', '', h.contenido || '', {
+            cs: h.sn || ''
+        });
     });
     
     var total = histCreacion.length + histAverias.length + histATP.length + histSN.length;
@@ -4526,27 +4465,9 @@ function sincronizarTodosHistoriales() {
 }
 
 function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields) {
-    leerPuenteSesion();
-    var backup = leerBackupSesion();
-    if (backup) {
-        actualizarCredencialesSesion(backup);
-    }
-    if (!supabaseClient) {
-        recrearClienteSupabaseSiEsPosible();
-    }
-    if (!supabaseClient) {
+    if (!supabaseClient || !supabaseUserId) {
         console.warn('⚠️ Supabase no disponible, solo guardando localmente');
-        return Promise.resolve();
-    }
-
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) {
-                console.warn('⚠️ Sin sesión activa para sincronizar, registro queda en cola local');
-                return Promise.resolve();
-            }
-            return guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observation, extraFields);
-        });
+        return;
     }
 
     var record = {
@@ -4558,7 +4479,6 @@ function guardarEnSupabase(module, templateType, idMostrado, tipoFalla, observat
         observation: observation || null
     };
 
-    // Add incidencia, ot, cs if provided
     if (extraFields) {
         if (extraFields.incidencia) record.incidencia = extraFields.incidencia;
         if (extraFields.ot) record.ot = extraFields.ot;
