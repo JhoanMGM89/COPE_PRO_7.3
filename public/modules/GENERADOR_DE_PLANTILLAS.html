@@ -4270,42 +4270,32 @@ function limpiarHistorialesLocales() {
 }
 
 function procesarComandosAdmin() {
-    if (!supabaseClient) return;
-    asegurarSesionSupabase().then(function(authOk) {
-        if (!authOk || !supabaseUserId) return;
-        var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
-        var lastSeen = localStorage.getItem(markerKey) || '';
-        supabaseClient
-            .from('admin_sync_commands')
-            .select('id, command_type, payload, created_at')
-            .eq('is_active', true)
-            .order('created_at', { ascending: true })
-            .then(function(result) {
-                if (result.error || !result.data) return;
-                result.data.forEach(function(cmd) {
-                    if (lastSeen && cmd.created_at <= lastSeen) return;
-                    if (cmd.command_type === 'sync_histories') {
-                        sincronizarTodosHistoriales();
-                    }
-                    if (cmd.command_type === 'clear_histories') {
-                        limpiarHistorialesLocales();
-                    }
-                    lastSeen = cmd.created_at;
-                });
-                if (lastSeen) localStorage.setItem(markerKey, lastSeen);
+    if (!supabaseClient || !supabaseUserId) return;
+    var markerKey = 'adminCommandLastSeen_' + (supabaseUserId || 'global');
+    var lastSeen = localStorage.getItem(markerKey) || '';
+    supabaseClient
+        .from('admin_sync_commands')
+        .select('id, command_type, payload, created_at')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .then(function(result) {
+            if (result.error || !result.data) return;
+            result.data.forEach(function(cmd) {
+                if (lastSeen && cmd.created_at <= lastSeen) return;
+                if (cmd.command_type === 'sync_histories') {
+                    sincronizarTodosHistoriales();
+                }
+                if (cmd.command_type === 'clear_histories') {
+                    limpiarHistorialesLocales();
+                }
+                lastSeen = cmd.created_at;
             });
-    });
+            if (lastSeen) localStorage.setItem(markerKey, lastSeen);
+        });
 }
 
 function flushSyncQueue() {
-    if (!supabaseClient || isFlushingSyncQueue) return Promise.resolve();
-    leerPuenteSesion();
-    if (!supabaseUserId) {
-        return asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk || !supabaseUserId) return Promise.resolve();
-            return flushSyncQueue();
-        });
-    }
+    if (!supabaseClient || !supabaseUserId || isFlushingSyncQueue) return Promise.resolve();
 
     var ejecutar = function() {
         var queue = cargarColaSync();
@@ -4346,27 +4336,17 @@ function iniciarAutomatizacionSync() {
     if (syncIntervalId) clearInterval(syncIntervalId);
 
     var ejecutarCicloSync = function() {
-        leerPuenteSesion();
-        asegurarSesionSupabase().then(function(authOk) {
-            if (!authOk) return;
-            flushSyncQueue();
-            procesarComandosAdmin();
-        });
+        if (!supabaseClient || !supabaseUserId) return;
+        flushSyncQueue();
+        procesarComandosAdmin();
     };
 
-    syncIntervalId = setInterval(function() {
-        ejecutarCicloSync();
-    }, 30000);
+    syncIntervalId = setInterval(ejecutarCicloSync, 30000);
 
     if (syncListenersAttached) return;
-
-    window.addEventListener('online', function() {
-        ejecutarCicloSync();
-    });
+    window.addEventListener('online', ejecutarCicloSync);
     document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            ejecutarCicloSync();
-        }
+        if (document.visibilityState === 'visible') ejecutarCicloSync();
     });
     syncListenersAttached = true;
 }
