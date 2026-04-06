@@ -1299,6 +1299,19 @@ let historial = [];
 function getHistorialKey() { return currentUserId ? 'historialServiceNow_' + currentUserId : 'historialServiceNow'; }
 function loadHistorial() { historial = JSON.parse(localStorage.getItem(getHistorialKey()) || '[]'); }
 loadHistorial();
+function limpiarValorCS(valor) {
+    var limpio = String(valor == null ? '' : valor).trim();
+    if (!limpio) return '';
+    var upper = limpio.toUpperCase();
+    if (upper === 'N/A' || upper === 'S/N' || upper === 'SIN DATO' || upper === 'NULL' || upper === 'UNDEFINED') return '';
+    return limpio;
+}
+
+function extraerCSDesdeResultado(texto) {
+    var match = String(texto || '').match(/SERVICE NOW:\s*([^\n\r]+)/i);
+    return match ? limpiarValorCS(match[1]) : '';
+}
+
 function obtenerCSActual() {
     const plantilla = document.getElementById('tipoPlantilla')?.value || '';
     let valor = '';
@@ -1313,7 +1326,14 @@ function obtenerCSActual() {
         valor = document.getElementById('snSolo')?.value || '';
     }
 
-    return String(valor || '').trim();
+    valor = limpiarValorCS(valor)
+        || limpiarValorCS(document.getElementById('sn')?.value)
+        || limpiarValorCS(document.getElementById('snAcepta')?.value)
+        || limpiarValorCS(document.getElementById('snSeguimiento')?.value)
+        || limpiarValorCS(document.getElementById('snSolo')?.value)
+        || extraerCSDesdeResultado(document.getElementById('resultado')?.value);
+
+    return valor;
 }
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
@@ -1462,10 +1482,10 @@ function sincronizarAlPadre() {
 
     var enviados = 0;
     historial.forEach(function(h) {
-        var csHistorial = String(h.cs || h.sn || '').trim();
+        var csHistorial = limpiarValorCS(h.cs) || limpiarValorCS(h.sn) || limpiarValorCS(h.idMostrado) || extraerCSDesdeResultado(h.contenido);
         window.parent.postMessage({
             type: 'GUARDAR_REGISTRO',
-            module: 'SERVICE_NOW',
+            module: 'SERVICE NOW',
             datos: {
                 'TIPO': h.tipo || '',
                 'SERVICE NOW': csHistorial,
@@ -1743,7 +1763,7 @@ function generar() {
         return '';
     }
     
-    const sn = document.getElementById('sn')?.value || document.getElementById('snSolo')?.value || document.getElementById('snAcepta')?.value || '';
+    const sn = obtenerCSActual();
     const cierre = document.getElementById('cierre')?.value || '';
     const info = document.getElementById('info')?.value || '';
     const solucion = document.getElementById('solucion')?.value || '';
@@ -1770,13 +1790,11 @@ function generar() {
     
     switch(plantilla) {
         case 'SEGUIMIENTO':
-            const snSeg = document.getElementById('snSeguimiento')?.value || '';
-            resultado = `SERVICE NOW: ${snSeg || 'N/A'}\nSeguimiento caso en service now pendiente respuesta por parte de ONNET.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            resultado = `SERVICE NOW: ${sn || 'N/A'}\nSeguimiento caso en service now pendiente respuesta por parte de ONNET.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
             break;
             
         case 'CIERRE_ADMIN':
-            const snAdmin = document.getElementById('snSeguimiento')?.value || '';
-            resultado = `✅NOTIFICACIÓN CIERRE DE CASO ADMINISTRATIVO✅\n${snAdmin ? 'SERVICE NOW: ' + snAdmin + '\n' : ''}Estimados señores de EECC. Se ha validado la falla por parte de ONNET confirmando la solución sin embargo el cliente sigue apareciendo en falla por consola ya pasaron 48h por lo que se procede a cerrar caso.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            resultado = `✅NOTIFICACIÓN CIERRE DE CASO ADMINISTRATIVO✅\n${sn ? 'SERVICE NOW: ' + sn + '\n' : ''}Estimados señores de EECC. Se ha validado la falla por parte de ONNET confirmando la solución sin embargo el cliente sigue apareciendo en falla por consola ya pasaron 48h por lo que se procede a cerrar caso.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
             break;
             
         case 'CIERRE':
@@ -1973,8 +1991,8 @@ function copiar() {
         enviarAGoogleSheets('SERVICE NOW', {
             FECHA: new Date().toLocaleString('es-CO'),
             TIPO: plantillaActual,
-            'SERVICE NOW': snVal || 'N/A',
-            CS: snVal || 'N/A',
+            'SERVICE NOW': snVal || '',
+            CS: snVal || '',
             OBSERVACION: textoFormateado
         });
     }).catch(() => {
@@ -2003,18 +2021,7 @@ function cerrarToast() {
 
 function registrarCaso(contenido) {
     const plantilla = document.getElementById('tipoPlantilla').value;
-    let sn = '';
-    
-    // Obtener SN según la plantilla
-    if (plantilla === 'CIERRE') {
-        sn = document.getElementById('sn')?.value?.trim() || 'S/N';
-    } else if (plantilla === 'ACEPTA_PDR') {
-        sn = document.getElementById('snAcepta')?.value?.trim() || 'S/N';
-    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN') {
-        sn = document.getElementById('snSeguimiento')?.value?.trim() || 'S/N';
-    } else {
-        sn = document.getElementById('snSolo')?.value?.trim() || 'S/N';
-    }
+    const sn = obtenerCSActual() || extraerCSDesdeResultado(contenido) || 'S/N';
     
     const ahora = new Date().getTime();
     const UNA_HORA = 60 * 60 * 1000; // 1 hora en milisegundos
