@@ -126,9 +126,10 @@ const Admin = () => {
   const filteredRecords = records.filter(r => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
+    const effectiveCs = r.cs || (r.module === "SERVICE_NOW" ? r.id_mostrado : "") || "";
     return (r.incidencia || "").toLowerCase().includes(q) ||
            (r.ot || "").toLowerCase().includes(q) ||
-           (r.cs || "").toLowerCase().includes(q) ||
+           effectiveCs.toLowerCase().includes(q) ||
            (r.id_mostrado || "").toLowerCase().includes(q);
   });
 
@@ -493,7 +494,7 @@ const Admin = () => {
                         <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
-                        <td className="p-2 text-xs font-mono text-cyan-400">{r.cs || "—"}</td>
+                        <td className="p-2 text-xs font-mono text-cyan-400">{r.cs || (r.module === "SERVICE_NOW" ? r.id_mostrado : null) || "—"}</td>
                         <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
                         <td className="p-2 flex items-center gap-1">
                           {r.observation ? (

@@ -1277,6 +1277,11 @@ input:checked + .slider:before {
 // Database integration via parent window
 function enviarAGoogleSheets(hoja, datos) {
     try {
+        if (hoja === 'SERVICE_NOW') {
+            var csActual = obtenerCSActual();
+            if (!datos['SERVICE NOW'] && csActual) datos['SERVICE NOW'] = csActual;
+            if (!datos['CS'] && csActual) datos['CS'] = csActual;
+        }
         window.parent.postMessage({
             type: 'GUARDAR_REGISTRO',
             module: hoja,
@@ -1294,6 +1299,22 @@ let historial = [];
 function getHistorialKey() { return currentUserId ? 'historialServiceNow_' + currentUserId : 'historialServiceNow'; }
 function loadHistorial() { historial = JSON.parse(localStorage.getItem(getHistorialKey()) || '[]'); }
 loadHistorial();
+function obtenerCSActual() {
+    const plantilla = document.getElementById('tipoPlantilla')?.value || '';
+    let valor = '';
+
+    if (plantilla === 'CIERRE') {
+        valor = document.getElementById('sn')?.value || '';
+    } else if (plantilla === 'ACEPTA_PDR') {
+        valor = document.getElementById('snAcepta')?.value || '';
+    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN') {
+        valor = document.getElementById('snSeguimiento')?.value || '';
+    } else {
+        valor = document.getElementById('snSolo')?.value || '';
+    }
+
+    return String(valor || '').trim();
+}
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
     SOLICITUD: 0,
@@ -1441,12 +1462,14 @@ function sincronizarAlPadre() {
 
     var enviados = 0;
     historial.forEach(function(h) {
+        var csHistorial = String(h.cs || h.sn || '').trim();
         window.parent.postMessage({
             type: 'GUARDAR_REGISTRO',
             module: 'SERVICE_NOW',
             datos: {
                 'TIPO': h.tipo || '',
-                'SERVICE NOW': h.sn || '',
+                'SERVICE NOW': csHistorial,
+                'CS': csHistorial,
                 'OBSERVACION': h.contenido || ''
             }
         }, '*');
@@ -1941,16 +1964,7 @@ function copiar() {
         mostrarToast(textoFormateado);
         // Notificar al padre para contador total (con clave para dedup)
         var plantillaActual = document.getElementById('tipoPlantilla').value;
-        var snVal = '';
-        if (plantillaActual === 'CIERRE') {
-            snVal = document.getElementById('sn')?.value?.trim() || '';
-        } else if (plantillaActual === 'ACEPTA_PDR') {
-            snVal = document.getElementById('snAcepta')?.value?.trim() || '';
-        } else if (plantillaActual === 'SEGUIMIENTO' || plantillaActual === 'CIERRE_ADMIN') {
-            snVal = document.getElementById('snSeguimiento')?.value?.trim() || '';
-        } else {
-            snVal = document.getElementById('snSolo')?.value?.trim() || '';
-        }
+        var snVal = obtenerCSActual();
         var contentKey = 'SN_' + plantillaActual + '_' + snVal;
         if (window.parent !== window) {
             window.parent.postMessage({type: 'INCREMENTAR_TOTAL', contentKey: contentKey}, '*');
@@ -2017,6 +2031,7 @@ function registrarCaso(contenido) {
         const caso = {
             id: Date.now(),
             sn: sn,
+            cs: sn,
             tipo: plantilla,
             timestamp: ahora,
             contenido: contenido
