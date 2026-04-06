@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,7 @@ const AppWrapper = () => {
     setUserId("");
     clearAgentIdentity();
     clearSessionBackup();
+    (window as Window & { __COPE_SESSION_BRIDGE__?: null }).__COPE_SESSION_BRIDGE__ = null;
     await supabase.auth.signOut({ scope: "local" });
     navigate("/", { replace: true });
   };
@@ -79,9 +80,32 @@ const AppWrapper = () => {
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const modulePath = `${import.meta.env.BASE_URL}modules/GENERADOR_DE_PLANTILLAS.html`;
   const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
-  const sessionBackup = session?.access_token && session?.refresh_token
-    ? { access_token: session.access_token, refresh_token: session.refresh_token }
-    : null;
+  const sessionBackup = useMemo(() => (
+    session?.access_token && session?.refresh_token
+      ? { access_token: session.access_token, refresh_token: session.refresh_token }
+      : null
+  ), [session?.access_token, session?.refresh_token]);
+
+  useEffect(() => {
+    const globalWindow = window as Window & {
+      __COPE_SESSION_BRIDGE__?: {
+        agentName: string;
+        userId: string;
+        sessionBackup: { access_token: string; refresh_token: string } | null;
+      } | null;
+    };
+
+    if (agentName && userId) {
+      globalWindow.__COPE_SESSION_BRIDGE__ = {
+        agentName,
+        userId,
+        sessionBackup,
+      };
+      return;
+    }
+
+    globalWindow.__COPE_SESSION_BRIDGE__ = null;
+  }, [agentName, userId, sessionBackup]);
 
   const enviarSesionAlModulo = () => {
     if (!iframeRef.current?.contentWindow || !agentName || !userId) return;
