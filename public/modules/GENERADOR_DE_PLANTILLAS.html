@@ -8096,8 +8096,11 @@ function copiarDetalle() {
         detalle += `CTO: ${cto || 'N/A'}${todasCTO}\n`;
     }
     
-    // ID: Solo mostrar FO si es SYTEX (no para GDM o CAZAMASIVOS) y no es multi-IP
-    if (!esGDM && !esCazamasivos && !esMultiIP) {
+    // ID: Mostrar según plataforma activa
+    if (esGDM || esCazamasivos) {
+        const gdm = document.getElementById('inputGDM').value.trim();
+        detalle += `ID GDM: ${gdm || 'N/A'}\n`;
+    } else if (!esMultiIP) {
         detalle += `ID: ${fo || 'N/A'}\n`;
     }
     
