@@ -235,16 +235,33 @@ Deno.serve(async (req) => {
 
     if (action === "export-records") {
       const { agent_id, module, template_type } = body;
-      let query = supabaseAdmin
-        .from("records")
-        .select("id, agent_id, module, template_type, id_mostrado, tipo_falla, observation, incidencia, ot, cs, created_at")
-        .order("created_at", { ascending: false });
-      if (agent_id) query = query.eq("agent_id", agent_id);
-      if (module) query = query.eq("module", module);
-      if (template_type) query = query.eq("template_type", template_type);
 
-      const { data: rawRecords, error } = await query;
-      if (error) throw error;
+      // Batch fetch all records to bypass the 1000-row default limit
+      const BATCH_SIZE = 1000;
+      let allRecords: any[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabaseAdmin
+          .from("records")
+          .select("id, agent_id, module, template_type, id_mostrado, tipo_falla, observation, incidencia, ot, cs, created_at")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + BATCH_SIZE - 1);
+        if (agent_id) query = query.eq("agent_id", agent_id);
+        if (module) query = query.eq("module", module);
+        if (template_type) query = query.eq("template_type", template_type);
+
+        const { data: batch, error } = await query;
+        if (error) throw error;
+
+        const rows = batch || [];
+        allRecords = allRecords.concat(rows);
+        hasMore = rows.length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+      }
+
+      const rawRecords = allRecords;
 
       const agentIds = [...new Set((rawRecords || []).map((record) => record.agent_id).filter(Boolean))];
       let agentMap = new Map();
