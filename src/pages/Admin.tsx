@@ -492,7 +492,7 @@ const Admin = () => {
             )}
 
             <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800">
-              <h2 className="text-lg font-semibold mb-3">Registros ({filteredRecords.length})</h2>
+              <h2 className="text-lg font-semibold mb-3">Registros ({visibleRecordsCount} visibles / {totalRecordsCount} cargados)</h2>
               <div className={scrollClass} style={scrollStyle}>
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-zinc-900 z-10">
@@ -501,8 +501,8 @@ const Admin = () => {
                       <th className="text-left p-2 text-gray-400 text-xs">AGENTE</th>
                       <th className="text-left p-2 text-gray-400 text-xs">MÓDULO</th>
                       <th className="text-left p-2 text-gray-400 text-xs">TIPO</th>
-                      <th className="text-left p-2 text-gray-400 text-xs min-w-[110px]">ID</th>
-                      <th className="text-left p-2 text-gray-400 text-xs">INCIDENCIA</th>
+                      <th className="text-left p-2 pr-4 text-gray-400 text-xs min-w-[140px]">ID</th>
+                      <th className="text-left p-2 pl-4 text-gray-400 text-xs min-w-[140px]">INCIDENCIA</th>
                       <th className="text-left p-2 text-gray-400 text-xs">OT</th>
                       <th className="text-left p-2 text-gray-400 text-xs">CS</th>
                       <th className="text-left p-2 text-gray-400 text-xs">FALLA</th>
@@ -516,8 +516,8 @@ const Admin = () => {
                         <td className="p-2 text-xs">{r.agents?.name || "N/A"}</td>
                         <td className="p-2"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${moduleColor(r.module)}`}>{r.module}</span></td>
                         <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                        <td className="p-2 text-xs font-mono min-w-[110px]" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
-                        <td className="p-2 text-xs font-mono text-cyan-400">{r.incidencia || "—"}</td>
+                        <td className="p-2 pr-4 text-xs font-mono min-w-[140px] break-words" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
+                        <td className="p-2 pl-4 text-xs font-mono text-cyan-400 min-w-[140px] break-words">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{getEffectiveCs(r) || "—"}</td>
                         <td className="p-2 text-xs">{r.tipo_falla || "—"}</td>
