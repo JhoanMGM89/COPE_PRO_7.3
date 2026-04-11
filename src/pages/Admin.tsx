@@ -514,7 +514,7 @@ const Admin = () => {
                         <td className="p-2 text-xs">{r.agents?.name || "N/A"}</td>
                         <td className="p-2"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${moduleColor(r.module)}`}>{r.module}</span></td>
                         <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                        <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
+                        <td className="p-2 text-xs font-mono max-w-[80px] truncate" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{getEffectiveCs(r) || "—"}</td>
