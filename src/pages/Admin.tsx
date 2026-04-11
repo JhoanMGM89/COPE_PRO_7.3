@@ -499,7 +499,7 @@ const Admin = () => {
                       <th className="text-left p-2 text-gray-400 text-xs">AGENTE</th>
                       <th className="text-left p-2 text-gray-400 text-xs">MÓDULO</th>
                       <th className="text-left p-2 text-gray-400 text-xs">TIPO</th>
-                      <th className="text-left p-2 text-gray-400 text-xs">ID</th>
+                      <th className="text-left p-2 text-gray-400 text-xs max-w-[80px]">ID</th>
                       <th className="text-left p-2 text-gray-400 text-xs">INCIDENCIA</th>
                       <th className="text-left p-2 text-gray-400 text-xs">OT</th>
                       <th className="text-left p-2 text-gray-400 text-xs">CS</th>
@@ -514,7 +514,7 @@ const Admin = () => {
                         <td className="p-2 text-xs">{r.agents?.name || "N/A"}</td>
                         <td className="p-2"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${moduleColor(r.module)}`}>{r.module}</span></td>
                         <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                        <td className="p-2 text-xs font-mono">{r.id_mostrado || "—"}</td>
+                        <td className="p-2 text-xs font-mono max-w-[80px] truncate" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{getEffectiveCs(r) || "—"}</td>
