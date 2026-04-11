@@ -499,7 +499,7 @@ const Admin = () => {
                       <th className="text-left p-2 text-gray-400 text-xs">AGENTE</th>
                       <th className="text-left p-2 text-gray-400 text-xs">MÓDULO</th>
                       <th className="text-left p-2 text-gray-400 text-xs">TIPO</th>
-                      <th className="text-left p-2 text-gray-400 text-xs">ID</th>
+                      <th className="text-left p-2 text-gray-400 text-xs max-w-[80px]">ID</th>
                       <th className="text-left p-2 text-gray-400 text-xs">INCIDENCIA</th>
                       <th className="text-left p-2 text-gray-400 text-xs">OT</th>
                       <th className="text-left p-2 text-gray-400 text-xs">CS</th>
