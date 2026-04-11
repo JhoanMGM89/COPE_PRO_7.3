@@ -155,6 +155,8 @@ const Admin = () => {
            effectiveCs.toLowerCase().includes(q) ||
            (r.id_mostrado || "").toLowerCase().includes(q);
   });
+  const totalRecordsCount = records.length;
+  const visibleRecordsCount = filteredRecords.length;
 
   const createAgent = async () => {
     if (!newNit.trim() || !newName.trim() || !newPassword.trim()) { toast.error("Complete todos los campos"); return; }
