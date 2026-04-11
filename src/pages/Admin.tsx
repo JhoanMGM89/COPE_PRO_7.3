@@ -497,11 +497,11 @@ const Admin = () => {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-zinc-900 z-10">
                     <tr className="border-b border-zinc-700">
-                      <th className="text-left p-2 text-gray-400 text-xs">FECHA</th>
+                      <th className="text-left p-2 text-gray-400 text-xs w-[170px] min-w-[170px]">FECHA</th>
                       <th className="text-left p-2 text-gray-400 text-xs">AGENTE</th>
                       <th className="text-left p-2 text-gray-400 text-xs">MÓDULO</th>
                       <th className="text-left p-2 text-gray-400 text-xs">TIPO</th>
-                      <th className="text-left p-2 pr-4 text-gray-400 text-xs min-w-[140px]">ID</th>
+                      <th className="text-left p-2 pr-4 text-gray-400 text-xs w-[170px] min-w-[170px]">ID</th>
                       <th className="text-left p-2 pl-4 text-gray-400 text-xs min-w-[140px]">INCIDENCIA</th>
                       <th className="text-left p-2 text-gray-400 text-xs">OT</th>
                       <th className="text-left p-2 text-gray-400 text-xs">CS</th>
@@ -512,11 +512,11 @@ const Admin = () => {
                   <tbody>
                     {filteredRecords.map(r => (
                       <tr key={r.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
-                        <td className="p-2 text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("es-CO")}</td>
+                        <td className="p-2 text-xs whitespace-nowrap w-[170px] min-w-[170px]">{new Date(r.created_at).toLocaleString("es-CO")}</td>
                         <td className="p-2 text-xs">{r.agents?.name || "N/A"}</td>
                         <td className="p-2"><span className={`px-2 py-0.5 rounded text-xs font-semibold ${moduleColor(r.module)}`}>{r.module}</span></td>
                         <td className="p-2 text-xs">{r.template_type || "N/A"}</td>
-                        <td className="p-2 pr-4 text-xs font-mono min-w-[140px] break-words" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
+                        <td className="p-2 pr-4 text-xs font-mono w-[170px] min-w-[170px] break-words" title={r.id_mostrado || ""}>{r.id_mostrado || "—"}</td>
                         <td className="p-2 pl-4 text-xs font-mono text-cyan-400 min-w-[140px] break-words">{r.incidencia || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{r.ot || "—"}</td>
                         <td className="p-2 text-xs font-mono text-cyan-400">{getEffectiveCs(r) || "—"}</td>
