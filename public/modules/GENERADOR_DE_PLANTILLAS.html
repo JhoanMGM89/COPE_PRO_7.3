@@ -8104,8 +8104,6 @@ function copiarDetalle() {
         detalle += `ID GDM: ${gdm || 'N/A'}\n`;
     } else if (esSYTEX) {
         detalle += `ID: ${fo || 'N/A'}\n`;
-        const gdm = document.getElementById('inputGDM').value.trim();
-        detalle += `ID GDM: ${gdm || 'N/A'}\n`;
     } else if (!esMultiIP) {
         detalle += `ID: ${fo || 'N/A'}\n`;
     }
@@ -8121,6 +8119,11 @@ function copiarDetalle() {
     }
     
     if (obs) detalle += `${obs}\n`;
+    // Para SYTEX, ID GDM va justo arriba de GESTOR
+    if (esSYTEX) {
+        const gdm = document.getElementById('inputGDM').value.trim();
+        detalle += `ID GDM: ${gdm || 'N/A'}\n`;
+    }
     detalle += `GESTOR: ${(nombreAgente || 'N/A').toUpperCase()}`;
     
     navigator.clipboard.writeText(detalle).then(() => {
