@@ -7738,6 +7738,8 @@ function validarCamposDetalle() {
     if (esSYTEX) {
         const fo = document.getElementById('inputFO').value.trim();
         if (!fo) faltantes.push('FO / ID');
+        const gdm = document.getElementById('inputGDM').value.trim();
+        if (!gdm) faltantes.push('ID GDM');
     }
     // Si es GDM o CAZAMASIVOS, no se valida FO porque está oculto
     
@@ -8098,6 +8100,10 @@ function copiarDetalle() {
     
     // ID: Mostrar según plataforma activa
     if (esGDM || esCazamasivos) {
+        const gdm = document.getElementById('inputGDM').value.trim();
+        detalle += `ID GDM: ${gdm || 'N/A'}\n`;
+    } else if (esSYTEX) {
+        detalle += `ID: ${fo || 'N/A'}\n`;
         const gdm = document.getElementById('inputGDM').value.trim();
         detalle += `ID GDM: ${gdm || 'N/A'}\n`;
     } else if (!esMultiIP) {

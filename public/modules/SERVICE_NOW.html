@@ -559,6 +559,7 @@ input:checked + .slider:before {
 }
 
 .history-type.SEGUIMIENTO { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+.history-type.CANCELACION { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
 .history-type.CIERRE, .history-type.CIERRE_ADMIN { background: rgba(25, 135, 84, 0.2); color: var(--success); }
 .history-type.VALIDACION { background: rgba(23, 162, 184, 0.2); color: var(--info); }
 .history-type.SOLICITUD { background: rgba(253, 126, 20, 0.2); color: #fd7e14; }
@@ -1046,6 +1047,7 @@ input:checked + .slider:before {
                 <select id="tipoPlantilla" class="form-control" onchange="actualizarCampos()">
                     <option value="" disabled selected>SELECCIONE PLANTILLA</option>
                     <option value="ACEPTA_PDR">ACEPTA PDR</option>
+                    <option value="CANCELACION">CANCELACIÓN</option>
                     <option value="CIERRE">CIERRE DE CASO</option>
                     <option value="CIERRE_ADMIN">CIERRE DE CASO ADMINISTRATIVO</option>
                     <option value="CULMINACION">CULMINACIÓN PDR</option>
@@ -1320,7 +1322,7 @@ function obtenerCSActual() {
         valor = document.getElementById('sn')?.value || '';
     } else if (plantilla === 'ACEPTA_PDR') {
         valor = document.getElementById('snAcepta')?.value || '';
-    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN') {
+    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN' || plantilla === 'CANCELACION') {
         valor = document.getElementById('snSeguimiento')?.value || '';
     } else {
         valor = document.getElementById('snSolo')?.value || '';
@@ -1511,6 +1513,7 @@ function renderizarTablaHistorial(filtro = '') {
     const tbody = document.getElementById('tablaHistorial');
     const nombresPlantilla = {
         'SEGUIMIENTO': 'Seguimiento',
+        'CANCELACION': 'Cancelación',
         'CIERRE_ADMIN': 'Cierre Adm',
         'CIERRE': 'Cierre Caso',
         'ACEPTA_PDR': 'Acepta PDR',
@@ -1608,6 +1611,7 @@ function exportarExcel() {
     
     const nombresPlantilla = {
         'SEGUIMIENTO': 'Seguimiento',
+        'CANCELACION': 'Cancelación',
         'CIERRE_ADMIN': 'Cierre Administrativo',
         'CIERRE': 'Cierre de Caso',
         'ACEPTA_PDR': 'Acepta PDR',
@@ -1693,6 +1697,7 @@ function actualizarCampos() {
     // Mostrar campos según la plantilla seleccionada
     switch(plantilla) {
         case 'SEGUIMIENTO':
+        case 'CANCELACION':
             document.getElementById('campoSN_Seguimiento').classList.add('active');
             document.getElementById('campoObs').classList.add('active');
             break;
@@ -1791,6 +1796,10 @@ function generar() {
     switch(plantilla) {
         case 'SEGUIMIENTO':
             resultado = `SERVICE NOW: ${sn || 'N/A'}\nSeguimiento caso en service now pendiente respuesta por parte de ONNET.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'CANCELACION':
+            resultado = `❌CANCELACIÓN DE CASO❌\nSERVICE NOW: ${sn || 'N/A'}${obs ? '\nOBSERVACION: ' + obs : ''}\nGESTOR: ${agente}`;
             break;
             
         case 'CIERRE_ADMIN':
@@ -1910,6 +1919,10 @@ function validar() {
         case 'SEGUIMIENTO':
             if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
             // Observación es opcional para SEGUIMIENTO
+            break;
+        case 'CANCELACION':
+            if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
+            // Observación es opcional para CANCELACION
             break;
         case 'CIERRE_ADMIN':
             if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
@@ -2057,6 +2070,7 @@ function registrarCaso(contenido) {
                 contadores.SOLICITUD++;
                 break;
             case 'SEGUIMIENTO':
+            case 'CANCELACION':
                 contadores.SEGUIMIENTO++;
                 break;
             case 'VALIDACION':
