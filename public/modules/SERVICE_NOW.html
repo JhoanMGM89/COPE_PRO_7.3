@@ -1027,6 +1027,10 @@ input:checked + .slider:before {
                 <span class="stat-value" id="statSeguimiento">0</span>
             </div>
             <div class="stat-item">
+                <span class="stat-label">Cancelación:</span>
+                <span class="stat-value" id="statCancelacion">0</span>
+            </div>
+            <div class="stat-item">
                 <span class="stat-label">Validación:</span>
                 <span class="stat-value" id="statValidacion">0</span>
             </div>
@@ -1341,9 +1345,11 @@ let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
     SOLICITUD: 0,
     SEGUIMIENTO: 0,
+    CANCELACION: 0,
     VALIDACION: 0,
     PDR: 0
 };
+if (contadores.CANCELACION === undefined) contadores.CANCELACION = 0;
 let previewActual = '';
 let accionPendiente = null;
 let colorActual = localStorage.getItem('colorServiceNow') || '#0d6efd';
@@ -1376,13 +1382,14 @@ function actualizarEstadisticas() {
     document.getElementById('statCierre').textContent = contadores.CIERRE;
     document.getElementById('statAvances').textContent = contadores.SOLICITUD;
     document.getElementById('statSeguimiento').textContent = contadores.SEGUIMIENTO;
+    document.getElementById('statCancelacion').textContent = contadores.CANCELACION;
     document.getElementById('statValidacion').textContent = contadores.VALIDACION;
     document.getElementById('statPDR').textContent = contadores.PDR;
 }
 
 function resetTodosContadores() {
     if (confirm('¿Reiniciar todos los contadores?')) {
-        contadores = { CIERRE: 0, SOLICITUD: 0, SEGUIMIENTO: 0, VALIDACION: 0, PDR: 0 };
+        contadores = { CIERRE: 0, SOLICITUD: 0, SEGUIMIENTO: 0, CANCELACION: 0, VALIDACION: 0, PDR: 0 };
         guardarDatos();
         actualizarEstadisticas();
     }
@@ -2070,8 +2077,10 @@ function registrarCaso(contenido) {
                 contadores.SOLICITUD++;
                 break;
             case 'SEGUIMIENTO':
-            case 'CANCELACION':
                 contadores.SEGUIMIENTO++;
+                break;
+            case 'CANCELACION':
+                contadores.CANCELACION++;
                 break;
             case 'VALIDACION':
                 contadores.VALIDACION++;
