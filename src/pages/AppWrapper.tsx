@@ -78,8 +78,9 @@ const AppWrapper = () => {
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const moduleVersion = "cancelacion-v34";
   const modulePath = `${import.meta.env.BASE_URL}modules/GENERADOR_DE_PLANTILLAS.html`;
-  const iframeSrc = `${modulePath}?agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
+  const iframeSrc = `${modulePath}?v=${encodeURIComponent(moduleVersion)}&agentName=${encodeURIComponent(agentName)}&userId=${encodeURIComponent(userId)}&supabaseUrl=${encodeURIComponent(supabaseUrl)}&supabaseKey=${encodeURIComponent(supabaseKey)}`;
   const sessionBackup = useMemo(() => (
     session?.access_token && session?.refresh_token
       ? { access_token: session.access_token, refresh_token: session.refresh_token }

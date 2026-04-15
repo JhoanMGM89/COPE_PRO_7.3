@@ -8388,6 +8388,24 @@ __modulosEmbebidos["PUTTY.html"] = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVzIj4K
 
 let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
 var __moduleCache = {}; // Cache iframes to avoid reloading
+var __moduleVersion = 'cancelacion-v34';
+
+function cargarModuloEnIframe(iframe, modulo) {
+    var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
+    if (__mod) {
+        try {
+            var decoded = atob(__mod);
+            var __html = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, function(c) { return c.charCodeAt(0); }));
+            iframe.srcdoc = __html;
+        } catch(e) {
+            console.error('Error loading embedded module:', modulo, e);
+            iframe.src = modulo + (modulo.indexOf('?') === -1 ? '?' : '&') + 'v=' + encodeURIComponent(__moduleVersion);
+        }
+    } else {
+        iframe.src = modulo + (modulo.indexOf('?') === -1 ? '?' : '&') + 'v=' + encodeURIComponent(__moduleVersion);
+    }
+    iframe.setAttribute('data-module', modulo);
+}
 
 function abrirModulo(modulo, params) {
     // Hide welcome screen buttons when opening a module
@@ -8427,19 +8445,7 @@ function abrirModulo(modulo, params) {
         }
         
         // --- MÓDULOS EMBEBIDOS ---
-        var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
-        if (__mod) {
-            try {
-                var decoded = atob(__mod);
-                var __html = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, function(c) { return c.charCodeAt(0); }));
-                nestedIframe.srcdoc = __html;
-            } catch(e) {
-                console.error('Error loading embedded module:', modulo, e);
-                nestedIframe.src = modulo;
-            }
-        } else {
-            nestedIframe.src = modulo;
-        }
+            cargarModuloEnIframe(nestedIframe, modulo);
         nestedOverlay.classList.add('activo');
         return;
     }
@@ -8474,39 +8480,14 @@ function abrirModulo(modulo, params) {
             enviarSesionAlIframe(iframe.contentWindow);
         };
         // --- MÓDULOS EMBEBIDOS ---
-        var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
-        if (__mod) {
-            try {
-                var decoded = atob(__mod);
-                var __html = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, function(c) { return c.charCodeAt(0); }));
-                iframe.srcdoc = __html;
-            } catch(e) {
-                console.error('Error loading embedded module:', modulo, e);
-                iframe.src = modulo;
-            }
-        } else {
-            iframe.src = modulo;
-        }
-        iframe.setAttribute('data-module', modulo);
+        cargarModuloEnIframe(iframe, modulo);
     } else {
         // Module is cached - instant switch without reload
         var currentSrc = iframe.getAttribute('data-module') || '';
         if (currentSrc !== modulo) {
-            // --- MÓDULOS EMBEBIDOS ---
-        var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
-        if (__mod) {
-            try {
-                var decoded = atob(__mod);
-                var __html = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, function(c) { return c.charCodeAt(0); }));
-                iframe.srcdoc = __html;
-            } catch(e) {
-                console.error('Error loading embedded module:', modulo, e);
-                iframe.src = modulo;
-            }
+            cargarModuloEnIframe(iframe, modulo);
         } else {
-            iframe.src = modulo;
-        }
-            iframe.setAttribute('data-module', modulo);
+            cargarModuloEnIframe(iframe, modulo);
         }
         
         // Always clear form data for new case, but preserve templates
