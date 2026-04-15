@@ -1341,6 +1341,38 @@ function obtenerCSActual() {
 
     return valor;
 }
+
+function asegurarOpcionCancelacion() {
+    const selectPlantilla = document.getElementById('tipoPlantilla');
+    if (!selectPlantilla) return;
+
+    const valorObjetivo = 'CANCELACION';
+    const textoObjetivo = 'CANCELACIÓN';
+    const opcionExistente = Array.from(selectPlantilla.options).find(option => option.value === valorObjetivo);
+
+    if (opcionExistente) {
+        opcionExistente.textContent = textoObjetivo;
+
+        const opcionAceptaPdr = Array.from(selectPlantilla.options).find(option => option.value === 'ACEPTA_PDR');
+        if (opcionAceptaPdr && opcionAceptaPdr.nextElementSibling !== opcionExistente) {
+            opcionAceptaPdr.insertAdjacentElement('afterend', opcionExistente);
+        }
+        return;
+    }
+
+    const nuevaOpcion = document.createElement('option');
+    nuevaOpcion.value = valorObjetivo;
+    nuevaOpcion.textContent = textoObjetivo;
+
+    const opcionAceptaPdr = Array.from(selectPlantilla.options).find(option => option.value === 'ACEPTA_PDR');
+    if (opcionAceptaPdr) {
+        opcionAceptaPdr.insertAdjacentElement('afterend', nuevaOpcion);
+        return;
+    }
+
+    selectPlantilla.appendChild(nuevaOpcion);
+}
+
 let contadores = JSON.parse(localStorage.getItem('contadoresServiceNow')) || {
     CIERRE: 0,
     SOLICITUD: 0,
@@ -1356,6 +1388,7 @@ let colorActual = localStorage.getItem('colorServiceNow') || '#0d6efd';
 
 document.addEventListener('DOMContentLoaded', () => {
     agente = (localStorage.getItem('nombreAgente') || agente || 'GESTOR').toUpperCase();
+    asegurarOpcionCancelacion();
     actualizarEstadisticas();
     actualizarCampos();
     aplicarColor(colorActual);
