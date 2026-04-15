@@ -1321,7 +1321,7 @@ function obtenerCSActual() {
         valor = document.getElementById('sn')?.value || '';
     } else if (plantilla === 'ACEPTA_PDR') {
         valor = document.getElementById('snAcepta')?.value || '';
-    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN') {
+    } else if (plantilla === 'SEGUIMIENTO' || plantilla === 'CIERRE_ADMIN' || plantilla === 'CANCELACION') {
         valor = document.getElementById('snSeguimiento')?.value || '';
     } else {
         valor = document.getElementById('snSolo')?.value || '';
@@ -1694,6 +1694,7 @@ function actualizarCampos() {
     // Mostrar campos según la plantilla seleccionada
     switch(plantilla) {
         case 'SEGUIMIENTO':
+        case 'CANCELACION':
             document.getElementById('campoSN_Seguimiento').classList.add('active');
             document.getElementById('campoObs').classList.add('active');
             break;
@@ -1792,6 +1793,10 @@ function generar() {
     switch(plantilla) {
         case 'SEGUIMIENTO':
             resultado = `SERVICE NOW: ${sn || 'N/A'}\nSeguimiento caso en service now pendiente respuesta por parte de ONNET.${obs ? '\n' + obs : ''}\nGESTOR: ${agente}`;
+            break;
+            
+        case 'CANCELACION':
+            resultado = `❌CANCELACIÓN DE CASO❌\nSERVICE NOW: ${sn || 'N/A'}${obs ? '\nOBSERVACION: ' + obs : ''}\nGESTOR: ${agente}`;
             break;
             
         case 'CIERRE_ADMIN':
@@ -1911,6 +1916,10 @@ function validar() {
         case 'SEGUIMIENTO':
             if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
             // Observación es opcional para SEGUIMIENTO
+            break;
+        case 'CANCELACION':
+            if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
+            // Observación es opcional para CANCELACION
             break;
         case 'CIERRE_ADMIN':
             if (!document.getElementById('snSeguimiento').value.trim()) camposRequeridos.push('Service Now');
@@ -2058,6 +2067,7 @@ function registrarCaso(contenido) {
                 contadores.SOLICITUD++;
                 break;
             case 'SEGUIMIENTO':
+            case 'CANCELACION':
                 contadores.SEGUIMIENTO++;
                 break;
             case 'VALIDACION':
