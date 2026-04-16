@@ -7738,8 +7738,13 @@ function validarCamposDetalle() {
     if (esSYTEX) {
         const fo = document.getElementById('inputFO').value.trim();
         if (!fo) faltantes.push('FO / ID');
-        const gdm = document.getElementById('inputGDM').value.trim();
-        if (!gdm) faltantes.push('ID GDM');
+        // ID GDM NO se requiere para ALTAS o PRIMERA ALTA en SYTEX
+        const fallaActual = document.getElementById('selectFalla').value || '';
+        const esAltaFalla = fallaActual.includes('ALTA');
+        if (!esAltaFalla) {
+            const gdm = document.getElementById('inputGDM').value.trim();
+            if (!gdm) faltantes.push('ID GDM');
+        }
     }
     // Si es GDM o CAZAMASIVOS, no se valida FO porque está oculto
     
