@@ -7738,10 +7738,11 @@ function validarCamposDetalle() {
     if (esSYTEX) {
         const fo = document.getElementById('inputFO').value.trim();
         if (!fo) faltantes.push('FO / ID');
-        // ID GDM NO se requiere para ALTAS o PRIMERA ALTA en SYTEX
+        // ID GDM NO se requiere para ALTAS, PRIMERA ALTA o CORRESPONDENCIA en SYTEX
         const fallaActual = document.getElementById('selectFalla').value || '';
         const esAltaFalla = fallaActual.includes('ALTA');
-        if (!esAltaFalla) {
+        const esCorrespondencia = fallaActual.includes('CORRESPONDENCIA');
+        if (!esAltaFalla && !esCorrespondencia) {
             const gdm = document.getElementById('inputGDM').value.trim();
             if (!gdm) faltantes.push('ID GDM');
         }
@@ -8393,7 +8394,7 @@ __modulosEmbebidos["PUTTY.html"] = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVzIj4K
 
 let moduleStack = []; // Stack to support nested modules (e.g., PUTTY inside ATP)
 var __moduleCache = {}; // Cache iframes to avoid reloading
-var __moduleVersion = 'cancelacion-v37';
+var __moduleVersion = 'cancelacion-v38';
 
 function cargarModuloEnIframe(iframe, modulo) {
     var __mod = typeof __modulosEmbebidos !== 'undefined' ? __modulosEmbebidos[modulo] : null;
